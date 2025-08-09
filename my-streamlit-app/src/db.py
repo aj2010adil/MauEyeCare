@@ -13,7 +13,9 @@ def init_db():
             gender TEXT,
             contact TEXT
         )''')
-        c.execute('''CREATE TABLE IF NOT EXISTS prescriptions (
+        # Drop and recreate prescriptions table to ensure schema is correct (WARNING: this deletes all prescription data)
+        c.execute('DROP TABLE IF EXISTS prescriptions')
+        c.execute('''CREATE TABLE prescriptions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             patient_id INTEGER,
             doctor_name TEXT,
