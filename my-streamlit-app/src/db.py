@@ -20,6 +20,9 @@ def init_db():
             medicines TEXT,
             dosage TEXT,
             eye_test TEXT,
+            issue TEXT,
+            money_given REAL DEFAULT 0,
+            money_pending REAL DEFAULT 0,
             date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(patient_id) REFERENCES patients(id)
         )''')
@@ -57,6 +60,11 @@ def init_db():
 def add_patient(name, age, gender, contact):
     with closing(sqlite3.connect(DB_PATH)) as conn:
         c = conn.cursor()
+        # Check for existing patient with same name and contact
+        c.execute("SELECT id FROM patients WHERE name=? AND contact=?", (name, contact))
+        row = c.fetchone()
+        if row:
+            return row[0]
         c.execute("INSERT INTO patients (name, age, gender, contact) VALUES (?, ?, ?, ?)", (name, age, gender, contact))
         conn.commit()
         return c.lastrowid
@@ -74,9 +82,11 @@ def get_prescriptions(patient_id):
         return c.fetchall()
 
 def add_prescription(patient_id, doctor_name, medicines, dosage, eye_test):
+    # New version: add issue, money_given, money_pending
     with closing(sqlite3.connect(DB_PATH)) as conn:
         c = conn.cursor()
-        c.execute("INSERT INTO prescriptions (patient_id, doctor_name, medicines, dosage, eye_test) VALUES (?, ?, ?, ?, ?)", (patient_id, doctor_name, medicines, dosage, eye_test))
+        c.execute("INSERT INTO prescriptions (patient_id, doctor_name, medicines, dosage, eye_test, issue, money_given, money_pending) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                  (patient_id, doctor_name, medicines.get('medicines', ''), medicines.get('dosage', ''), medicines.get('eye_test', ''), medicines.get('issue', ''), medicines.get('money_given', 0), medicines.get('money_pending', 0)))
         conn.commit()
         return c.lastrowid
 
