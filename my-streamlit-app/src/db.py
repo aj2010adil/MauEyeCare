@@ -27,6 +27,31 @@ def init_db():
             medicine TEXT PRIMARY KEY,
             quantity INTEGER
         )''')
+        # Pre-populate with common eye specialist medicines and spectacles if not already present
+        default_items = [
+            ("Tobramycin Eye Drops", 20),
+            ("Moxifloxacin Eye Drops", 15),
+            ("Carboxymethylcellulose Eye Drops", 25),
+            ("Atropine Eye Drops", 10),
+            ("Prednisolone Acetate Eye Drops", 10),
+            ("Timolol Eye Drops", 12),
+            ("Latanoprost Eye Drops", 8),
+            ("Brimonidine Eye Drops", 8),
+            ("Acetazolamide Tablets", 30),
+            ("Fluorescein Strips", 50),
+            ("Eye Ointment (Erythromycin)", 10),
+            ("Contact Lens Solution", 15),
+            ("Reading Glasses +1.00", 10),
+            ("Reading Glasses +1.50", 10),
+            ("Reading Glasses +2.00", 10),
+            ("Single Vision Spectacles", 10),
+            ("Bifocal Spectacles", 8),
+            ("Progressive Spectacles", 6),
+            ("Protective Eye Shields", 12),
+            ("Eye Patch", 20)
+        ]
+        for med, qty in default_items:
+            c.execute("INSERT OR IGNORE INTO inventory (medicine, quantity) VALUES (?, ?)", (med, qty))
         conn.commit()
 
 def add_patient(name, age, gender, contact):
@@ -40,6 +65,12 @@ def get_patients():
     with closing(sqlite3.connect(DB_PATH)) as conn:
         c = conn.cursor()
         c.execute("SELECT * FROM patients")
+        return c.fetchall()
+
+def get_prescriptions(patient_id):
+    with closing(sqlite3.connect(DB_PATH)) as conn:
+        c = conn.cursor()
+        c.execute("SELECT * FROM prescriptions WHERE patient_id=? ORDER BY date DESC", (patient_id,))
         return c.fetchall()
 
 def add_prescription(patient_id, doctor_name, medicines, dosage, eye_test):
