@@ -1,7 +1,7 @@
 import sqlite3
 from contextlib import closing
 
-DB_PATH = "src/eyecare.db"
+DB_PATH = "eyecare.db"
 
 def init_db():
     with closing(sqlite3.connect(DB_PATH)) as conn:

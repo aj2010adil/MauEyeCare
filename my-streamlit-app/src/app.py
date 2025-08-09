@@ -13,6 +13,17 @@ from fpdf import FPDF
 from modules.pdf_utils import generate_pdf
 from modules.ai_utils import get_grok_suggestion
 from modules.inventory_utils import get_inventory_dict, add_or_update_inventory, reduce_inventory
+# LangGraph imports - will be loaded conditionally
+try:
+    from langgraph_agent import mau_agent
+    from market_updater import market_updater
+    LANGGRAPH_AVAILABLE = True
+    print("LangGraph components loaded successfully")
+except ImportError as e:
+    LANGGRAPH_AVAILABLE = False
+    mau_agent = None
+    market_updater = None
+    print(f"LangGraph not available: {e}")
 
 def to_excel(df):
     """Convert DataFrame to Excel for download."""
@@ -73,7 +84,7 @@ def main():
     st.title("🔍 Mau Eye Care Optical Center")
     st.markdown("*Advanced Eye Care & Prescription Management System*")
 
-    tab1, tab2, tab3 = st.tabs(["📋 Prescription & Patient", "📦 Inventory Management", "📊 Patient History"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📋 Prescription & Patient", "📦 Inventory Management", "📊 Patient History", "🤖 AI Agent Tools"])
 
     # --- Prescription & Patient Tab ---
     with tab1:
@@ -354,7 +365,7 @@ def main():
                 db.add_prescription(patient_id, "Dr Danish", pres_data, '', '')
                 for med, qty in prescription.items():
                     reduce_inventory(med, qty)
-                    st.success("Prescription and medical tests saved! Inventory updated!")
+                st.success("Prescription and medical tests saved! Inventory updated!")
     # --- Patient History Tab ---
     with tab3:
         st.header("🔍 Patient History & Search")
@@ -408,6 +419,155 @@ def main():
             st.success(f"Added {spectacle_qty} of {spectacle_name} to inventory.")
 
         st.info("For medicine suggestions, refer to reputable sites like drugs.com or medlineplus.gov. You can add any medicine or spectacle needed for eye specialists. The agent will keep the inventory updated.")
+        
+        # Market Data Integration
+        st.markdown("---")
+        st.subheader("📊 Market Data & Auto-Update")
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("🔄 Update from Market", type="primary"):
+                if LANGGRAPH_AVAILABLE and market_updater:
+                    with st.spinner("Fetching latest market data..."):
+                        result = market_updater.update_inventory_from_market()
+                        if result:
+                            st.success("Inventory updated with latest market data!")
+                            st.rerun()
+                        else:
+                            st.error("Failed to update inventory")
+                else:
+                    st.warning("LangGraph not available. Install with: pip install langgraph")
+        
+        with col2:
+            if st.button("⚠️ Check Low Stock"):
+                if LANGGRAPH_AVAILABLE and market_updater:
+                    low_stock = market_updater.check_low_stock_alerts()
+                    if low_stock:
+                        st.warning(f"Low stock items: {len(low_stock)}")
+                        for item, qty in low_stock:
+                            st.write(f"- {item}: {qty} remaining")
+                    else:
+                        st.success("All items have sufficient stock")
+                else:
+                    st.warning("LangGraph not available")
+        
+        with col3:
+            if st.button("📈 Market Trends"):
+                if LANGGRAPH_AVAILABLE and market_updater:
+                    trends = market_updater.get_market_trends()
+                    st.json(trends)
+                else:
+                    st.warning("LangGraph not available")
+
+    # --- AI Agent Tools Tab ---
+    with tab4:
+        st.header("🤖 AI Agent Tools")
+        st.markdown("*LangGraph-powered intelligent tools for automated tasks*")
+        
+        if not LANGGRAPH_AVAILABLE:
+            st.error("🚀 LangGraph not available. Install with: pip install langgraph langchain langchain-core")
+            st.info("The AI Agent Tools require LangGraph to be installed. Please install the dependencies and restart the application.")
+            return
+        
+        # Agent Task Executor
+        st.subheader("🚀 Agent Task Executor")
+        task_options = [
+            "Generate PDF for patient",
+            "Fetch latest market data",
+            "Update inventory from market",
+            "Check low stock items",
+            "Get patient data summary",
+            "Custom task"
+        ]
+        
+        selected_task = st.selectbox("Select Agent Task", task_options)
+        
+        if selected_task == "Custom task":
+            custom_task = st.text_input("Enter custom task description")
+            task_to_execute = custom_task
+        else:
+            task_to_execute = selected_task
+        
+        # Task context inputs
+        if "patient" in selected_task.lower():
+            patient_id = st.number_input("Patient ID", min_value=1, value=1)
+            context = {"patient_id": patient_id}
+        else:
+            context = {}
+        
+        # Execute task
+        if st.button("▶️ Execute Agent Task", type="primary"):
+            if task_to_execute and mau_agent:
+                with st.spinner(f"Agent executing: {task_to_execute}..."):
+                    try:
+                        result = mau_agent.execute_task(task_to_execute, context)
+                        st.success("Task completed successfully!")
+                        st.json(result)
+                    except Exception as e:
+                        st.error(f"Agent task failed: {str(e)}")
+            else:
+                st.warning("Please enter a task description")
+        
+        # Quick Actions
+        st.markdown("---")
+        st.subheader("⚡ Quick Actions")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("📝 Auto-Generate PDF"):
+                if mau_agent and 'patient_id' in st.session_state:
+                    patient_data = {
+                        'patient_name': st.session_state.get('patient_name', ''),
+                        'age': st.session_state.get('age', 0),
+                        'gender': st.session_state.get('gender', ''),
+                        'prescription': st.session_state.get('prescription', {}),
+                        'advice': st.session_state.get('advice', ''),
+                        'rx_table': st.session_state.get('rx_table', {}),
+                        'recommendations': st.session_state.get('recommendations', [])
+                    }
+                    result = mau_agent.generate_patient_pdf(patient_data)
+                    st.success(result)
+                elif not mau_agent:
+                    st.warning("LangGraph agent not available")
+                else:
+                    st.warning("No patient selected. Please go to Prescription tab first.")
+        
+        with col2:
+            if st.button("🔄 Smart Inventory Update"):
+                if mau_agent:
+                    result = mau_agent.update_inventory_from_market()
+                    st.info(result)
+                else:
+                    st.warning("LangGraph agent not available")
+        
+        with col3:
+            if st.button("📈 Stock Analysis"):
+                if mau_agent:
+                    result = mau_agent.check_low_stock()
+                    st.info(result)
+                else:
+                    st.warning("LangGraph agent not available")
+        
+        # Agent Status
+        st.markdown("---")
+        st.subheader("📊 Agent Status")
+        
+        status_col1, status_col2 = st.columns(2)
+        
+        with status_col1:
+            st.metric("Tools Available", "4")
+            st.write("- PDF Generator")
+            st.write("- Market Data Fetcher")
+            st.write("- Inventory Manager")
+            st.write("- Patient Data Reader")
+        
+        with status_col2:
+            st.metric("Agent Status", "Active ✅")
+            st.write("- LangGraph: Enabled")
+            st.write("- Auto-updates: Running")
+            st.write("- Market sync: Every 6h")
+            st.write("- Stock alerts: Every 2h")
 
 if __name__ == "__main__":
     main()

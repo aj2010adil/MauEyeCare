@@ -1,4 +1,9 @@
 streamlit
 pandas
-numpy
-matplotlib
+fpdf2
+requests
+langgraph
+langchain
+langchain-core
+schedule
+sqlite3

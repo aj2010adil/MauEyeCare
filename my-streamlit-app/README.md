@@ -1,54 +1,83 @@
-# My Streamlit App
+# 🔍 MauEyeCare Optical Center
 
-This is a simple Streamlit application designed to demonstrate the capabilities of Streamlit for building interactive web applications.
+AI-powered optical center management system with LangGraph integration.
 
-## Project Structure
+## 🚀 Quick Start
 
-```
-my-streamlit-app
-├── src
-│   ├── app.py          # Main entry point of the Streamlit application
-│   └── utils
-│       └── __init__.py # Package for utility functions
-├── requirements.txt     # List of dependencies
-└── README.md            # Project documentation
+### Windows
+```cmd
+install.bat
 ```
 
-## Installation
-
-To get started with this project, you need to have Python installed on your machine. Follow these steps to set up the project:
-
-1. Clone the repository:
-   ```
-   git clone <repository-url>
-   cd my-streamlit-app
-   ```
-
-2. Create a virtual environment (optional but recommended):
-   ```
-   python -m venv venv
-   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-   ```
-
-3. Install the required dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-
-## Running the Application
-
-To run the Streamlit application, execute the following command:
-
-```
-streamlit run src/app.py
+### Linux/Mac
+```bash
+chmod +x install.sh && ./install.sh
 ```
 
-This will start the Streamlit server and open the application in your default web browser.
+## ✨ Features
 
-## Contributing
+- **🤖 AI Agent**: LangGraph-powered automation
+- **📊 Market Data**: Real-time inventory updates
+- **📋 Patient Management**: Complete medical records
+- **📝 PDF Generation**: Automated prescriptions
+- **💊 Inventory Control**: Smart stock management
 
-If you would like to contribute to this project, please fork the repository and submit a pull request with your changes.
+## 🛠️ Manual Setup
 
-## License
+1. **Install UV**:
+   ```bash
+   # Windows
+   irm https://astral.sh/uv/install.ps1 | iex
+   
+   # Linux/Mac
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+2. **Install Dependencies**:
+   ```bash
+   uv sync
+   ```
+
+3. **Run System**:
+   ```bash
+   python start_system.py
+   ```
+
+## 📁 Project Structure
+
+```
+MauEyeCare/
+├── src/
+│   ├── app.py              # Main Streamlit app
+│   ├── db.py               # Database operations
+│   ├── langgraph_agent.py  # AI agent with tools
+│   ├── market_updater.py   # Market data sync
+│   └── modules/
+│       ├── pdf_utils.py    # PDF generation
+│       ├── ai_utils.py     # AI utilities
+│       └── inventory_utils.py # Inventory management
+├── pyproject.toml          # UV dependencies
+├── install.bat             # Windows installer
+├── install.sh              # Linux/Mac installer
+└── start_system.py         # System launcher
+```
+
+## 🔧 Configuration
+
+- **Database**: SQLite (auto-created)
+- **Market Updates**: Every 6 hours
+- **Stock Alerts**: Every 2 hours
+- **AI Model**: Configurable in `perplexity_config.py`
+
+## 📖 Usage
+
+1. **Patient Management**: Add patients, medical history
+2. **Prescriptions**: Generate with AI verification
+3. **Inventory**: Auto-sync with market data
+4. **AI Tools**: Execute tasks via natural language
+
+## 🆘 Support
+
+- Check `SETUP.md` for detailed instructions
+- Ensure UV is properly installed
+- Verify internet connection for market data
