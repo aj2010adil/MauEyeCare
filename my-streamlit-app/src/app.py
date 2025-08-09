@@ -70,13 +70,14 @@ inventory = {
 
 def main():
 
-    st.title("MauEyeCare - Prescription & Inventory Management")
+    st.title("🔍 Mau Eye Care Optical Center")
+    st.markdown("*Advanced Eye Care & Prescription Management System*")
 
-    tab1, tab2, tab3 = st.tabs(["Prescription & Patient", "Inventory Management", "Patient History"])
+    tab1, tab2, tab3 = st.tabs(["📋 Prescription & Patient", "📦 Inventory Management", "📊 Patient History"])
 
     # --- Prescription & Patient Tab ---
     with tab1:
-        st.header("Patient Information")
+        st.header("👥 Patient Information & Prescription")
         # --- Patient Form ---
         with st.form("patient_form"):
             first_name = st.text_input("First Name")
@@ -85,23 +86,87 @@ def main():
             age = st.number_input("Age", min_value=0, max_value=120, value=30)
             gender = st.selectbox("Gender", ["Male", "Female", "Other"])
             contact = st.text_input("Mobile Number")
-            advice = st.text_area("Advice/Notes")
-            patient_issue = st.text_area("Patient Issue/Complaint (Describe symptoms, e.g. blurry vision, redness, etc.)")
-            # RX Table
+            
+            # Patient Issue/Complaint (moved before advice)
+            issue_options = ["Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Headache", "Light Sensitivity", "Floaters", "Night Vision Problems", "Other"]
+            patient_issue = st.selectbox("Patient Issue/Complaint", issue_options)
+            if patient_issue == "Other":
+                patient_issue = st.text_input("Specify Other Issue")
+            
+            # Advice/Notes with dropdown
+            advice_options = ["Cataract Surgery Recommended", "Spectacle Prescription", "Contact Lens Fitting", "Regular Eye Checkup", "Glaucoma Treatment", "Diabetic Eye Care", "Dry Eye Treatment", "Other"]
+            advice = st.selectbox("Advice/Notes", advice_options)
+            if advice == "Other":
+                advice = st.text_input("Specify Other Advice")
+            # RX Table with dropdowns
             st.markdown("**Rx Table** (Fill for OD and OS)")
             rx_table = {}
+            sphere_options = ["", "+0.25", "+0.50", "+0.75", "+1.00", "+1.25", "+1.50", "+2.00", "+2.50", "+3.00", "-0.25", "-0.50", "-0.75", "-1.00", "-1.25", "-1.50", "-2.00", "-2.50", "-3.00"]
+            cylinder_options = ["", "-0.25", "-0.50", "-0.75", "-1.00", "-1.25", "-1.50", "-2.00"]
+            axis_options = ["", "90", "180", "45", "135", "30", "60", "120", "150"]
+            glass_type_options = ["Single Vision", "Bifocal", "Progressive", "Reading Only"]
+            glass_tint_options = ["Clear", "Photochromic", "Sunglasses", "Blue Light Filter", "Anti-Glare"]
+            
             for eye in ['OD', 'OS']:
                 st.markdown(f"**{eye}**")
-                col1, col2, col3, col4 = st.columns(4)
+                col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
                 with col1:
-                    sphere = st.text_input(f"Sphere {eye}", key=f"sphere_{eye}")
+                    sphere = st.selectbox(f"Sphere {eye}", sphere_options, key=f"sphere_{eye}")
                 with col2:
-                    cylinder = st.text_input(f"Cylinder {eye}", key=f"cylinder_{eye}")
+                    cylinder = st.selectbox(f"Cylinder {eye}", cylinder_options, key=f"cylinder_{eye}")
                 with col3:
-                    axis = st.text_input(f"Axis {eye}", key=f"axis_{eye}")
+                    axis = st.selectbox(f"Axis {eye}", axis_options, key=f"axis_{eye}")
                 with col4:
                     prism = st.text_input(f"Prism {eye}", key=f"prism_{eye}")
-                rx_table[eye] = {"Sphere": sphere, "Cylinder": cylinder, "Axis": axis, "Prism": prism}
+                with col5:
+                    near_vision = st.selectbox(f"Near Vision {eye}", ["", "N6", "N8", "N10", "N12", "N18", "N24"], key=f"near_{eye}")
+                with col6:
+                    glass_type = st.selectbox(f"Glass Type {eye}", glass_type_options, key=f"type_{eye}")
+                with col7:
+                    glass_tint = st.selectbox(f"Glass Tint {eye}", glass_tint_options, key=f"tint_{eye}")
+                rx_table[eye] = {"Sphere": sphere, "Cylinder": cylinder, "Axis": axis, "Prism": prism, "NearVision": near_vision, "GlassType": glass_type, "GlassTint": glass_tint}
+            # Medical Tests
+            st.markdown("**Medical Tests**")
+            col1, col2 = st.columns(2)
+            with col1:
+                bp_options = ["Normal (120/80)", "High (>140/90)", "Low (<90/60)", "Not Tested"]
+                blood_pressure = st.selectbox("Blood Pressure", bp_options)
+                sugar_options = ["Normal (70-100)", "High (>126)", "Low (<70)", "Not Tested"]
+                blood_sugar = st.selectbox("Blood Sugar", sugar_options)
+            with col2:
+                cbt_options = ["Normal", "Abnormal", "Not Done"]
+                complete_blood_test = st.selectbox("Complete Blood Test", cbt_options)
+                viral_options = ["Negative", "Positive", "Not Done"]
+                viral_marker = st.selectbox("Viral Marker", viral_options)
+            
+            # Special Investigations
+            st.markdown("**Special Investigations**")
+            col3, col4, col5 = st.columns(3)
+            with col3:
+                fundus_options = ["Normal", "Diabetic Retinopathy", "Hypertensive Retinopathy", "Macular Degeneration", "Not Done"]
+                fundus_examination = st.selectbox("Fundus Examination", fundus_options)
+                iop_options = ["Normal (10-21 mmHg)", "High (>21 mmHg)", "Low (<10 mmHg)", "Not Measured"]
+                iop = st.selectbox("IOP (Intraocular Pressure)", iop_options)
+            with col4:
+                retino_dry_options = ["Normal", "Myopia", "Hyperopia", "Astigmatism", "Not Done"]
+                retinoscopy_dry = st.selectbox("Retinoscopy (Dry)", retino_dry_options)
+                retino_wet_options = ["Normal", "Myopia", "Hyperopia", "Astigmatism", "Not Done"]
+                retinoscopy_wet = st.selectbox("Retinoscopy (Wet)", retino_wet_options)
+            with col5:
+                syringing_options = ["Patent", "Blocked", "Partially Blocked", "Not Done"]
+                syringing = st.selectbox("Syringing", syringing_options)
+            
+            # Medicine Selection (moved before save)
+            st.markdown("**Medicine Selection**")
+            inventory_db = get_inventory_dict()
+            med_options = list(inventory_db.keys())
+            selected_meds = st.multiselect("Choose medicines/spectacles", med_options, key="form_meds")
+            prescription = {}
+            for med in selected_meds:
+                max_qty = inventory_db[med]
+                qty = st.number_input(f"Quantity for {med} (Stock: {max_qty})", min_value=1, max_value=max_qty, value=1, key=f"form_qty_{med}")
+                prescription[med] = qty
+            
             # Recommendations
             st.markdown("**Recommendations** (Select all that apply)")
             rec_options = [
@@ -137,9 +202,21 @@ def main():
                 st.session_state['rx_table'] = rx_table
                 st.session_state['recommendations'] = recommendations
                 st.session_state['patient_issue'] = patient_issue
+                st.session_state['prescription'] = prescription
+                st.session_state['medical_tests'] = {
+                    'blood_pressure': blood_pressure,
+                    'blood_sugar': blood_sugar,
+                    'complete_blood_test': complete_blood_test,
+                    'viral_marker': viral_marker,
+                    'fundus_examination': fundus_examination,
+                    'iop': iop,
+                    'retinoscopy_dry': retinoscopy_dry,
+                    'retinoscopy_wet': retinoscopy_wet,
+                    'syringing': syringing
+                }
                 st.session_state['show_prescription_pdf'] = True
 
-        # --- Show download buttons after form submission ---
+        # --- Show patient history and AI verification after form submission ---
         if st.session_state.get('show_prescription_pdf', False):
             patient_id = st.session_state['patient_id']
             patient_name = st.session_state['patient_name']
@@ -148,13 +225,88 @@ def main():
             advice = st.session_state['advice']
             rx_table = st.session_state['rx_table']
             recommendations = st.session_state['recommendations']
+            prescription = st.session_state['prescription']
+            patient_issue = st.session_state['patient_issue']
+            medical_tests = st.session_state['medical_tests']
+            
             st.success(f"Patient saved/selected: {patient_name}")
+            
+            # Show Patient History with Medical Tests
             st.markdown("---")
-            st.subheader("Review & Print Basic Prescription for Selected Patient")
+            st.subheader("Patient History")
+            
+            # Show medical test history
+            try:
+                med_history = db.get_medical_tests(patient_id)
+                if med_history:
+                    st.markdown("**Recent Medical Tests:**")
+                    latest_test = med_history[0]  # Most recent
+                    st.info(f"Last Test Date: {latest_test[11]} | BP: {latest_test[2]} | Sugar: {latest_test[3]} | IOP: {latest_test[7]}")
+                    
+                    # Check for changes if there are previous tests
+                    if len(med_history) > 1:
+                        prev_test = med_history[1]
+                        changes = []
+                        if latest_test[2] != prev_test[2]: changes.append(f"BP: {prev_test[2]} → {latest_test[2]}")
+                        if latest_test[3] != prev_test[3]: changes.append(f"Sugar: {prev_test[3]} → {latest_test[3]}")
+                        if latest_test[7] != prev_test[7]: changes.append(f"IOP: {prev_test[7]} → {latest_test[7]}")
+                        if changes:
+                            st.warning(f"Changes detected: {'; '.join(changes)}")
+            except Exception:
+                st.info("No medical test history available")
+            
+            # Show prescription history
+            history = db.get_prescriptions(patient_id)
+            if history:
+                st.markdown("**Recent Prescriptions:**")
+                for pres in history[-3:]:  # Show last 3 records
+                    st.info(f"Date: {pres[9]} | Issue: {pres[6]} | Medicines: {pres[3]} | Money Pending: ${pres[8]}")
+            else:
+                st.info("No previous history found.")
+            
+            # AI Agent Verification
+            st.markdown("---")
+            st.subheader("🤖 AI Agent Verification")
+            col1, col2 = st.columns([1, 3])
+            with col1:
+                if st.button("✅ Verify Prescription", type="primary"):
+                    with st.spinner("🔍 AI verifying..."):
+                        med_list = ', '.join([f"{med}({qty})" for med, qty in prescription.items()])
+                        prompt = f"Patient: {patient_name}, Age: {age}, Issue: {patient_issue}, Advice: {advice}, Medicines: {med_list}. Verify prescription appropriateness in one concise line."
+                        try:
+                            import perplexity_config
+                            grok_key = getattr(perplexity_config, "grok_key", None)
+                            if grok_key:
+                                url = "https://api.groq.com/openai/v1/chat/completions"
+                                headers = {"Authorization": f"Bearer {grok_key}", "Content-Type": "application/json"}
+                                data = {
+                                    "model": "qwen/qwen3-32b",
+                                    "messages": [{"role": "user", "content": prompt}]
+                                }
+                                response = requests.post(url, headers=headers, json=data, timeout=30)
+                                if response.status_code == 200:
+                                    result = response.json()
+                                    ai_result = result["choices"][0]["message"]["content"]
+                                    st.session_state['ai_verification'] = ai_result
+                                else:
+                                    st.session_state['ai_verification'] = "AI verification unavailable"
+                            else:
+                                st.session_state['ai_verification'] = "AI key not configured"
+                        except Exception as e:
+                            st.session_state['ai_verification'] = f"AI verification failed: {e}"
+            with col2:
+                if 'ai_verification' in st.session_state:
+                    if "appropriate" in st.session_state['ai_verification'].lower() or "suitable" in st.session_state['ai_verification'].lower():
+                        st.success(f"✅ {st.session_state['ai_verification']}")
+                    else:
+                        st.warning(f"⚠️ {st.session_state['ai_verification']}")
+            
+            st.markdown("---")
+            st.subheader("📝 Generate Prescription PDF")
             pdf_file = generate_pdf(
-                {}, # No medicines yet
-                '', # No dosage
-                '', # No eye test
+                prescription,
+                '',  # No dosage for now
+                '',  # No eye test for now
                 "Dr Danish",
                 patient_name,
                 age,
@@ -164,249 +316,80 @@ def main():
                 recommendations
             )
             st.download_button(
-                label="Download/Print Basic Prescription PDF",
+                label="Download/Print Prescription PDF",
                 data=pdf_file,
                 file_name=f"prescription_{patient_name.replace(' ', '_')}.pdf",
                 mime="application/pdf",
-                key=f"pdf_btn_basic_{patient_id}"
+                key=f"pdf_btn_{patient_id}"
             )
-            # --- Add medicine selection and prescription PDF generation ---
-            st.markdown("---")
-            st.subheader("Add Medicines and Print Prescription")
-            inventory_db = get_inventory_dict()
-            med_options = list(inventory_db.keys())
-            selected_meds = st.multiselect("Choose medicines/spectacles for this patient", med_options, key=f"meds_{patient_id}")
-            prescription = {}
-            out_of_stock = []
-            for med in selected_meds:
-                max_qty = inventory_db[med]
-                qty = st.number_input(f"Quantity for {med} (In stock: {max_qty})", min_value=1, max_value=10, value=1, key=f"qty_{patient_id}_{med}")
-                if max_qty >= qty:
-                    prescription[med] = qty
-                else:
-                    out_of_stock.append(med)
-            if out_of_stock:
-                st.warning(f"Out of stock or insufficient: {', '.join(out_of_stock)}. Please add to inventory later.")
-            if st.button("Generate Prescription PDF for Patient", key=f"genpdf_{patient_id}"):
-                pdf_file2 = generate_pdf(
-                    prescription,
-                    '',
-                    '',
-                    "Dr Danish",
-                    patient_name,
-                    age,
-                    gender,
-                    advice,
-                    rx_table,
-                    recommendations
-                )
-                st.session_state[f'pdf_file2_{patient_id}'] = pdf_file2
-                st.session_state[f'pdf_file2_ready_{patient_id}'] = True
-            if st.session_state.get(f'pdf_file2_ready_{patient_id}', False):
-                pdf_file2 = st.session_state.get(f'pdf_file2_{patient_id}')
-                st.success("Prescription PDF generated. Please review below.")
-                st.download_button(
-                    label="Download/Print Prescription PDF",
-                    data=pdf_file2,
-                    file_name=f"prescription_{patient_name.replace(' ', '_')}_with_meds.pdf",
-                    mime="application/pdf",
-                    key=f"pdf_btn_full_{patient_id}"
-                )
+            
+            # Save prescription and medical tests to database
+            if st.button("Save Prescription & Medical Tests to Database", key=f"save_{patient_id}"):
+                # Save medical tests
+                try:
+                    db.add_medical_tests(
+                        patient_id,
+                        medical_tests['blood_pressure'],
+                        medical_tests['blood_sugar'],
+                        medical_tests['complete_blood_test'],
+                        medical_tests['viral_marker'],
+                        medical_tests['fundus_examination'],
+                        medical_tests['iop'],
+                        medical_tests['retinoscopy_dry'],
+                        medical_tests['retinoscopy_wet'],
+                        medical_tests['syringing']
+                    )
+                except Exception as e:
+                    st.error(f"Error saving medical tests: {e}")
+                
+                # Save prescription
+                pres_data = {
+                    'medicines': str(prescription),
+                    'dosage': '',
+                    'eye_test': '',
+                    'issue': patient_issue,
+                    'money_given': 0,
+                    'money_pending': 0
+                }
+                db.add_prescription(patient_id, "Dr Danish", pres_data, '', '')
+                for med, qty in prescription.items():
+                    reduce_inventory(med, qty)
+                    st.success("Prescription and medical tests saved! Inventory updated!")
     # --- Patient History Tab ---
     with tab3:
-        st.header("Patient History & Search")
+        st.header("🔍 Patient History & Search")
         patients = db.get_patients()
         search_mobile = st.text_input("Search by Mobile Number", key="history_search_mobile")
         search_name = st.text_input("Search by Name", key="history_search_name")
         filtered = [p for p in patients if (search_mobile in p[4]) and (search_name.lower() in p[1].lower())]
         st.write(f"Found {len(filtered)} patient(s)")
-        for p in filtered:
-            st.markdown(f"**Name:** {p[1]} | **Age:** {p[2]} | **Gender:** {p[3]} | **Mobile:** {p[4]}")
-            history = db.get_prescriptions(p[0])
-    with tab3:
-        st.header("Patient History & Search")
-        patients = db.get_patients()
-        search_mobile = st.text_input("Search by Mobile Number")
-        search_name = st.text_input("Search by Name")
-        # Merge patients by name and mobile
-        merged = {}
-        for p in patients:
-            key = (p[1].strip().lower(), p[4].strip())
-            if key not in merged:
-                merged[key] = list(p)
-            else:
-                # If duplicate, keep the earliest age/gender
-                merged[key][2] = min(merged[key][2], p[2])
-        merged_patients = list(merged.values())
-        st.write(f"Found {len(merged_patients)} patient(s)")
-        if merged_patients:
-            patient_df = pd.DataFrame(merged_patients, columns=["ID", "Name", "Age", "Gender", "Mobile"])
-            st.dataframe(patient_df)
-            st.download_button(
-                label="Download Patient Data (Excel)",
-                data=to_excel(patient_df),
-                file_name="patients.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-            # Upload patient data Excel
-            uploaded_patients = st.file_uploader("Upload Patient Data (Excel)", type=["xlsx"], key="upload_patients")
-            if uploaded_patients:
-                df_pat = pd.read_excel(uploaded_patients)
-                for _, row in df_pat.iterrows():
-                    db.add_patient(row["Name"], int(row["Age"]), row["Gender"], str(row["Mobile"]))
-                st.success("Uploaded and merged patient data.")
-
-            # Show prescription history for selected patient
-            selected_patient = st.selectbox("Select patient to view prescription history", patient_df["ID"])
-            history = db.get_prescriptions(selected_patient)
-            if history:
-                hist_df = pd.DataFrame(history, columns=["ID", "PatientID", "Doctor", "Medicines", "Dosage", "EyeTest", "Issue", "MoneyGiven", "MoneyPending", "Date"])
-                hist_df = hist_df.sort_values(by="Date", ascending=False)
-                # Show all columns including Date, Doctor, Issue, Medicines, Dosage, EyeTest, MoneyGiven, MoneyPending
-                show_cols = ["Date", "Doctor", "Issue", "Medicines", "Dosage", "EyeTest", "MoneyGiven", "MoneyPending"]
-                # Add a prominent action button for each row
-                def render_action_buttons(row):
-                    import streamlit as st
-                    try:
-                        meds = eval(row['Medicines']) if isinstance(row['Medicines'], str) and row['Medicines'].startswith('{') else row['Medicines']
-                    except Exception:
-                        meds = {}
-                    pdf_file = generate_pdf(
-                        meds if isinstance(meds, dict) else {},
-                        row['Dosage'],
-                        row['EyeTest'],
-                        row['Doctor'],
-                        patient_df[patient_df['ID'] == row['PatientID']]['Name'].values[0] if 'Name' in patient_df.columns else '',
-                        0,
-                        '',
-                        '',
-                        {},
-                        []
-                    )
-                    st.download_button(
-                        label=f"Download/Print PDF",
-                        data=pdf_file,
-                        file_name=f"prescription_{row['Date']}.pdf",
-                        mime="application/pdf",
-                        key=f"pdf_btn_{row['ID']}"
-                    )
-
-                # Show table with action buttons
-                for idx, row in hist_df.iterrows():
-                    st.write(":heavy_minus_sign:"*30)
-                    st.markdown(f"**Date:** {row['Date']} | **Doctor:** {row['Doctor']} | **Issue:** {row['Issue']} | **Medicines:** {row['Medicines']} | **Dosage:** {row['Dosage']} | **Money Given:** {row['MoneyGiven']} | **Money Pending:** {row['MoneyPending']}")
-                    render_action_buttons(row)
-                st.download_button(
-                    label="Download Prescription History (Excel)",
-                    data=to_excel(hist_df[show_cols]),
-                    file_name="prescription_history.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-                # Upload prescription history Excel
-                uploaded_presc = st.file_uploader("Upload Prescription History (Excel)", type=["xlsx"], key="upload_presc")
-                if uploaded_presc:
-                    df_presc = pd.read_excel(uploaded_presc)
-                    for _, row in df_presc.iterrows():
-                        db.add_prescription(
-                            row["PatientID"],
-                            row["Doctor"],
-                            {'medicines': row["Medicines"], 'dosage': row["Dosage"], 'eye_test': row["EyeTest"], 'issue': row["Issue"], 'money_given': row["MoneyGiven"], 'money_pending': row["MoneyPending"]},
-                            row["Dosage"],
-                            row["EyeTest"]
-                        )
-                    st.success("Uploaded and merged prescription history.")
-            else:
-                st.write("No prescription history.")
+        if filtered:
+            for p in filtered:
+                st.markdown(f"**Name:** {p[1]} | **Age:** {p[2]} | **Gender:** {p[3]} | **Mobile:** {p[4]}")
+                
+                # Show medical test history
+                try:
+                    med_tests = db.get_medical_tests(p[0])
+                    if med_tests:
+                        latest = med_tests[0]
+                        st.info(f"Latest Tests ({latest[11]}): BP: {latest[2]} | Sugar: {latest[3]} | IOP: {latest[7]} | Fundus: {latest[6]}")
+                except Exception:
+                    st.info("No medical test history available")
+                
+                # Show prescription history
+                history = db.get_prescriptions(p[0])
+                if history:
+                    for pres in history[-2:]:  # Show last 2 records
+                        st.info(f"Date: {pres[9]} | Issue: {pres[6]} | Medicines: {pres[3]} | Money Pending: ${pres[8]}")
+                else:
+                    st.write("No prescription history found.")
         else:
             st.write("No patients found.")
-            if history:
-                for pres in history:
-                    st.markdown(f"- **Date:** {pres[6]} | **Doctor:** {pres[2]} | **Meds:** {pres[3]} | **Dosage:** {pres[4]} | **Eye Test:** {pres[5]}")
-            else:
-                st.write("No history found.")
 
-            st.header("1. Select Medicines/Spectacles")
-            inventory_db = get_inventory_dict()
-            med_options = list(inventory_db.keys())
-            # Agent suggestion for medicines based on patient issue
-            if patient_issue:
-                if st.button("Get Agent Medicine Suggestions for Issue"):
-                    with st.spinner("Agent is suggesting medicines for the issue..."):
-                        import perplexity_config
-                        grok_key = getattr(perplexity_config, "grok_key", None)
-                        suggestion = get_grok_suggestion(grok_key, "Dr Danish", patient_name, [], "", patient_issue)
-                    st.info(f"Agent Suggestion: {suggestion}")
-            selected_meds = st.multiselect("Choose medicines/spectacles", med_options)
-            prescription = {}
-            out_of_stock = []
-            for med in selected_meds:
-                max_qty = inventory_db[med]
-                qty = st.number_input(f"Quantity for {med} (In stock: {max_qty})", min_value=1, max_value=10, value=1, key=med)
-                if max_qty >= qty:
-                    prescription[med] = qty
-                else:
-                    out_of_stock.append(med)
 
-            if out_of_stock:
-                st.warning(f"Out of stock or insufficient: {', '.join(out_of_stock)}. Please add to inventory later.")
-
-            st.header("2. Dosage Details")
-            dosage = st.text_area("Enter dosage instructions")
-
-            st.header("3. Eye Testing Details")
-            eye_test = st.text_area("Enter eye testing details")
-
-            st.header("4. Visit Details")
-            issue = st.text_area("Patient Issue/Complaint for this visit")
-            money_given = st.number_input("Money Given by Patient", min_value=0.0, value=0.0, step=0.01)
-            money_pending = st.number_input("Money Pending (Due)", min_value=0.0, value=0.0, step=0.01)
-
-            st.header("AI Suggestions")
-            if st.button("Get Grok AI Suggestions"):
-                with st.spinner("Contacting Grok AI for suggestions..."):
-                    import perplexity_config
-                    grok_key = getattr(perplexity_config, "grok_key", None)
-                    suggestion = get_grok_suggestion(grok_key, "Dr Danish", patient_name, selected_meds, dosage, eye_test)
-                st.info(suggestion)
-
-            st.header("5. Review & Generate Prescription PDF")
-            if st.button("Generate PDF for Review"):
-                if not prescription:
-                    st.error("Please select at least one medicine with available stock.")
-                else:
-                    pdf_file = generate_pdf(
-                        prescription, dosage, eye_test, "Dr Danish", patient_name, age, gender, advice, rx_table, recommendations
-                    )
-                    st.success("PDF generated. Please review below.")
-                    st.download_button(
-                        label="Download Prescription PDF",
-                        data=pdf_file,
-                        file_name="prescription.pdf",
-                        mime="application/pdf"
-                    )
-                    st.session_state['pdf_ready'] = True
-            else:
-                st.session_state['pdf_ready'] = False
-
-            if st.session_state.get('pdf_ready', False):
-                st.header("6. Approve & Print Prescription")
-                if st.button("Approve and Print (Download)"):
-                    # Store all visit info in prescription
-                    pres_data = {
-                        'medicines': str(prescription),
-                        'dosage': dosage,
-                        'eye_test': eye_test,
-                        'issue': issue,
-                        'money_given': money_given,
-                        'money_pending': money_pending
-                    }
-                    db.add_prescription(patient_id, "Dr Danish", pres_data, dosage, eye_test)
-                    for med, qty in prescription.items():
-                        reduce_inventory(med, qty)
-                    st.success("Prescription approved, saved, and inventory updated. Please use the download button above to print.")
 
     with tab2:
-        st.header("Inventory Management (Medicines & Spectacles)")
+        st.header("📦 Inventory Management (Medicines & Spectacles)")
         inventory_db = get_inventory_dict()
         st.table(pd.DataFrame(list(inventory_db.items()), columns=["Item", "Quantity"]))
 

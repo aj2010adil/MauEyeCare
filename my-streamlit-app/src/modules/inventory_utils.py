@@ -2,6 +2,9 @@
 inventory_utils.py
 Inventory management utilities for MauEyeCare.
 """
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import db
 
 def get_inventory_dict():

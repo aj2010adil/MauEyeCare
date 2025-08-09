@@ -41,7 +41,7 @@ def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age,
     pdf.set_xy(32, 12)
     pdf.set_font('Arial', 'B', 18)
     pdf.set_text_color(41, 71, 226)
-    pdf.cell(120, 10, 'MauEye Care Hospital', ln=0)
+    pdf.cell(120, 10, 'Mau Eye Care Optical Center', ln=0)
     pdf.set_text_color(0,0,0)
     
     # Contact info
@@ -55,7 +55,7 @@ def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age,
     # Tagline and address
     pdf.set_xy(32, 20)
     pdf.set_font('Arial', 'I', 11)
-    pdf.cell(120, 6, 'Advanced Eye & Vision Care Center', ln=2)
+    pdf.cell(120, 6, 'Premium Eye Care & Optical Solutions', ln=2)
     pdf.set_x(32)
     pdf.set_font('Arial', '', 9)
     pdf.cell(120, 5, 'MubarakPur, Azamgarh | www.maueyeycare.com | info@maueyeycare.com', ln=2)
@@ -125,9 +125,12 @@ def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age,
     pdf.set_font('Arial', '', 10)
     pdf.set_xy(90, 53)
     for eye in ['OD', 'OS']:
-        row = rx_table.get(eye, {'Sphere':'', 'Cylinder':'', 'Axis':'', 'Prism':''})
-        rx_str = f"{eye}: Sph {row.get('Sphere','')} Cyl {row.get('Cylinder','')} Axis {row.get('Axis','')} Prism {row.get('Prism','')}"
+        row = rx_table.get(eye, {'Sphere':'', 'Cylinder':'', 'Axis':'', 'Prism':'', 'NearVision':'', 'GlassType':'', 'GlassTint':''})
+        rx_str = f"{eye}: Sph {row.get('Sphere','')} Cyl {row.get('Cylinder','')} Axis {row.get('Axis','')} Near {row.get('NearVision','')}"
         pdf.cell(0, 6, rx_str, ln=1)
+        glass_str = f"Type: {row.get('GlassType','')} Tint: {row.get('GlassTint','')}"
+        pdf.set_x(90)
+        pdf.cell(0, 6, glass_str, ln=1)
 
     # Medicines
     if prescription:
@@ -154,7 +157,7 @@ def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age,
     pdf.set_y(265)
     pdf.set_font('Arial', 'I', 9)
     pdf.set_text_color(41, 71, 226)
-    pdf.cell(0, 6, 'MauEye Care Hospital | MubarakPur, Azamgarh | www.maueyeycare.com | info@maueyeycare.com', ln=1, align='C')
+    pdf.cell(0, 6, 'Mau Eye Care Optical Center | MubarakPur, Azamgarh | www.maueyeycare.com | info@maueyeycare.com', ln=1, align='C')
     pdf.set_text_color(0,0,0)
 
     # --- BACK PAGE: Hospital Info ---
@@ -164,13 +167,13 @@ def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age,
     # Hospital name in English
     pdf.set_xy(20, 30)
     pdf.set_text_color(41, 71, 226)
-    pdf.cell(0, 12, 'MauEye Care Hospital', ln=1, align='C')
+    pdf.cell(0, 12, 'Mau Eye Care Optical Center', ln=1, align='C')
     pdf.set_text_color(0,0,0)
     
     # Hospital details in English
     pdf.set_font('Arial', '', 12)
     pdf.ln(10)
-    pdf.multi_cell(0, 8, 'Advanced Eye & Vision Care Center\nMubarakPur, Azamgarh\nPhone: 92356-47410\nWebsite: www.maueyeycare.com\nEmail: info@maueyeycare.com', align='C')
+    pdf.multi_cell(0, 8, 'Premium Eye Care & Optical Solutions\nMubarakPur, Azamgarh\nPhone: 92356-47410\nWebsite: www.maueyeycare.com\nEmail: info@maueyeycare.com', align='C')
     
     pdf.ln(10)
     pdf.set_font('Arial', 'B', 12)

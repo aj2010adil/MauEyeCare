@@ -13,6 +13,23 @@ def init_db():
             gender TEXT,
             contact TEXT
         )''')
+        
+        # Medical tests table with change tracking
+        c.execute('''CREATE TABLE IF NOT EXISTS medical_tests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER,
+            blood_pressure TEXT,
+            blood_sugar TEXT,
+            complete_blood_test TEXT,
+            viral_marker TEXT,
+            fundus_examination TEXT,
+            iop TEXT,
+            retinoscopy_dry TEXT,
+            retinoscopy_wet TEXT,
+            syringing TEXT,
+            date_recorded TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(patient_id) REFERENCES patients(id)
+        )''')
         # Drop and recreate prescriptions table to ensure schema is correct (WARNING: this deletes all prescription data)
         c.execute('DROP TABLE IF EXISTS prescriptions')
         c.execute('''CREATE TABLE prescriptions (
@@ -132,3 +149,23 @@ def get_inventory():
         c = conn.cursor()
         c.execute("SELECT * FROM inventory")
         return c.fetchall()
+
+def add_medical_tests(patient_id, bp, sugar, cbt, viral, fundus, iop, retino_dry, retino_wet, syringing):
+    with closing(sqlite3.connect(DB_PATH)) as conn:
+        c = conn.cursor()
+        c.execute("INSERT INTO medical_tests (patient_id, blood_pressure, blood_sugar, complete_blood_test, viral_marker, fundus_examination, iop, retinoscopy_dry, retinoscopy_wet, syringing) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                  (patient_id, bp, sugar, cbt, viral, fundus, iop, retino_dry, retino_wet, syringing))
+        conn.commit()
+        return c.lastrowid
+
+def get_medical_tests(patient_id):
+    with closing(sqlite3.connect(DB_PATH)) as conn:
+        c = conn.cursor()
+        c.execute("SELECT * FROM medical_tests WHERE patient_id=? ORDER BY date_recorded DESC", (patient_id,))
+        return c.fetchall()
+
+def get_latest_medical_tests(patient_id):
+    with closing(sqlite3.connect(DB_PATH)) as conn:
+        c = conn.cursor()
+        c.execute("SELECT * FROM medical_tests WHERE patient_id=? ORDER BY date_recorded DESC LIMIT 1", (patient_id,))
+        return c.fetchone()
