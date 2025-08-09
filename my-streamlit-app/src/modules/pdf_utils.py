@@ -2,57 +2,79 @@
 pdf_utils.py
 PDF generation utilities for MauEyeCare.
 """
-from fpdf import FPDF  # (fpdf2 will override the classic fpdf)
+from fpdf import FPDF
 from io import BytesIO
+import os
+import sys
 
 def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age, gender, advice, rx_table, recommendations):
     pdf = FPDF()
     pdf.add_page()
-    # Always set a font before any cell/text on a new page
-    pdf.set_font('Arial', 'B', 18)
+    
+    # Try to load Unicode font for checkboxes
+    unicode_font = None
+    try:
+        font_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts')
+        dejavu_path = os.path.join(font_dir, 'DejaVuSans.ttf')
+        arialuni_path = os.path.join(font_dir, 'arialuni.ttf')
+        
+        if os.path.exists(dejavu_path):
+            pdf.add_font('DejaVuSans', '', dejavu_path, uni=True)
+            unicode_font = 'DejaVuSans'
+        elif os.path.exists(arialuni_path):
+            pdf.add_font('ArialUnicode', '', arialuni_path, uni=True)
+            unicode_font = 'ArialUnicode'
+    except Exception as e:
+        print(f"[WARNING] Could not load Unicode font: {e}", file=sys.stderr)
+    
     # Colors
     blue = (41, 171, 226)
-    gray = (230, 230, 230)
+    
+    # Always set a font before any cell/text
+    pdf.set_font('Arial', 'B', 18)
+    
     # Draw blue sidebar
     pdf.set_fill_color(*blue)
     pdf.rect(10, 10, 20, 270, 'F')
+    
     # --- HEADER ---
-    # Hospital Name (English, front page)
     pdf.set_xy(32, 12)
     pdf.set_font('Arial', 'B', 18)
     pdf.set_text_color(41, 71, 226)
     pdf.cell(120, 10, 'MauEye Care Hospital', ln=0)
     pdf.set_text_color(0,0,0)
-    # Contact info (right, blue bubble)
+    
+    # Contact info
     pdf.set_xy(140, 12)
     pdf.set_fill_color(*blue)
     pdf.set_text_color(255,255,255)
     pdf.set_font('Arial', '', 11)
     pdf.cell(55, 10, 'Ph: 92356-47410', 0, 0, 'C', fill=True)
     pdf.set_text_color(0,0,0)
-    # Tagline
+    
+    # Tagline and address
     pdf.set_xy(32, 20)
     pdf.set_font('Arial', 'I', 11)
     pdf.cell(120, 6, 'Advanced Eye & Vision Care Center', ln=2)
-    # Address, website, email
     pdf.set_x(32)
     pdf.set_font('Arial', '', 9)
     pdf.cell(120, 5, 'MubarakPur, Azamgarh | www.maueyeycare.com | info@maueyeycare.com', ln=2)
-    # Doctor info and Reg No
+    
+    # Doctor info
     pdf.set_x(32)
     pdf.set_font('Arial', 'B', 10)
     pdf.cell(120, 5, f'{doctor_name}, B.Sc. Optometry', ln=2)
     pdf.set_x(32)
     pdf.set_font('Arial', '', 9)
     pdf.cell(120, 5, 'Optometrist & Eye Specialist | Reg. No.: UP-123456', ln=2)
-    # Line below header
+    
+    # Header line
     pdf.set_draw_color(41, 171, 226)
     pdf.set_line_width(0.8)
     pdf.line(32, 38, 200, 38)
     pdf.set_line_width(0.2)
 
-    # --- PATIENT & PRESCRIPTION DETAILS (Front Page) ---
-    # Patient Info
+    # --- PATIENT INFO ---
     pdf.set_xy(15, 45)
     pdf.set_font('Arial', '', 10)
     pdf.cell(20, 7, 'Name:', ln=0)
@@ -71,17 +93,32 @@ def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age,
     pdf.set_x(30)
     pdf.cell(60, 7, str(advice), ln=1)
 
-    # Recommendations (one-liner)
+    # Recommendations with checkboxes
     if recommendations:
         pdf.set_xy(15, 75)
         pdf.set_font('Arial', 'B', 10)
-        pdf.cell(40, 7, 'Recommendations:', ln=0)
-        pdf.set_font('Arial', '', 10)
-        rec_line = ', '.join(recommendations)
-        pdf.set_x(55)
-        pdf.cell(0, 7, rec_line, ln=1)
+        pdf.cell(40, 7, 'Recommendations:', ln=1)
+        
+        y_pos = 82
+        for rec in recommendations:
+            pdf.set_xy(20, y_pos)
+            
+            # Try Unicode checkbox first, fallback to ASCII
+            if unicode_font:
+                try:
+                    pdf.set_font(unicode_font, '', 10)
+                    pdf.cell(5, 6, '☑', ln=0)  # Unicode checked box
+                    pdf.set_font('Arial', '', 10)
+                    pdf.cell(0, 6, f' {rec}', ln=1)
+                except:
+                    pdf.set_font('Arial', '', 10)
+                    pdf.cell(0, 6, f'[x] {rec}', ln=1)
+            else:
+                pdf.set_font('Arial', '', 10)
+                pdf.cell(0, 6, f'[x] {rec}', ln=1)
+            y_pos += 6
 
-    # Rx Table (one-liner per eye)
+    # Rx Table
     pdf.set_xy(90, 45)
     pdf.set_font('Arial', 'B', 12)
     pdf.cell(20, 8, 'Rx:', ln=0)
@@ -92,7 +129,7 @@ def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age,
         rx_str = f"{eye}: Sph {row.get('Sphere','')} Cyl {row.get('Cylinder','')} Axis {row.get('Axis','')} Prism {row.get('Prism','')}"
         pdf.cell(0, 6, rx_str, ln=1)
 
-    # Medicines (one-liner)
+    # Medicines
     if prescription:
         pdf.set_xy(90, 65)
         pdf.set_font('Arial', 'B', 10)
@@ -102,13 +139,13 @@ def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age,
         pdf.set_x(90)
         pdf.multi_cell(0, 6, meds_line)
 
-    # Dosage and Eye Test (one-liners)
+    # Dosage and Eye Test
     pdf.set_x(90)
     pdf.cell(0, 6, f"Dosage: {dosage}", ln=1)
     pdf.set_x(90)
     pdf.cell(0, 6, f"Eye Test: {eye_test}", ln=1)
 
-    # Signature line
+    # Signature
     pdf.set_y(250)
     pdf.set_font('Arial', '', 10)
     pdf.cell(0, 8, 'Doctor Signature: ___________________________', ln=1, align='R')
@@ -119,183 +156,48 @@ def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age,
     pdf.set_text_color(41, 71, 226)
     pdf.cell(0, 6, 'MauEye Care Hospital | MubarakPur, Azamgarh | www.maueyeycare.com | info@maueyeycare.com', ln=1, align='C')
     pdf.set_text_color(0,0,0)
-    pdf = FPDF()
+
+    # --- BACK PAGE: Hospital Info ---
     pdf.add_page()
-    # Always set a font before any cell/text on a new page
-    pdf.set_font('Arial', 'B', 18)
-    # Colors
-    blue = (41, 171, 226)
-    gray = (230, 230, 230)
-    # Draw blue sidebar
-    pdf.set_fill_color(*blue)
-    pdf.rect(10, 10, 20, 270, 'F')
-    # --- HEADER ---
-    # Hospital Name (English, front page)
-    pdf.set_xy(32, 12)
-    pdf.set_font('Arial', 'B', 18)
-    pdf.set_text_color(41, 71, 226)
-    pdf.cell(120, 10, 'MauEye Care Hospital', ln=0)
-    pdf.set_text_color(0,0,0)
-    # Contact info (right, blue bubble)
-    pdf.set_xy(140, 12)
-    pdf.set_fill_color(*blue)
-    pdf.set_text_color(255,255,255)
-    pdf.set_font('Arial', '', 11)
-    pdf.cell(55, 10, 'Ph: 92356-47410', 0, 0, 'C', fill=True)
-    pdf.set_text_color(0,0,0)
-    # Tagline
-    pdf.set_xy(32, 20)
-    pdf.set_font('Arial', 'I', 11)
-    pdf.cell(120, 6, 'Advanced Eye & Vision Care Center', ln=2)
-    # Address, website, email
-    pdf.set_x(32)
-    pdf.set_font('Arial', '', 9)
-    pdf.cell(120, 5, 'MubarakPur, Azamgarh | www.maueyeycare.com | info@maueyeycare.com', ln=2)
-    # Doctor info and Reg No
-    pdf.set_x(32)
-    pdf.set_font('Arial', 'B', 10)
-    pdf.cell(120, 5, f'{doctor_name}, B.Sc. Optometry', ln=2)
-    pdf.set_x(32)
-    pdf.set_font('Arial', '', 9)
-    pdf.cell(120, 5, 'Optometrist & Eye Specialist | Reg. No.: UP-123456', ln=2)
-    # Line below header
-    pdf.set_draw_color(41, 171, 226)
-    pdf.set_line_width(0.8)
-    pdf.line(32, 38, 200, 38)
-    pdf.set_line_width(0.2)
-    # --- BACK PAGE: Info in Urdu and Hindi ---
-    pdf.add_page()
-    # Always set a default font before any cell/text on a new page
-    pdf.set_font('Arial', 'B', 14)
-    import os
-    import sys
-    font_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts')
-    dev_path = os.path.join(font_dir, 'NotoSansDevanagari-Regular.ttf')
-    arabic_path = os.path.join(font_dir, 'NotoNaskhArabic-Regular.ttf')
-    arialuni_path = os.path.join(font_dir, 'arialuni.ttf')
-    print(f"[DEBUG] Looking for Hindi font at: {dev_path}", file=sys.stderr)
-    print(f"[DEBUG] Looking for Urdu font at: {arabic_path}", file=sys.stderr)
-    print(f"[DEBUG] Looking for fallback font at: {arialuni_path}", file=sys.stderr)
-    font_hindi = None
-    font_urdu = None
-    try:
-        if os.path.exists(dev_path):
-            pdf.add_font('NotoSansDevanagari', '', dev_path, uni=True)
-            font_hindi = 'NotoSansDevanagari'
-            print(f"[DEBUG] Found NotoSansDevanagari-Regular.ttf at {dev_path}", file=sys.stderr)
-        elif os.path.exists(arialuni_path):
-            pdf.add_font('ArialUnicode', '', arialuni_path, uni=True)
-            font_hindi = 'ArialUnicode'
-            print(f"[DEBUG] Using ArialUnicode for Hindi at {arialuni_path}", file=sys.stderr)
-        else:
-            print(f"[ERROR] Hindi font not found. Checked: {dev_path} and {arialuni_path}", file=sys.stderr)
-        if os.path.exists(arabic_path):
-            pdf.add_font('NotoNaskhArabic', '', arabic_path, uni=True)
-            font_urdu = 'NotoNaskhArabic'
-            print(f"[DEBUG] Found NotoNaskhArabic-Regular.ttf at {arabic_path}", file=sys.stderr)
-        elif os.path.exists(arialuni_path):
-            if not font_hindi:  # Only add if not already added
-                pdf.add_font('ArialUnicode', '', arialuni_path, uni=True)
-            font_urdu = 'ArialUnicode'
-            print(f"[DEBUG] Using ArialUnicode for Urdu at {arialuni_path}", file=sys.stderr)
-        else:
-            print(f"[ERROR] Urdu font not found. Checked: {arabic_path} and {arialuni_path}", file=sys.stderr)
-    except Exception as e:
-        print(f"[ERROR] Exception loading Unicode font: {e}", file=sys.stderr)
+    pdf.set_font('Arial', 'B', 16)
+    
+    # Hospital name in English
     pdf.set_xy(20, 30)
     pdf.set_text_color(41, 71, 226)
     pdf.cell(0, 12, 'MauEye Care Hospital', ln=1, align='C')
     pdf.set_text_color(0,0,0)
-    if font_hindi:
-        pdf.set_font(font_hindi, '', 12)
-        pdf.ln(5)
-        pdf.multi_cell(0, 10, 'मऊ आई केयर हॉस्पिटल\nआधुनिक नेत्र एवं दृष्टि देखभाल केंद्र\nमुबाकरपुर, आज़मगढ़ | www.maueyeycare.com | info@maueyeycare.com\nफोन: 92356-47410', align='C')
-    else:
-        pdf.set_font('Arial', 'B', 12)
-        pdf.set_text_color(255,0,0)
-        pdf.ln(10)
-        pdf.cell(0, 10, 'Hindi Unicode font not found. Hindi text not shown.', ln=1, align='C')
-        pdf.set_text_color(0,0,0)
-    if font_urdu:
-        pdf.set_font(font_urdu, '', 13)
-        pdf.ln(5)
-        urdu_text = 'مئو آئی کیئر ہسپتال\nجدید آنکھوں اور بصارت کی دیکھ بھال کا مرکز\nمبارک پور، اعظم گڑھ | www.maueycare.com | info@maueyeycare.com\nفون: 92356-47410'
-        pdf.multi_cell(0, 10, urdu_text, align='C')
-    else:
-        pdf.set_font('Arial', 'B', 12)
-        pdf.set_text_color(255,0,0)
-        pdf.ln(10)
-        pdf.cell(0, 10, 'Urdu Unicode font not found. Urdu text not shown.', ln=1, align='C')
-        pdf.set_text_color(0,0,0)
-    # (Back page should not repeat patient info, Rx, or recommendations)
-    # --- BACK PAGE: Info in Urdu and Hindi ---
-    pdf.add_page()
-    # Always set a default font before any cell/text on a new page
-    pdf.set_font('Arial', 'B', 14)
-    import os
-    import sys
-    font_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts')
-    dev_path = os.path.join(font_dir, 'NotoSansDevanagari-Regular.ttf')
-    arabic_path = os.path.join(font_dir, 'NotoNaskhArabic-Regular.ttf')
-    arialuni_path = os.path.join(font_dir, 'arialuni.ttf')
-    print(f"[DEBUG] Looking for Hindi font at: {dev_path}", file=sys.stderr)
-    print(f"[DEBUG] Looking for Urdu font at: {arabic_path}", file=sys.stderr)
-    print(f"[DEBUG] Looking for fallback font at: {arialuni_path}", file=sys.stderr)
-    font_hindi = None
-    font_urdu = None
+    
+    # Hospital details in English
+    pdf.set_font('Arial', '', 12)
+    pdf.ln(10)
+    pdf.multi_cell(0, 8, 'Advanced Eye & Vision Care Center\nMubarakPur, Azamgarh\nPhone: 92356-47410\nWebsite: www.maueyeycare.com\nEmail: info@maueyeycare.com', align='C')
+    
+    pdf.ln(10)
+    pdf.set_font('Arial', 'B', 12)
+    pdf.cell(0, 8, 'Services Offered:', ln=1, align='C')
+    pdf.set_font('Arial', '', 10)
+    services = ['Eye Examinations', 'Prescription Glasses', 'Contact Lens Fitting', 'Eye Disease Treatment', 'Vision Therapy']
+    for service in services:
+        pdf.cell(0, 6, f'- {service}', ln=1, align='C')
+
+    # Return PDF as bytes - ensure bytes type for Streamlit
     try:
-        if os.path.exists(dev_path):
-            pdf.add_font('NotoSansDevanagari', '', dev_path, uni=True)
-            font_hindi = 'NotoSansDevanagari'
-            print(f"[DEBUG] Found NotoSansDevanagari-Regular.ttf at {dev_path}", file=sys.stderr)
-        elif os.path.exists(arialuni_path):
-            pdf.add_font('ArialUnicode', '', arialuni_path, uni=True)
-            font_hindi = 'ArialUnicode'
-            print(f"[DEBUG] Using ArialUnicode for Hindi at {arialuni_path}", file=sys.stderr)
-        else:
-            print(f"[ERROR] Hindi font not found. Checked: {dev_path} and {arialuni_path}", file=sys.stderr)
-        if os.path.exists(arabic_path):
-            pdf.add_font('NotoNaskhArabic', '', arabic_path, uni=True)
-            font_urdu = 'NotoNaskhArabic'
-            print(f"[DEBUG] Found NotoNaskhArabic-Regular.ttf at {arabic_path}", file=sys.stderr)
-        elif os.path.exists(arialuni_path):
-            if not font_hindi:  # Only add if not already added
-                pdf.add_font('ArialUnicode', '', arialuni_path, uni=True)
-            font_urdu = 'ArialUnicode'
-            print(f"[DEBUG] Using ArialUnicode for Urdu at {arialuni_path}", file=sys.stderr)
-        else:
-            print(f"[ERROR] Urdu font not found. Checked: {arabic_path} and {arialuni_path}", file=sys.stderr)
-    except Exception as e:
-        print(f"[ERROR] Exception loading Unicode font: {e}", file=sys.stderr)
-    pdf.set_xy(20, 30)
-    pdf.set_text_color(41, 71, 226)
-    pdf.cell(0, 12, 'MauEye Care Hospital', ln=1, align='C')
-    pdf.set_text_color(0,0,0)
-    if font_hindi:
-        pdf.set_font(font_hindi, '', 12)
-        pdf.ln(5)
-        pdf.multi_cell(0, 10, 'मऊ आई केयर हॉस्पिटल\nआधुनिक नेत्र एवं दृष्टि देखभाल केंद्र\nमुबाकरपुर, आज़मगढ़ | www.maueyeycare.com | info@maueyeycare.com\nफोन: 92356-47410', align='C')
-    else:
-        pdf.set_font('Arial', 'B', 12)
-        pdf.set_text_color(255,0,0)
-        pdf.ln(10)
-        pdf.cell(0, 10, 'Hindi Unicode font not found. Hindi text not shown.', ln=1, align='C')
-        pdf.set_text_color(0,0,0)
-    if font_urdu:
-        pdf.set_font(font_urdu, '', 13)
-        pdf.ln(5)
-        urdu_text = 'مئو آئی کیئر ہسپتال\nجدید آنکھوں اور بصارت کی دیکھ بھال کا مرکز\nمبارک پور، اعظم گڑھ | www.maueycare.com | info@maueyeycare.com\nفون: 92356-47410'
-        pdf.multi_cell(0, 10, urdu_text, align='C')
-    else:
-        pdf.set_font('Arial', 'B', 12)
-        pdf.set_text_color(255,0,0)
-        pdf.ln(10)
-        pdf.cell(0, 10, 'Urdu Unicode font not found. Urdu text not shown.', ln=1, align='C')
-        pdf.set_text_color(0,0,0)
-    # FPDF output(dest='S') returns bytes or bytearray; wrap as bytes for BytesIO
-    pdf_bytes = pdf.output(dest='S')
-    if not isinstance(pdf_bytes, (bytes, bytearray)):
-        raise TypeError("FPDF output(dest='S') did not return bytes or bytearray")
-    return BytesIO(bytes(pdf_bytes))
-
-
+        # Try fpdf2 method first
+        result = pdf.output()
+        return bytes(result) if isinstance(result, bytearray) else result
+    except:
+        try:
+            # Try classic fpdf method
+            result = pdf.output(dest='S').encode('latin-1')
+            return bytes(result) if isinstance(result, bytearray) else result
+        except:
+            # Fallback with BytesIO
+            buffer = BytesIO()
+            pdf_str = pdf.output(dest='S')
+            if isinstance(pdf_str, str):
+                buffer.write(pdf_str.encode('latin-1'))
+            else:
+                buffer.write(pdf_str)
+            buffer.seek(0)
+            result = buffer.getvalue()
+            return bytes(result) if isinstance(result, bytearray) else result

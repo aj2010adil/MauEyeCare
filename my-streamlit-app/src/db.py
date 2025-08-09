@@ -84,11 +84,28 @@ def get_prescriptions(patient_id):
         return c.fetchall()
 
 def add_prescription(patient_id, doctor_name, medicines, dosage, eye_test):
-    # New version: add issue, money_given, money_pending
     with closing(sqlite3.connect(DB_PATH)) as conn:
         c = conn.cursor()
+        # Handle both dict and string formats for medicines parameter
+        if isinstance(medicines, dict):
+            medicines_str = medicines.get('medicines', '')
+            if isinstance(medicines_str, dict):
+                medicines_str = str(medicines_str)
+            dosage_str = medicines.get('dosage', dosage)
+            eye_test_str = medicines.get('eye_test', eye_test)
+            issue_str = medicines.get('issue', '')
+            money_given = medicines.get('money_given', 0)
+            money_pending = medicines.get('money_pending', 0)
+        else:
+            medicines_str = str(medicines) if medicines else ''
+            dosage_str = dosage
+            eye_test_str = eye_test
+            issue_str = ''
+            money_given = 0
+            money_pending = 0
+        
         c.execute("INSERT INTO prescriptions (patient_id, doctor_name, medicines, dosage, eye_test, issue, money_given, money_pending) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                  (patient_id, doctor_name, medicines.get('medicines', ''), medicines.get('dosage', ''), medicines.get('eye_test', ''), medicines.get('issue', ''), medicines.get('money_given', 0), medicines.get('money_pending', 0)))
+                  (patient_id, doctor_name, medicines_str, dosage_str, eye_test_str, issue_str, money_given, money_pending))
         conn.commit()
         return c.lastrowid
 

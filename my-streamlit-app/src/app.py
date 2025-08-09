@@ -6,6 +6,7 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 import sys, os
+import requests
 sys.path.append(os.path.dirname(__file__))
 import db
 from fpdf import FPDF
