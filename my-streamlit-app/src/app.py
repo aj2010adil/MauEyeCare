@@ -9,10 +9,18 @@ import sys, os
 import requests
 sys.path.append(os.path.dirname(__file__))
 import db
+# PDF import with fallback
 try:
-    from fpdf import FPDF
-except ImportError:
     from fpdf2 import FPDF
+    PDF_AVAILABLE = True
+except ImportError:
+    try:
+        from fpdf import FPDF
+        PDF_AVAILABLE = True
+    except ImportError:
+        PDF_AVAILABLE = False
+        class FPDF:
+            def __init__(self): pass
 from modules.pdf_utils import generate_pdf
 from modules.ai_utils import get_grok_suggestion
 from modules.inventory_utils import get_inventory_dict, add_or_update_inventory, reduce_inventory

@@ -2,15 +2,25 @@
 pdf_utils.py
 PDF generation utilities for MauEyeCare.
 """
+# PDF import with fallback
 try:
-    from fpdf import FPDF
-except ImportError:
     from fpdf2 import FPDF
+    PDF_AVAILABLE = True
+except ImportError:
+    try:
+        from fpdf import FPDF
+        PDF_AVAILABLE = True
+    except ImportError:
+        PDF_AVAILABLE = False
+        class FPDF:
+            def __init__(self): pass
 from io import BytesIO
 import os
 import sys
 
 def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age, gender, advice, rx_table, recommendations):
+    if not PDF_AVAILABLE:
+        return b"PDF generation not available - fpdf2 not installed"
     pdf = FPDF()
     pdf.add_page()
     

@@ -4,11 +4,34 @@ LangGraph Agent for MauEyeCare with tools for PDF generation, market data, and i
 import json
 import requests
 from typing import Dict, List, Any
-from langgraph.graph import StateGraph, END
-from langchain_core.tools import BaseTool
-from langchain_core.messages import HumanMessage, AIMessage
-from typing import Annotated
-from langgraph.graph.message import add_messages
+# LangGraph imports with fallback
+try:
+    from langgraph.graph import StateGraph, END
+    from langchain_core.tools import BaseTool
+    from langchain_core.messages import HumanMessage, AIMessage
+    from langgraph.graph.message import add_messages
+    LANGGRAPH_AVAILABLE = True
+except ImportError:
+    LANGGRAPH_AVAILABLE = False
+    # Create dummy classes for fallback
+    class BaseTool:
+        def __init__(self):
+            self.name = ""
+            self.description = ""
+        def _run(self, *args, **kwargs):
+            return "LangGraph not available"
+    
+    class StateGraph:
+        def __init__(self, *args): pass
+        def add_node(self, *args): pass
+        def add_edge(self, *args): pass
+        def add_conditional_edges(self, *args): pass
+        def set_entry_point(self, *args): pass
+        def compile(self): return self
+        def invoke(self, state): return state
+    
+    END = "end"
+    def add_messages(x): return x
 import db
 from modules.pdf_utils import generate_pdf
 
@@ -126,10 +149,17 @@ class PatientDataTool(BaseTool):
 # Agent State
 from typing import TypedDict
 
-class AgentState(TypedDict):
-    messages: Annotated[list, add_messages]
-    current_task: str
-    results: dict
+if LANGGRAPH_AVAILABLE:
+    from typing import Annotated
+    class AgentState(TypedDict):
+        messages: Annotated[list, add_messages]
+        current_task: str
+        results: dict
+else:
+    class AgentState(TypedDict):
+        messages: list
+        current_task: str
+        results: dict
 
 # Create tools
 tools = [
@@ -210,29 +240,24 @@ def call_tool(state: AgentState) -> AgentState:
     """Execute tools based on agent decisions"""
     return state
 
-# Create the graph
-workflow = StateGraph(AgentState)
-
-# Add nodes
-workflow.add_node("agent", call_model)
-workflow.add_node("action", call_tool)
-
-# Add edges
-workflow.add_edge("agent", "action")
-workflow.add_conditional_edges(
-    "action",
-    should_continue,
-    {
-        "continue": "agent",
-        "end": END
-    }
-)
-
-# Set entry point
-workflow.set_entry_point("agent")
-
-# Compile the graph
-app = workflow.compile()
+# Create the graph with fallback
+if LANGGRAPH_AVAILABLE:
+    workflow = StateGraph(AgentState)
+    workflow.add_node("agent", call_model)
+    workflow.add_node("action", call_tool)
+    workflow.add_edge("agent", "action")
+    workflow.add_conditional_edges(
+        "action",
+        should_continue,
+        {
+            "continue": "agent",
+            "end": END
+        }
+    )
+    workflow.set_entry_point("agent")
+    app = workflow.compile()
+else:
+    app = StateGraph()
 
 class MauEyeCareAgent:
     def __init__(self):
