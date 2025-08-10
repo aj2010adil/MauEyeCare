@@ -59,13 +59,13 @@ try:
         sys.path.append(os.path.dirname(config_path))
     import perplexity_config
     grok_key = getattr(perplexity_config, "grok_key", None)
-    whatsapp_token = getattr(perplexity_config, "WHATSAPP_ACCESS_TOKEN", None)
-    whatsapp_phone_id = getattr(perplexity_config, "WHATSAPP_PHONE_NUMBER_ID", None)
+    whatsapp_token = getattr(perplexity_config, "META_WA_ACCESS_TOKEN", None)
+    whatsapp_phone_id = "6363738550"  # Fixed sender number
     doctor_phone = getattr(perplexity_config, "DOCTOR_PHONE", "92356-47410")
 except Exception:
     grok_key = None
     whatsapp_token = None
-    whatsapp_phone_id = None
+    whatsapp_phone_id = "6363738550"  # Fixed sender number
     doctor_phone = "92356-47410"
 
 
@@ -230,6 +230,7 @@ def main():
                         )
                 st.session_state['patient_id'] = patient_id
                 st.session_state['patient_name'] = patient_name
+                st.session_state['patient_mobile'] = contact  # Store mobile number
                 st.session_state['age'] = age
                 st.session_state['gender'] = gender
                 st.session_state['advice'] = advice
@@ -364,18 +365,21 @@ def main():
             with col2:
                 if st.button("📱 Send via WhatsApp", key=f"whatsapp_btn_{patient_id}"):
                     if whatsapp_token and whatsapp_phone_id:
-                        # Get patient contact from database
-                        patients = db.get_patients()
-                        patient_contact = None
-                        for p in patients:
-                            if p[0] == patient_id:
-                                patient_contact = p[4]
-                                break
+                        # Get patient mobile from current session (from form input)
+                        patient_mobile = st.session_state.get('patient_mobile', None)
                         
-                        if patient_contact:
-                            with st.spinner("Sending PDF via WhatsApp..."):
+                        # If not in session, get from database
+                        if not patient_mobile:
+                            patients = db.get_patients()
+                            for p in patients:
+                                if p[0] == patient_id:
+                                    patient_mobile = p[4]  # Mobile number from database
+                                    break
+                        
+                        if patient_mobile:
+                            with st.spinner(f"Sending PDF to {patient_mobile} via WhatsApp..."):
                                 result = send_pdf_to_whatsapp(
-                                    patient_contact, 
+                                    patient_mobile, 
                                     pdf_file, 
                                     patient_name, 
                                     whatsapp_token, 
@@ -383,17 +387,18 @@ def main():
                                 )
                                 
                                 if result["success"]:
-                                    st.success(f"✅ PDF sent to {patient_contact}")
+                                    st.success(f"✅ PDF sent to {patient_mobile}")
                                 else:
                                     if "OAuth" in result['message']:
-                                        st.error("❌ WhatsApp token expired. Please update META_WA_ACCESS_TOKEN in config")
+                                        st.error("❌ WhatsApp token expired. Please update META_WA_ACCESS_TOKEN in perplexity_config.py")
+                                        st.info("Get new token from: https://developers.facebook.com → Your App → WhatsApp → Getting Started")
                                     else:
                                         st.error(f"❌ Failed: {result['message']}")
                                     st.info("PDF download is still available above")
                         else:
-                            st.error("Patient contact number not found")
+                            st.error("Patient mobile number not found. Please ensure mobile number is entered in the form.")
                     else:
-                        st.error("WhatsApp not configured. Add tokens to perplexity_config.py")
+                        st.error("WhatsApp not configured. Add META_WA_ACCESS_TOKEN to perplexity_config.py")
             
             # Save prescription and medical tests to database
             if st.button("Save Prescription & Medical Tests to Database", key=f"save_{patient_id}"):
