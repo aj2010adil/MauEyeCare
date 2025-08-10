@@ -1,83 +1,53 @@
 # 🔍 MauEyeCare Optical Center
 
-AI-powered optical center management system with LangGraph integration.
+## AI-Powered Eye Care Management System
 
-## 🚀 Quick Start
+**Live Demo**: [https://maueyecare.streamlit.app](https://maueyecare.streamlit.app)
 
-### Windows
-```cmd
-install.bat
-```
+### 🎯 Features
+- **Patient Management**: Complete patient records with medical history
+- **Digital Prescriptions**: PDF generation with professional formatting
+- **AI Agent Integration**: LangGraph-powered automation tools
+- **Inventory Management**: Real-time stock tracking and market updates
+- **Medical Tests**: Blood pressure, sugar, eye examinations tracking
+- **Market Data Sync**: Automated inventory updates from market sources
 
-### Linux/Mac
+### 🚀 Quick Start
+1. Visit the live app: [https://maueyecare.streamlit.app](https://maueyecare.streamlit.app)
+2. Add a new patient in the "Prescription & Patient" tab
+3. Generate prescriptions with PDF download
+4. Explore AI agent tools for automation
+5. Manage inventory in real-time
+
+### 🛠️ Local Development
 ```bash
-chmod +x install.sh && ./install.sh
+# Clone repository
+git clone https://github.com/yourusername/maueyecare.git
+cd maueyecare/my-streamlit-app
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run application
+streamlit run src/app.py
 ```
 
-## ✨ Features
+### 📋 Tech Stack
+- **Frontend**: Streamlit
+- **Backend**: Python, SQLite
+- **AI**: LangGraph, LangChain
+- **PDF**: FPDF2
+- **Deployment**: Streamlit Cloud
 
-- **🤖 AI Agent**: LangGraph-powered automation
-- **📊 Market Data**: Real-time inventory updates
-- **📋 Patient Management**: Complete medical records
-- **📝 PDF Generation**: Automated prescriptions
-- **💊 Inventory Control**: Smart stock management
+### 🔧 Configuration
+- Database: SQLite (auto-created)
+- Port: 8501 (default)
+- AI Features: LangGraph agents with specialized tools
 
-## 🛠️ Manual Setup
+### 📞 Support
+- **Documentation**: See DOCUMENTATION.md
+- **Issues**: GitHub Issues
+- **Contact**: info@maueyeycare.com
 
-1. **Install UV**:
-   ```bash
-   # Windows
-   irm https://astral.sh/uv/install.ps1 | iex
-   
-   # Linux/Mac
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
-
-2. **Install Dependencies**:
-   ```bash
-   uv sync
-   ```
-
-3. **Run System**:
-   ```bash
-   python start_system.py
-   ```
-
-## 📁 Project Structure
-
-```
-MauEyeCare/
-├── src/
-│   ├── app.py              # Main Streamlit app
-│   ├── db.py               # Database operations
-│   ├── langgraph_agent.py  # AI agent with tools
-│   ├── market_updater.py   # Market data sync
-│   └── modules/
-│       ├── pdf_utils.py    # PDF generation
-│       ├── ai_utils.py     # AI utilities
-│       └── inventory_utils.py # Inventory management
-├── pyproject.toml          # UV dependencies
-├── install.bat             # Windows installer
-├── install.sh              # Linux/Mac installer
-└── start_system.py         # System launcher
-```
-
-## 🔧 Configuration
-
-- **Database**: SQLite (auto-created)
-- **Market Updates**: Every 6 hours
-- **Stock Alerts**: Every 2 hours
-- **AI Model**: Configurable in `perplexity_config.py`
-
-## 📖 Usage
-
-1. **Patient Management**: Add patients, medical history
-2. **Prescriptions**: Generate with AI verification
-3. **Inventory**: Auto-sync with market data
-4. **AI Tools**: Execute tasks via natural language
-
-## 🆘 Support
-
-- Check `SETUP.md` for detailed instructions
-- Ensure UV is properly installed
-- Verify internet connection for market data
+---
+*Built with ❤️ for better eye care management*

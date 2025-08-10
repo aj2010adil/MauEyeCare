@@ -9,7 +9,10 @@ import sys, os
 import requests
 sys.path.append(os.path.dirname(__file__))
 import db
-from fpdf import FPDF
+try:
+    from fpdf import FPDF
+except ImportError:
+    from fpdf2 import FPDF
 from modules.pdf_utils import generate_pdf
 from modules.ai_utils import get_grok_suggestion
 from modules.inventory_utils import get_inventory_dict, add_or_update_inventory, reduce_inventory

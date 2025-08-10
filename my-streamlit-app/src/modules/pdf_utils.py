@@ -2,7 +2,10 @@
 pdf_utils.py
 PDF generation utilities for MauEyeCare.
 """
-from fpdf import FPDF
+try:
+    from fpdf import FPDF
+except ImportError:
+    from fpdf2 import FPDF
 from io import BytesIO
 import os
 import sys
