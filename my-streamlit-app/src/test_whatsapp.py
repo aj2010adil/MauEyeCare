@@ -11,13 +11,13 @@ def test_whatsapp():
     
     # Get config
     access_token = perplexity_config.WHATSAPP_ACCESS_TOKEN
-    phone_id = perplexity_config.WHATSAPP_PHONE_NUMBER_ID
+    phone_id = getattr(perplexity_config, 'META_WA_PHONE_NUMBER_ID', '783828511470086')
     
     print(f"Access Token: {access_token[:10]}...")
     print(f"Phone ID: {phone_id}")
     
     # Test phone number (use your own for testing)
-    test_phone = "916363738550"  # Replace with your test number
+    test_phone = "6363738550"  # Replace with your test number
     
     # Test text message
     print("\n1. Testing text message...")

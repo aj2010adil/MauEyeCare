@@ -14,7 +14,7 @@ def send_pdf_to_whatsapp(phone_number, pdf_bytes, patient_name, access_token, ph
         pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
         
         # Format phone number (remove + and spaces)
-        formatted_phone = phone_number.replace('+', '').replace(' ', '').replace('-', '')
+        formatted_phone = str(phone_number).replace('+', '').replace(' ', '').replace('-', '')
         if not formatted_phone.startswith('91'):
             formatted_phone = '91' + formatted_phone
         
@@ -54,7 +54,7 @@ def send_text_message(phone_number, message, access_token, phone_number_id):
     Send text message via WhatsApp Business API
     """
     try:
-        formatted_phone = phone_number.replace('+', '').replace(' ', '').replace('-', '')
+        formatted_phone = str(phone_number).replace('+', '').replace(' ', '').replace('-', '')
         if not formatted_phone.startswith('91'):
             formatted_phone = '91' + formatted_phone
         
