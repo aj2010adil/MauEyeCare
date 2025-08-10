@@ -24,6 +24,7 @@ except ImportError:
 from modules.pdf_utils import generate_pdf
 from modules.ai_utils import get_grok_suggestion
 from modules.inventory_utils import get_inventory_dict, add_or_update_inventory, reduce_inventory
+from modules.whatsapp_utils import send_pdf_to_whatsapp, send_text_message
 # LangGraph imports - will be loaded conditionally
 try:
     from langgraph_agent import mau_agent
@@ -46,15 +47,26 @@ def to_excel(df):
 
 db.init_db()
 
+# Load configuration
 grok_key = None
+whatsapp_token = None
+whatsapp_phone_id = None
+doctor_phone = None
+
 try:
     config_path = os.path.join(os.path.dirname(__file__), "perplexity_config.py")
     if config_path not in sys.path:
         sys.path.append(os.path.dirname(config_path))
     import perplexity_config
     grok_key = getattr(perplexity_config, "grok_key", None)
+    whatsapp_token = getattr(perplexity_config, "WHATSAPP_ACCESS_TOKEN", None)
+    whatsapp_phone_id = getattr(perplexity_config, "WHATSAPP_PHONE_NUMBER_ID", None)
+    doctor_phone = getattr(perplexity_config, "DOCTOR_PHONE", "92356-47410")
 except Exception:
     grok_key = None
+    whatsapp_token = None
+    whatsapp_phone_id = None
+    doctor_phone = "92356-47410"
 
 
 def get_grok_suggestion(doctor_name, patient_name, selected_meds, dosage, eye_test):
@@ -337,14 +349,51 @@ def main():
                 rx_table,
                 recommendations
             )
-            # Download PDF
-            st.download_button(
-                label="Download/Print Prescription PDF",
-                data=pdf_file,
-                file_name=f"prescription_{patient_name.replace(' ', '_')}.pdf",
-                mime="application/pdf",
-                key=f"pdf_btn_{patient_id}"
-            )
+            # PDF Actions
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.download_button(
+                    label="📄 Download PDF",
+                    data=pdf_file,
+                    file_name=f"prescription_{patient_name.replace(' ', '_')}.pdf",
+                    mime="application/pdf",
+                    key=f"pdf_btn_{patient_id}"
+                )
+            
+            with col2:
+                if st.button("📱 Send via WhatsApp", key=f"whatsapp_btn_{patient_id}"):
+                    if whatsapp_token and whatsapp_phone_id:
+                        # Get patient contact from database
+                        patients = db.get_patients()
+                        patient_contact = None
+                        for p in patients:
+                            if p[0] == patient_id:
+                                patient_contact = p[4]
+                                break
+                        
+                        if patient_contact:
+                            with st.spinner("Sending PDF via WhatsApp..."):
+                                result = send_pdf_to_whatsapp(
+                                    patient_contact, 
+                                    pdf_file, 
+                                    patient_name, 
+                                    whatsapp_token, 
+                                    whatsapp_phone_id
+                                )
+                                
+                                if result["success"]:
+                                    st.success(f"✅ PDF sent to {patient_contact}")
+                                else:
+                                    if "OAuth" in result['message']:
+                                        st.error("❌ WhatsApp token expired. Please update META_WA_ACCESS_TOKEN in config")
+                                    else:
+                                        st.error(f"❌ Failed: {result['message']}")
+                                    st.info("PDF download is still available above")
+                        else:
+                            st.error("Patient contact number not found")
+                    else:
+                        st.error("WhatsApp not configured. Add tokens to perplexity_config.py")
             
             # Save prescription and medical tests to database
             if st.button("Save Prescription & Medical Tests to Database", key=f"save_{patient_id}"):
@@ -502,8 +551,16 @@ def main():
         
         # Task context inputs
         if "patient" in selected_task.lower():
-            patient_id = st.number_input("Patient ID", min_value=1, value=1)
-            context = {"patient_id": patient_id}
+            # Show available patients for selection
+            patients = db.get_patients()
+            if patients:
+                patient_options = {f"{p[1]} (ID: {p[0]}, Mobile: {p[4]})": p[0] for p in patients}
+                selected_patient = st.selectbox("Select Patient", list(patient_options.keys()))
+                patient_id = patient_options[selected_patient]
+                context = {"patient_id": patient_id, "patient_name": selected_patient.split(" (ID:")[0]}
+            else:
+                st.warning("No patients found. Add patients first.")
+                context = {}
         else:
             context = {}
         
@@ -539,7 +596,8 @@ def main():
                         'recommendations': st.session_state.get('recommendations', [])
                     }
                     result = mau_agent.generate_patient_pdf(patient_data)
-                    st.success(result)
+                    st.success(f"AI Generated PDF for: {st.session_state.get('patient_name', 'Unknown Patient')}")
+                    st.info(result)
                 elif not mau_agent:
                     st.warning("LangGraph agent not available")
                 else:
