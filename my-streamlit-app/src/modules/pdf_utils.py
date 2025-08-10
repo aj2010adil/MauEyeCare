@@ -196,24 +196,32 @@ def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age,
     for service in services:
         pdf.cell(0, 6, f'- {service}', ln=1, align='C')
 
-    # Return PDF as bytes - ensure bytes type for Streamlit
+    # Return PDF as bytes - fixed for proper PDF output
     try:
-        # Try fpdf2 method first
-        result = pdf.output()
-        return bytes(result) if isinstance(result, bytearray) else result
-    except:
-        try:
-            # Try classic fpdf method
-            result = pdf.output(dest='S').encode('latin-1')
-            return bytes(result) if isinstance(result, bytearray) else result
-        except:
-            # Fallback with BytesIO
-            buffer = BytesIO()
-            pdf_str = pdf.output(dest='S')
-            if isinstance(pdf_str, str):
-                buffer.write(pdf_str.encode('latin-1'))
+        # For fpdf2, use output() method directly
+        if hasattr(pdf, 'output'):
+            result = pdf.output()
+            # fpdf2 returns bytes directly
+            if isinstance(result, bytes):
+                return result
+            elif isinstance(result, bytearray):
+                return bytes(result)
             else:
-                buffer.write(pdf_str)
-            buffer.seek(0)
-            result = buffer.getvalue()
-            return bytes(result) if isinstance(result, bytearray) else result
+                # String result, encode properly
+                return result.encode('latin-1')
+        else:
+            # Fallback for older fpdf
+            return pdf.output(dest='S').encode('latin-1')
+    except Exception as e:
+        print(f"PDF generation error: {e}")
+        # Create minimal valid PDF as fallback
+        fallback_pdf = FPDF()
+        fallback_pdf.add_page()
+        fallback_pdf.set_font('Arial', 'B', 16)
+        fallback_pdf.cell(0, 10, 'MauEyeCare Prescription', ln=True, align='C')
+        fallback_pdf.ln(10)
+        fallback_pdf.set_font('Arial', '', 12)
+        fallback_pdf.cell(0, 10, f'Patient: {patient_name}', ln=True)
+        fallback_pdf.cell(0, 10, f'Age: {age}', ln=True)
+        fallback_pdf.cell(0, 10, f'Doctor: {doctor_name}', ln=True)
+        return fallback_pdf.output()
