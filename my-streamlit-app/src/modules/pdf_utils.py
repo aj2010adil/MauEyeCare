@@ -196,32 +196,13 @@ def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age,
     for service in services:
         pdf.cell(0, 6, f'- {service}', ln=1, align='C')
 
-    # Return PDF as bytes - fixed for proper PDF output
+    # Return PDF as bytes - ensure bytes format for Streamlit
     try:
-        # For fpdf2, use output() method directly
-        if hasattr(pdf, 'output'):
-            result = pdf.output()
-            # fpdf2 returns bytes directly
-            if isinstance(result, bytes):
-                return result
-            elif isinstance(result, bytearray):
-                return bytes(result)
-            else:
-                # String result, encode properly
-                return result.encode('latin-1')
-        else:
-            # Fallback for older fpdf
-            return pdf.output(dest='S').encode('latin-1')
+        result = pdf.output()
+        # Convert to bytes if it's bytearray
+        if isinstance(result, bytearray):
+            return bytes(result)
+        return result
     except Exception as e:
         print(f"PDF generation error: {e}")
-        # Create minimal valid PDF as fallback
-        fallback_pdf = FPDF()
-        fallback_pdf.add_page()
-        fallback_pdf.set_font('Arial', 'B', 16)
-        fallback_pdf.cell(0, 10, 'MauEyeCare Prescription', ln=True, align='C')
-        fallback_pdf.ln(10)
-        fallback_pdf.set_font('Arial', '', 12)
-        fallback_pdf.cell(0, 10, f'Patient: {patient_name}', ln=True)
-        fallback_pdf.cell(0, 10, f'Age: {age}', ln=True)
-        fallback_pdf.cell(0, 10, f'Doctor: {doctor_name}', ln=True)
-        return fallback_pdf.output()
+        return b"PDF generation failed"

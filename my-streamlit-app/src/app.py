@@ -337,17 +337,14 @@ def main():
                 rx_table,
                 recommendations
             )
-            # Ensure PDF is valid before download
-            if isinstance(pdf_file, (bytes, bytearray)) and len(pdf_file) > 100:
-                st.download_button(
-                    label="Download/Print Prescription PDF",
-                    data=pdf_file,
-                    file_name=f"prescription_{patient_name.replace(' ', '_')}.pdf",
-                    mime="application/pdf",
-                    key=f"pdf_btn_{patient_id}"
-                )
-            else:
-                st.error("PDF generation failed - invalid format or corrupted file")
+            # Download PDF
+            st.download_button(
+                label="Download/Print Prescription PDF",
+                data=pdf_file,
+                file_name=f"prescription_{patient_name.replace(' ', '_')}.pdf",
+                mime="application/pdf",
+                key=f"pdf_btn_{patient_id}"
+            )
             
             # Save prescription and medical tests to database
             if st.button("Save Prescription & Medical Tests to Database", key=f"save_{patient_id}"):
