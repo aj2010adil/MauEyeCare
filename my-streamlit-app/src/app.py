@@ -1,7 +1,7 @@
 
 # MauEyeCare Main App
 # Entry point for Streamlit UI. Uses modules for PDF, AI, and inventory logic.
-
+import perplexity_config
 import streamlit as st
 import pandas as pd
 from io import BytesIO
