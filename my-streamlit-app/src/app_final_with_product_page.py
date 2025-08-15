@@ -11,7 +11,13 @@ sys.path.append(os.path.dirname(__file__))
 import db
 from modules.pdf_utils import generate_pdf
 from modules.inventory_utils import get_inventory_dict, add_or_update_inventory, reduce_inventory
-from modules.enhanced_docx_utils import generate_professional_prescription_docx
+try:
+    from modules.enhanced_docx_utils import generate_professional_prescription_docx
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
+    def generate_professional_prescription_docx(*args, **kwargs):
+        return b"DOCX generation not available - please install python-docx"
 from modules.ai_doctor_tools import analyze_symptoms_ai
 from modules.comprehensive_spectacle_database import (
     COMPREHENSIVE_SPECTACLE_DATABASE, 

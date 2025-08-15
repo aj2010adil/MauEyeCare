@@ -11,7 +11,13 @@ sys.path.append(os.path.dirname(__file__))
 import db
 from modules.pdf_utils import generate_pdf
 from modules.inventory_utils import get_inventory_dict, add_or_update_inventory, reduce_inventory
-from modules.enhanced_docx_utils import generate_professional_prescription_docx
+try:
+    from modules.enhanced_docx_utils import generate_professional_prescription_docx
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
+    def generate_professional_prescription_docx(*args, **kwargs):
+        return b"DOCX generation not available - please install python-docx"
 from modules.ai_doctor_tools import analyze_symptoms_ai
 from modules.comprehensive_spectacle_database import (
     COMPREHENSIVE_SPECTACLE_DATABASE, 
@@ -220,19 +226,22 @@ def main():
                 )
             
             with col2:
-                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-                docx_file = generate_professional_prescription_docx(
-                    st.session_state['prescription'], "Dr Danish", 
-                    st.session_state['patient_name'], st.session_state['age'], 
-                    st.session_state['gender'], st.session_state['advice'], 
-                    st.session_state['rx_table'], [], st.session_state.get('dosages', {})
-                )
-                st.download_button(
-                    label="📄 Download DOCX Prescription",
-                    data=docx_file,
-                    file_name=f"RX_{st.session_state['patient_name'].replace(' ', '_')}_{timestamp}.docx",
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                )
+                if DOCX_AVAILABLE:
+                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+                    docx_file = generate_professional_prescription_docx(
+                        st.session_state['prescription'], "Dr Danish", 
+                        st.session_state['patient_name'], st.session_state['age'], 
+                        st.session_state['gender'], st.session_state['advice'], 
+                        st.session_state['rx_table'], [], st.session_state.get('dosages', {})
+                    )
+                    st.download_button(
+                        label="📄 Download DOCX Prescription",
+                        data=docx_file,
+                        file_name=f"RX_{st.session_state['patient_name'].replace(' ', '_')}_{timestamp}.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    )
+                else:
+                    st.info("📄 DOCX generation not available - PDF download available above")
 
     # --- Comprehensive Inventory Tab ---
     with tab2:

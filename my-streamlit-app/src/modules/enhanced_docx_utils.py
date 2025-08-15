@@ -2,14 +2,24 @@
 """
 Enhanced DOCX prescription generation with professional features
 """
-from docx import Document
-from docx.shared import Inches, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+try:
+    from docx import Document
+    from docx.shared import Inches, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
+    print("Warning: python-docx not available. DOCX generation will be disabled.")
+
 from io import BytesIO
 import datetime
 
 def generate_professional_prescription_docx(prescription, doctor_name, patient_name, age, gender, advice, rx_table, recommendations, dosages=None):
     """Generate professional prescription in DOCX format with enhanced features"""
+    
+    if not DOCX_AVAILABLE:
+        # Return a simple text-based prescription as fallback
+        return generate_text_prescription_fallback(prescription, doctor_name, patient_name, age, gender, advice, rx_table, recommendations, dosages)
     
     doc = Document()
     
@@ -132,6 +142,10 @@ def generate_professional_prescription_docx(prescription, doctor_name, patient_n
 
 def generate_inventory_report_docx(inventory_data):
     """Generate professional inventory report"""
+    
+    if not DOCX_AVAILABLE:
+        return generate_text_inventory_fallback(inventory_data)
+    
     doc = Document()
     
     # Header
@@ -186,3 +200,115 @@ def generate_inventory_report_docx(inventory_data):
     docx_buffer.seek(0)
     
     return docx_buffer.getvalue()
+
+def generate_text_prescription_fallback(prescription, doctor_name, patient_name, age, gender, advice, rx_table, recommendations, dosages=None):
+    """Fallback text-based prescription when DOCX is not available"""
+    
+    timestamp = datetime.datetime.now()
+    
+    text_content = f"""
+👁️ MauEyeCare Optical Center
+Dr. Danish - Eye Care Specialist
+Reg. No: UPS 2908 | Phone: +91 92356-47410
+Email: info@maueyecare.com
+
+{'='*60}
+
+Date: {timestamp.strftime("%d/%m/%Y %H:%M")}
+Prescription No: RX-{timestamp.strftime("%Y%m%d%H%M")}
+
+Patient Name: {patient_name}
+Age: {age} years    Gender: {gender}
+
+"""
+    
+    # RX Table
+    if rx_table and any(rx_table.get(eye, {}).get('Sphere') for eye in ['OD', 'OS']):
+        text_content += "\nPrescription Details:\n"
+        text_content += "-" * 40 + "\n"
+        for eye in ['OD', 'OS']:
+            eye_data = rx_table.get(eye, {})
+            if eye_data.get('Sphere'):
+                text_content += f"{eye}: SPH {eye_data.get('Sphere', '')} CYL {eye_data.get('Cylinder', '')} AXIS {eye_data.get('Axis', '')}\n"
+    
+    # Medicines
+    if prescription:
+        text_content += "\nPrescribed Medications:\n"
+        text_content += "-" * 40 + "\n"
+        for item, qty in prescription.items():
+            dosage_info = dosages.get(item, {}) if dosages else {}
+            dosage = dosage_info.get('dosage', '1 drop' if 'drop' in item.lower() else '1 tablet')
+            timing = dosage_info.get('timing', '2 times daily')
+            text_content += f"• {item} - Qty: {qty} - {dosage} {timing}\n"
+    
+    # Recommendations
+    if recommendations:
+        text_content += "\nRecommendations:\n"
+        text_content += "-" * 40 + "\n"
+        for rec in recommendations:
+            text_content += f"• {rec}\n"
+    
+    # Advice
+    if advice:
+        text_content += f"\nDoctor's Advice:\n{advice}\n"
+    
+    text_content += f"""
+
+General Instructions:
+• Take medications as prescribed
+• Follow up after 2 weeks if symptoms persist
+• Avoid rubbing eyes
+• Use prescribed eye drops regularly
+• Contact clinic for any emergency
+
+{'='*60}
+Thank you for choosing MauEyeCare Optical Center
+
+                                    Dr. Danish
+                                    Eye Care Specialist
+"""
+    
+    return text_content.encode('utf-8')
+
+def generate_text_inventory_fallback(inventory_data):
+    """Fallback text-based inventory report"""
+    
+    timestamp = datetime.datetime.now()
+    
+    text_content = f"""
+📦 MauEyeCare Inventory Report
+Generated on: {timestamp.strftime("%d/%m/%Y %H:%M")}
+
+{'='*60}
+
+Inventory Status:
+{'-'*40}
+"""
+    
+    if inventory_data:
+        for item, qty in inventory_data.items():
+            if qty == 0:
+                status = "Out of Stock - Reorder Immediately"
+            elif qty < 5:
+                status = "Low Stock - Reorder Soon"
+            else:
+                status = "In Stock"
+            
+            text_content += f"{item}: {qty} units - {status}\n"
+    
+    # Summary
+    total_items = len(inventory_data)
+    low_stock = sum(1 for qty in inventory_data.values() if qty < 5)
+    out_of_stock = sum(1 for qty in inventory_data.values() if qty == 0)
+    
+    text_content += f"""
+
+Summary:
+Total Items: {total_items}
+Low Stock Items: {low_stock}
+Out of Stock Items: {out_of_stock}
+
+{'='*60}
+"""
+    
+    return text_content.encode('utf-8')
