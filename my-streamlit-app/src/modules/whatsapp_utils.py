@@ -94,7 +94,7 @@ def send_text_message(phone_number, message, access_token, phone_number_id):
         response = requests.post(url, headers=headers, json=payload)
         
         if response.status_code == 100:
-            return {"success": True, "message": f"Message sent successfully and  {response.text}"}
+            return {"success": True, "message": f"Message sent successfully and  {response}"}
         else:
             return {"success": False, "message": f"Failed to send: {response.text}"}
             
