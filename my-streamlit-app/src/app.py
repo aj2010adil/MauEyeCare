@@ -7,6 +7,7 @@ import pandas as pd
 from io import BytesIO
 import sys, os
 import requests
+import datetime
 sys.path.append(os.path.dirname(__file__))
 import db
 # PDF import with fallback
@@ -178,16 +179,32 @@ def main():
                 syringing_options = ["Patent", "Blocked", "Partially Blocked", "Not Done"]
                 syringing = st.selectbox("Syringing", syringing_options)
             
-            # Medicine Selection (moved before save)
-            st.markdown("**Medicine Selection**")
+            # Medicine Selection with dosages
+            st.markdown("**Medicine Selection & Dosages**")
             inventory_db = get_inventory_dict()
             med_options = list(inventory_db.keys())
             selected_meds = st.multiselect("Choose medicines/spectacles", med_options, key="form_meds")
             prescription = {}
+            dosages = {}
+            
             for med in selected_meds:
                 max_qty = inventory_db[med]
-                qty = st.number_input(f"Quantity for {med} (Stock: {max_qty})", min_value=1, max_value=max_qty, value=1, key=f"form_qty_{med}")
-                prescription[med] = qty
+                col_qty, col_dose, col_timing = st.columns(3)
+                
+                with col_qty:
+                    qty = st.number_input(f"Qty {med} (Stock: {max_qty})", min_value=1, max_value=max_qty, value=1, key=f"form_qty_{med}")
+                    prescription[med] = qty
+                
+                with col_dose:
+                    if 'drop' in med.lower():
+                        dosage = st.selectbox(f"Dosage {med}", ["1 drop", "2 drops", "3 drops"], key=f"dose_{med}")
+                    else:
+                        dosage = st.selectbox(f"Dosage {med}", ["1 tablet", "2 tablets", "1/2 tablet"], key=f"dose_{med}")
+                
+                with col_timing:
+                    timing = st.selectbox(f"Timing {med}", ["Once daily", "Twice daily", "Thrice daily", "As needed"], key=f"timing_{med}")
+                
+                dosages[med] = {'dosage': dosage, 'timing': timing}
             
             # Recommendations
             st.markdown("**Recommendations** (Select all that apply)")
@@ -225,6 +242,7 @@ def main():
                 st.session_state['recommendations'] = recommendations
                 st.session_state['patient_issue'] = patient_issue
                 st.session_state['prescription'] = prescription
+                st.session_state['dosages'] = dosages
                 st.session_state['medical_tests'] = {
                     'blood_pressure': blood_pressure,
                     'blood_sugar': blood_sugar,
@@ -350,14 +368,20 @@ def main():
                 )
             
             with col2:
-                from modules.docx_utils import generate_prescription_docx
-                docx_file = generate_prescription_docx(
-                    prescription, "Dr Danish", patient_name, age, gender, advice, rx_table, recommendations
+                from modules.enhanced_docx_utils import generate_professional_prescription_docx
+                
+                # Get dosage information
+                dosages = st.session_state.get('dosages', {})
+                
+                import datetime
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+                docx_file = generate_professional_prescription_docx(
+                    prescription, "Dr Danish", patient_name, age, gender, advice, rx_table, recommendations, dosages
                 )
                 st.download_button(
                     label="📄 Download DOCX",
                     data=docx_file,
-                    file_name=f"prescription_{patient_name.replace(' ', '_')}.docx",
+                    file_name=f"RX_{patient_name.replace(' ', '_')}_{timestamp}.docx",
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     key=f"docx_btn_{patient_id}"
                 )
@@ -487,10 +511,167 @@ def main():
                 else:
                     st.warning("LangGraph not available")
 
-    # --- AI Agent Tools Tab ---
+    # --- AI Doctor Tools Tab ---
     with tab4:
-        st.header("🤖 AI Agent Tools")
-        st.markdown("*LangGraph-powered intelligent tools for automated tasks*")
+        st.header("🤖 AI Doctor Assistant")
+        st.markdown("*AI-powered tools for enhanced diagnosis and patient care*")
+        
+        # Camera-based spectacle recommendation
+        st.subheader("📸 Face Analysis & Spectacle Recommendation")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📷 Capture Photo", type="primary"):
+                try:
+                    from modules.camera_utils import capture_photo, analyze_face_shape, get_spectacle_recommendations
+                    
+                    with st.spinner("Accessing camera..."):
+                        image, message = capture_photo()
+                        
+                    if image is not None:
+                        st.image(image, caption="Captured Photo", width=300)
+                        
+                        # Analyze face shape
+                        with st.spinner("Analyzing face shape..."):
+                            face_shape, basic_recs = analyze_face_shape(image)
+                            
+                        if "error" not in face_shape.lower():
+                            st.success(f"Face Shape Detected: {face_shape}")
+                            
+                            # Get detailed recommendations
+                            if 'patient_name' in st.session_state:
+                                age = st.session_state.get('age', 30)
+                                gender = st.session_state.get('gender', 'Male')
+                                detailed_recs = get_spectacle_recommendations(face_shape, age, gender)
+                                
+                                st.subheader("🕶️ Spectacle Recommendations")
+                                st.write(f"**Face Shape:** {detailed_recs['face_shape']}")
+                                st.write(f"**Recommended Frames:** {', '.join(detailed_recs['recommended_frames'])}")
+                                st.write(f"**Avoid:** {', '.join(detailed_recs['avoid_frames'])}")
+                                st.write(f"**Colors:** {', '.join(detailed_recs['color_suggestions'])}")
+                                st.write(f"**Age Considerations:** {detailed_recs['age_considerations']}")
+                                st.write(f"**Style Preferences:** {detailed_recs['style_preferences']}")
+                            else:
+                                for rec in basic_recs:
+                                    st.write(f"• {rec}")
+                        else:
+                            st.error(face_shape)
+                    else:
+                        st.error(message)
+                except Exception as e:
+                    st.error(f"Camera feature unavailable: {str(e)}")
+                    st.info("Install opencv-python: pip install opencv-python")
+        
+        with col2:
+            uploaded_file = st.file_uploader("Or upload a photo", type=['jpg', 'jpeg', 'png'])
+            if uploaded_file is not None:
+                from PIL import Image
+                image = Image.open(uploaded_file)
+                st.image(image, caption="Uploaded Photo", width=300)
+                
+                try:
+                    from modules.camera_utils import analyze_face_shape, get_spectacle_recommendations
+                    face_shape, basic_recs = analyze_face_shape(image)
+                    
+                    if "error" not in face_shape.lower():
+                        st.success(f"Face Shape: {face_shape}")
+                        for rec in basic_recs:
+                            st.write(f"• {rec}")
+                    else:
+                        st.error(face_shape)
+                except Exception as e:
+                    st.error(f"Analysis failed: {str(e)}")
+        
+        st.markdown("---")
+        
+        # AI Symptom Analysis
+        st.subheader("🔍 AI Symptom Analysis")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            symptoms = st.text_area("Enter patient symptoms:", placeholder="e.g., blurry vision, eye pain, redness")
+            medical_history = st.text_input("Medical history (optional):", placeholder="diabetes, hypertension, etc.")
+            
+            if st.button("🧠 Analyze Symptoms") and symptoms:
+                if 'patient_name' in st.session_state:
+                    age = st.session_state.get('age', 30)
+                    gender = st.session_state.get('gender', 'Male')
+                    
+                    with st.spinner("AI analyzing symptoms..."):
+                        from modules.ai_doctor_tools import analyze_symptoms_ai
+                        analysis = analyze_symptoms_ai(symptoms, age, gender, medical_history)
+                        st.session_state['symptom_analysis'] = analysis
+                else:
+                    st.warning("Please select a patient first")
+        
+        with col2:
+            if 'symptom_analysis' in st.session_state:
+                st.markdown("**AI Analysis:**")
+                st.write(st.session_state['symptom_analysis'])
+        
+        st.markdown("---")
+        
+        # Medication Suggestions
+        st.subheader("💊 AI Medication Suggestions")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            diagnosis = st.text_input("Diagnosis:", placeholder="e.g., dry eyes, conjunctivitis")
+            allergies = st.text_input("Known allergies:", placeholder="penicillin, sulfa drugs")
+            
+            if st.button("💊 Get Medication Suggestions") and diagnosis:
+                if 'patient_name' in st.session_state:
+                    age = st.session_state.get('age', 30)
+                    
+                    with st.spinner("AI suggesting medications..."):
+                        from modules.ai_doctor_tools import suggest_medications_ai
+                        suggestions = suggest_medications_ai(diagnosis, age, allergies)
+                        st.session_state['med_suggestions'] = suggestions
+                else:
+                    st.warning("Please select a patient first")
+        
+        with col2:
+            if 'med_suggestions' in st.session_state:
+                st.markdown("**Medication Suggestions:**")
+                st.write(st.session_state['med_suggestions'])
+        
+        st.markdown("---")
+        
+        # Smart Inventory Management
+        st.subheader("📦 Smart Inventory Analysis")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📊 Analyze Inventory", type="primary"):
+                inventory_db = get_inventory_dict()
+                patients = db.get_patients()
+                demographics = f"Total patients: {len(patients)}, Average age: 35-45"
+                
+                with st.spinner("AI analyzing inventory..."):
+                    from modules.ai_doctor_tools import smart_inventory_suggestions
+                    suggestions = smart_inventory_suggestions(inventory_db, demographics)
+                    st.session_state['inventory_analysis'] = suggestions
+        
+        with col2:
+            if 'inventory_analysis' in st.session_state:
+                st.markdown("**Inventory Recommendations:**")
+                st.write(st.session_state['inventory_analysis'])
+        
+        # Generate inventory report
+        if st.button("📋 Generate Inventory Report"):
+            from modules.enhanced_docx_utils import generate_inventory_report_docx
+            import datetime
+            
+            inventory_db = get_inventory_dict()
+            report_docx = generate_inventory_report_docx(inventory_db)
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+            
+            st.download_button(
+                label="📄 Download Inventory Report",
+                data=report_docx,
+                file_name=f"Inventory_Report_{timestamp}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
         
         if not LANGGRAPH_AVAILABLE:
             st.error("🚀 LangGraph not available. Install with: pip install langgraph langchain langchain-core")

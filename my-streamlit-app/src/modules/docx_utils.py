@@ -3,8 +3,9 @@
 DOCX prescription generation utilities
 """
 from docx import Document
-from docx.shared import Inches
+from docx.shared import Inches, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.shared import OxmlElement, qn
 from io import BytesIO
 import datetime
 
