@@ -198,11 +198,22 @@ def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age,
 
     # Return PDF as bytes - ensure bytes format for Streamlit
     try:
-        result = pdf.output()
-        # Convert to bytes if it's bytearray
-        if isinstance(result, bytearray):
+        # Use dest='S' to return as string/bytes
+        result = pdf.output(dest='S')
+        # Ensure it's bytes
+        if isinstance(result, str):
+            return result.encode('latin1')
+        elif isinstance(result, bytearray):
             return bytes(result)
         return result
     except Exception as e:
         print(f"PDF generation error: {e}")
-        return b"PDF generation failed"
+        # Return a minimal valid PDF
+        fallback_pdf = FPDF()
+        fallback_pdf.add_page()
+        fallback_pdf.set_font('Arial', 'B', 16)
+        fallback_pdf.cell(0, 10, 'MauEyeCare Prescription', ln=1, align='C')
+        fallback_pdf.set_font('Arial', '', 12)
+        fallback_pdf.cell(0, 10, f'Patient: {patient_name}', ln=1)
+        fallback_pdf.cell(0, 10, f'Age: {age}, Gender: {gender}', ln=1)
+        return fallback_pdf.output(dest='S').encode('latin1') if isinstance(fallback_pdf.output(dest='S'), str) else fallback_pdf.output(dest='S')

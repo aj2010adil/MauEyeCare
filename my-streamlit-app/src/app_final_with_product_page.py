@@ -311,6 +311,70 @@ def main():
                 
                 st.success(f"✅ Patient {patient_name} saved successfully!")
                 st.info("🎯 Now go to the 'AI Camera Analysis' tab to capture photo and get spectacle recommendations!")
+        
+        # PDF Generation Section
+        if st.session_state.get('show_pdf', False) and 'patient_name' in st.session_state:
+            st.markdown("---")
+            st.subheader("📄 Generate Prescription Documents")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                pdf_file = generate_pdf(
+                    {}, '', '', "Dr Danish", 
+                    st.session_state['patient_name'], st.session_state['age'], 
+                    st.session_state['gender'], st.session_state['advice'], 
+                    st.session_state.get('rx_table', {}), []
+                )
+                st.download_button(
+                    label="📄 Download PDF Prescription",
+                    data=pdf_file,
+                    file_name=f"prescription_{st.session_state['patient_name'].replace(' ', '_')}.pdf",
+                    mime="application/pdf"
+                )
+            
+            with col2:
+                if DOCX_AVAILABLE:
+                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+                    docx_file = generate_professional_prescription_docx(
+                        {}, "Dr Danish", 
+                        st.session_state['patient_name'], st.session_state['age'], 
+                        st.session_state['gender'], st.session_state['advice'], 
+                        st.session_state.get('rx_table', {}), [], {}
+                    )
+                    st.download_button(
+                        label="📄 Download DOCX Prescription",
+                        data=docx_file,
+                        file_name=f"RX_{st.session_state['patient_name'].replace(' ', '_')}_{timestamp}.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    )
+                else:
+                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+                    text_prescription = f"""MauEyeCare Optical Center
+Dr. Danish - Eye Care Specialist
+Reg. No: UPS 2908 | Phone: +91 92356-47410
+
+Patient: {st.session_state['patient_name']}
+Age: {st.session_state['age']} | Gender: {st.session_state['gender']}
+Advice: {st.session_state['advice']}
+
+Prescription Details:
+{'-'*40}
+"""
+                    if st.session_state.get('rx_table'):
+                        for eye in ['OD', 'OS']:
+                            eye_data = st.session_state['rx_table'].get(eye, {})
+                            if eye_data.get('Sphere'):
+                                text_prescription += f"{eye}: SPH {eye_data.get('Sphere', '')} CYL {eye_data.get('Cylinder', '')} AXIS {eye_data.get('Axis', '')}\n"
+                    
+                    text_prescription += f"\n\nGenerated: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}\nDr. Danish\nEye Care Specialist"
+                    
+                    st.download_button(
+                        label="📄 Download Text Prescription",
+                        data=text_prescription.encode('utf-8'),
+                        file_name=f"RX_{st.session_state['patient_name'].replace(' ', '_')}_{timestamp}.txt",
+                        mime="text/plain"
+                    )
 
     # --- Spectacle Gallery Tab ---
     with tab2:
