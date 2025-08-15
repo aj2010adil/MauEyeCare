@@ -90,13 +90,13 @@ def draw_rectangle_spectacles(draw, x, y, width, height, material):
     
     # Bridge
     bridge_y = y + height // 4
-    draw.line([x + left_lens_width, bridge_y, right_lens_x, bridge_y], 
+    draw.line([(x + left_lens_width, bridge_y), (right_lens_x, bridge_y)], 
              fill='black', width=frame_thickness)
     
     # Temples
-    draw.line([x, y + height // 3, x - 20, y + height // 3], 
+    draw.line([(x, y + height // 3), (x - 20, y + height // 3)], 
              fill='black', width=frame_thickness)
-    draw.line([x + width, y + height // 3, x + width + 20, y + height // 3], 
+    draw.line([(x + width, y + height // 3), (x + width + 20, y + height // 3)], 
              fill='black', width=frame_thickness)
 
 def draw_round_spectacles(draw, x, y, width, height, material):
@@ -119,16 +119,16 @@ def draw_round_spectacles(draw, x, y, width, height, material):
                 outline='black', width=frame_thickness)
     
     # Bridge
-    draw.line([left_center_x + radius, left_center_y, 
-              right_center_x - radius, right_center_y], 
+    draw.line([(left_center_x + radius, left_center_y), 
+               (right_center_x - radius, right_center_y)], 
              fill='black', width=frame_thickness)
     
     # Temples
-    draw.line([left_center_x - radius, left_center_y, 
-              left_center_x - radius - 20, left_center_y], 
+    draw.line([(left_center_x - radius, left_center_y), 
+               (left_center_x - radius - 20, left_center_y)], 
              fill='black', width=frame_thickness)
-    draw.line([right_center_x + radius, right_center_y, 
-              right_center_x + radius + 20, right_center_y], 
+    draw.line([(right_center_x + radius, right_center_y), 
+               (right_center_x + radius + 20, right_center_y)], 
              fill='black', width=frame_thickness)
 
 def draw_aviator_spectacles(draw, x, y, width, height, material):
@@ -163,8 +163,8 @@ def draw_aviator_spectacles(draw, x, y, width, height, material):
         draw.line([start, end], fill='black', width=frame_thickness)
     
     # Bridge
-    draw.line([x + width//2 - 15, y + height], 
-             [x + width//2 + 15, y + height], 
+    draw.line([(x + width//2 - 15, y + height), 
+               (x + width//2 + 15, y + height)], 
              fill='black', width=frame_thickness)
 
 def draw_cateye_spectacles(draw, x, y, width, height, material):
@@ -217,13 +217,13 @@ def draw_square_spectacles(draw, x, y, width, height, material):
     
     # Bridge
     bridge_y = y + left_size // 3
-    draw.line([x + left_size, bridge_y, right_x, bridge_y], 
+    draw.line([(x + left_size, bridge_y), (right_x, bridge_y)], 
              fill='black', width=frame_thickness)
     
     # Temples
-    draw.line([x, y + left_size // 3, x - 20, y + left_size // 3], 
+    draw.line([(x, y + left_size // 3), (x - 20, y + left_size // 3)], 
              fill='black', width=frame_thickness)
-    draw.line([x + width, y + left_size // 3, x + width + 20, y + left_size // 3], 
+    draw.line([(x + width, y + left_size // 3), (x + width + 20, y + left_size // 3)], 
              fill='black', width=frame_thickness)
 
 def add_spectacle_info_overlay(image, spec_data):

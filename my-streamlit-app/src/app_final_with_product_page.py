@@ -12,8 +12,7 @@ import db
 from modules.pdf_utils import generate_pdf
 from modules.inventory_utils import get_inventory_dict, add_or_update_inventory, reduce_inventory
 try:
-    from modules.enhanced_docx_utils import generate_professional_prescription_docx
-    DOCX_AVAILABLE = True
+    from modules.enhanced_docx_utils import generate_professional_prescription_docx, DOCX_AVAILABLE
 except ImportError:
     DOCX_AVAILABLE = False
     def generate_professional_prescription_docx(*args, **kwargs):
@@ -438,12 +437,16 @@ def main():
             gender = st.session_state.get('gender', 'Male')
             
             st.success(f"👤 **Current Patient:** {patient_name} | Age: {age} | Gender: {gender}")
-            st.markdown("🔄 **Camera will open automatically below for instant AI analysis!**")
             
-            # Camera capture - Auto-opens camera
-            st.markdown("### 📷 AI Face Analysis Camera")
-            st.info("🤖 **AI will automatically analyze your face shape and recommend the best spectacles!**")
-            captured_image = show_camera_with_preview()
+            # Manual camera activation
+            st.markdown("### 📷 Face Analysis for Spectacle Recommendations")
+            st.info("📸 **Click below to start camera and capture photo for AI analysis**")
+            
+            if st.button("📸 Start Camera Analysis", type="primary"):
+                st.markdown("### 🤖 AI Face Analysis Camera")
+                captured_image = show_camera_with_preview()
+            else:
+                captured_image = None
             
             if captured_image is not None:
                 st.session_state['analysis_photo'] = captured_image

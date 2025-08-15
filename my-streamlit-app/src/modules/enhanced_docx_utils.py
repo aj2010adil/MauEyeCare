@@ -9,7 +9,10 @@ try:
     DOCX_AVAILABLE = True
 except ImportError:
     DOCX_AVAILABLE = False
+    Document = None
     print("Warning: python-docx not available. DOCX generation will be disabled.")
+
+__all__ = ['generate_professional_prescription_docx', 'generate_inventory_report_docx', 'DOCX_AVAILABLE']
 
 from io import BytesIO
 import datetime
@@ -17,7 +20,7 @@ import datetime
 def generate_professional_prescription_docx(prescription, doctor_name, patient_name, age, gender, advice, rx_table, recommendations, dosages=None):
     """Generate professional prescription in DOCX format with enhanced features"""
     
-    if not DOCX_AVAILABLE:
+    if not DOCX_AVAILABLE or Document is None:
         # Return a simple text-based prescription as fallback
         return generate_text_prescription_fallback(prescription, doctor_name, patient_name, age, gender, advice, rx_table, recommendations, dosages)
     
@@ -143,7 +146,7 @@ def generate_professional_prescription_docx(prescription, doctor_name, patient_n
 def generate_inventory_report_docx(inventory_data):
     """Generate professional inventory report"""
     
-    if not DOCX_AVAILABLE:
+    if not DOCX_AVAILABLE or Document is None:
         return generate_text_inventory_fallback(inventory_data)
     
     doc = Document()
