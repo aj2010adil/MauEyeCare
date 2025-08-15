@@ -370,7 +370,7 @@ Prescription Details:
                     text_prescription += f"\n\nGenerated: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}\nDr. Danish\nEye Care Specialist"
                     
                     st.download_button(
-                        label="📄 Download Text Prescription",
+                        label="📄 Download Prescription",
                         data=text_prescription.encode('utf-8'),
                         file_name=f"RX_{st.session_state['patient_name'].replace(' ', '_')}_{timestamp}.txt",
                         mime="text/plain"
