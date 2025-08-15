@@ -337,14 +337,30 @@ def main():
                 rx_table,
                 recommendations
             )
-            # Download PDF
-            st.download_button(
-                label="Download/Print Prescription PDF",
-                data=pdf_file,
-                file_name=f"prescription_{patient_name.replace(' ', '_')}.pdf",
-                mime="application/pdf",
-                key=f"pdf_btn_{patient_id}"
-            )
+            # Download Options
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.download_button(
+                    label="📄 Download PDF",
+                    data=pdf_file,
+                    file_name=f"prescription_{patient_name.replace(' ', '_')}.pdf",
+                    mime="application/pdf",
+                    key=f"pdf_btn_{patient_id}"
+                )
+            
+            with col2:
+                from modules.docx_utils import generate_prescription_docx
+                docx_file = generate_prescription_docx(
+                    prescription, "Dr Danish", patient_name, age, gender, advice, rx_table, recommendations
+                )
+                st.download_button(
+                    label="📄 Download DOCX",
+                    data=docx_file,
+                    file_name=f"prescription_{patient_name.replace(' ', '_')}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    key=f"docx_btn_{patient_id}"
+                )
             
             # Save prescription and medical tests to database
             if st.button("Save Prescription & Medical Tests to Database", key=f"save_{patient_id}"):
