@@ -2,7 +2,13 @@
 """
 Simple and reliable camera system for Streamlit
 """
-import cv2
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+    print("Warning: OpenCV not available. Using fallback methods.")
+
 import streamlit as st
 import numpy as np
 from PIL import Image
@@ -12,6 +18,10 @@ def simple_camera_capture():
     """Simple camera capture that works reliably"""
     
     st.markdown("### 📷 Camera Capture")
+    
+    if not CV2_AVAILABLE:
+        st.warning("⚠️ OpenCV not available. Using Streamlit's built-in camera.")
+        return show_camera_with_preview()
     
     # Camera status
     camera_status = st.empty()
@@ -45,14 +55,18 @@ def simple_camera_capture():
             
             if ret:
                 # Convert BGR to RGB
-                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                if CV2_AVAILABLE:
+                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                else:
+                    frame_rgb = frame
                 
                 # Show captured image
                 st.image(frame_rgb, caption="📸 Captured Photo", width=500)
                 
                 # Release camera
                 cap.release()
-                cv2.destroyAllWindows()
+                if CV2_AVAILABLE:
+                    cv2.destroyAllWindows()
                 
                 return frame_rgb
             else:
@@ -63,12 +77,16 @@ def simple_camera_capture():
         # Show current frame
         ret, frame = cap.read()
         if ret:
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            if CV2_AVAILABLE:
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            else:
+                frame_rgb = frame
             camera_feed.image(frame_rgb, caption="Live Camera Feed", width=500)
         
         # Release camera if not capturing
         cap.release()
-        cv2.destroyAllWindows()
+        if CV2_AVAILABLE:
+            cv2.destroyAllWindows()
         
     except Exception as e:
         st.error(f"❌ Camera error: {str(e)}")
@@ -116,14 +134,25 @@ def show_camera_with_preview():
 def analyze_captured_photo(image_array, patient_name, age, gender):
     """Analyze the captured photo immediately"""
     
-    from modules.enhanced_spectacle_data import ENHANCED_SPECTACLE_DATA
+    try:
+        from modules.comprehensive_spectacle_database import COMPREHENSIVE_SPECTACLE_DATABASE
+    except:
+        from modules.enhanced_spectacle_data import ENHANCED_SPECTACLE_DATA as COMPREHENSIVE_SPECTACLE_DATABASE
+    
     import datetime
     
     try:
-        # Face detection
-        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        gray = cv2.cvtColor(image_array, cv2.COLOR_RGB2GRAY)
-        faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+        if CV2_AVAILABLE:
+            # Face detection with OpenCV
+            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+            gray = cv2.cvtColor(image_array, cv2.COLOR_RGB2GRAY)
+            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+        else:
+            # Fallback: assume face is in center of image
+            h, w = image_array.shape[:2]
+            face_w, face_h = w // 3, h // 3
+            x, y = (w - face_w) // 2, (h - face_h) // 2
+            faces = [(x, y, face_w, face_h)]
         
         if len(faces) == 0:
             return {
@@ -164,7 +193,7 @@ def analyze_captured_photo(image_array, patient_name, age, gender):
         # Find matching spectacles
         recommended_spectacles = []
         
-        for spec_name, spec_data in ENHANCED_SPECTACLE_DATA.items():
+        for spec_name, spec_data in COMPREHENSIVE_SPECTACLE_DATABASE.items():
             # Match by shape
             if spec_data['shape'] in best_shapes or spec_data['shape'] == "Any":
                 # Age-based filtering
@@ -179,9 +208,9 @@ def analyze_captured_photo(image_array, patient_name, age, gender):
         
         # Sort by price (budget-friendly for younger, premium for older)
         if age < 30:
-            recommended_spectacles.sort(key=lambda x: ENHANCED_SPECTACLE_DATA[x]['price'])
+            recommended_spectacles.sort(key=lambda x: COMPREHENSIVE_SPECTACLE_DATABASE[x]['price'])
         else:
-            recommended_spectacles.sort(key=lambda x: -ENHANCED_SPECTACLE_DATA[x]['price'])
+            recommended_spectacles.sort(key=lambda x: -COMPREHENSIVE_SPECTACLE_DATABASE[x]['price'])
         
         return {
             "status": "success",
@@ -245,11 +274,14 @@ def display_analysis_results(analysis_result):
             st.markdown("---")
             st.markdown("**🔍 Top Spectacle Recommendations:**")
             
-            from modules.enhanced_spectacle_data import ENHANCED_SPECTACLE_DATA
+            try:
+                from modules.comprehensive_spectacle_database import COMPREHENSIVE_SPECTACLE_DATABASE
+            except:
+                from modules.enhanced_spectacle_data import ENHANCED_SPECTACLE_DATA as COMPREHENSIVE_SPECTACLE_DATABASE
             
             for i, spec_name in enumerate(analysis_result["recommended_spectacles"][:4], 1):
-                if spec_name in ENHANCED_SPECTACLE_DATA:
-                    spec_data = ENHANCED_SPECTACLE_DATA[spec_name]
+                if spec_name in COMPREHENSIVE_SPECTACLE_DATABASE:
+                    spec_data = COMPREHENSIVE_SPECTACLE_DATABASE[spec_name]
                     
                     with st.expander(f"{i}. {spec_data['brand']} {spec_data['model']} - ${spec_data['price']}", expanded=(i==1)):
                         col1, col2, col3 = st.columns(3)

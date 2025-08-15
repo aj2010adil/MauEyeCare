@@ -2,7 +2,13 @@
 """
 Create patient photos with spectacle overlays and comprehensive analysis
 """
-import cv2
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+    print("Warning: OpenCV not available. Some features may be limited.")
+
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 import requests
