@@ -83,12 +83,14 @@ def simple_camera_capture():
 def show_camera_with_preview():
     """Show camera with live preview using Streamlit's built-in camera"""
     
-    st.markdown("### 📷 Camera Capture Options")
+    st.markdown("### 📷 Camera Capture")
     
-    # Option 1: Streamlit camera input (most reliable)
-    st.markdown("**Option 1: Built-in Camera (Recommended)**")
-    
-    camera_photo = st.camera_input("Take a photo for analysis")
+    # Auto-open camera with Streamlit's built-in camera input
+    camera_photo = st.camera_input(
+        "📸 Take a photo for AI analysis",
+        help="Position your face in the center and ensure good lighting",
+        key="auto_camera"
+    )
     
     if camera_photo is not None:
         # Convert to PIL Image
@@ -96,17 +98,18 @@ def show_camera_with_preview():
         image_array = np.array(image)
         
         st.success("✅ Photo captured successfully!")
+        st.image(image_array, caption="Captured Photo", width=400)
         return image_array
     
-    st.markdown("---")
-    
-    # Option 2: OpenCV camera (fallback)
-    st.markdown("**Option 2: Advanced Camera (If Option 1 doesn't work)**")
-    
-    if st.button("🎥 Try Advanced Camera", key="advanced_camera"):
-        captured_image = simple_camera_capture()
-        if captured_image is not None:
-            return captured_image
+    # Instructions for better photos
+    st.info("💡 **Tips for best results:**")
+    st.markdown("""
+    • **Face the camera directly**
+    • **Ensure good lighting**
+    • **Remove existing glasses**
+    • **Keep face centered**
+    • **Maintain neutral expression**
+    """)
     
     return None
 

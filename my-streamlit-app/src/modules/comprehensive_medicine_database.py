@@ -149,59 +149,28 @@ COMPREHENSIVE_MEDICINE_DATABASE = {
         "expiry_months": 24, "availability": "In Stock", "source": "apollo_pharmacy",
         "collected_date": "2024-01-15", "generic_available": True
     },
-    "Doxycycline 100mg (Doxy-1)": {
-        "price": 120, "category": "Antibiotic", "type": "Capsule", "volume": "10 capsules",
-        "manufacturer": "Cipla", "prescription_required": True, "dosage": "1 capsule twice daily",
-        "indication": "Bacterial infections, meibomitis", "side_effects": "Photosensitivity, nausea",
-        "contraindications": "Pregnancy, children under 8", "storage": "Room temperature",
-        "expiry_months": 24, "availability": "In Stock", "source": "medplus.com",
-        "collected_date": "2024-01-15", "generic_available": True
-    },
     
-    # === EYE OINTMENTS ===
-    "Chloramphenicol Eye Ointment 1%": {
-        "price": 65, "category": "Antibiotic", "type": "Ointment", "volume": "5g",
-        "manufacturer": "FDC", "prescription_required": True, "dosage": "Apply 2-3 times daily",
-        "indication": "Bacterial eye infections", "side_effects": "Local irritation",
-        "contraindications": "Blood disorders", "storage": "Room temperature",
-        "expiry_months": 24, "availability": "In Stock", "source": "local_pharmacy",
-        "collected_date": "2024-01-15", "generic_available": True
-    },
-    "Erythromycin Eye Ointment 0.5%": {
-        "price": 85, "category": "Antibiotic", "type": "Ointment", "volume": "5g",
-        "manufacturer": "Sun Pharma", "prescription_required": True, "dosage": "Apply 2-4 times daily",
-        "indication": "Bacterial conjunctivitis", "side_effects": "Blurred vision",
-        "contraindications": "Hypersensitivity", "storage": "Room temperature",
-        "expiry_months": 24, "availability": "In Stock", "source": "netmeds.com",
-        "collected_date": "2024-01-15", "generic_available": True
-    },
-    
-    # === VITAMINS & SUPPLEMENTS ===
+    # Vitamins and Supplements
     "Vitamin A 25000 IU (Aquasol A)": {
-        "price": 150, "category": "Vitamin", "type": "Capsule", "volume": "30 capsules",
-        "manufacturer": "USV", "prescription_required": False, "dosage": "1 capsule daily",
-        "indication": "Night blindness, dry eyes", "side_effects": "Nausea at high doses",
-        "contraindications": "Pregnancy (high doses)", "storage": "Room temperature",
-        "expiry_months": 36, "availability": "In Stock", "source": "healthkart.com",
+        "price": 120, "category": "Vitamin", "type": "Capsule", "volume": "30 capsules",
+        "manufacturer": "Mayne Pharma", "prescription_required": False, "dosage": "1 capsule daily",
+        "indication": "Vitamin A deficiency, night blindness", "side_effects": "Nausea, headache",
+        "contraindications": "Pregnancy, liver disease", "storage": "Room temperature",
+        "expiry_months": 24, "availability": "In Stock", "source": "healthkart.com",
         "collected_date": "2024-01-15", "generic_available": True
     },
-    "Omega-3 Fatty Acids (Fish Oil)": {
-        "price": 280, "category": "Supplement", "type": "Capsule", "volume": "30 capsules",
-        "manufacturer": "Nature Made", "prescription_required": False, "dosage": "1-2 capsules daily",
-        "indication": "Dry eye syndrome", "side_effects": "Fishy aftertaste",
+    
+    "Omega-3 Fish Oil (Maxepa)": {
+        "price": 350, "category": "Supplement", "type": "Capsule", "volume": "30 capsules",
+        "manufacturer": "Seven Seas", "prescription_required": False, "dosage": "1-2 capsules daily",
+        "indication": "Dry eyes, general eye health", "side_effects": "Fishy aftertaste, nausea",
         "contraindications": "Fish allergy", "storage": "Room temperature",
-        "expiry_months": 24, "availability": "In Stock", "source": "amazon.in",
+        "expiry_months": 18, "availability": "In Stock", "source": "amazon.in",
         "collected_date": "2024-01-15", "generic_available": True
-    },
-    "Lutein 20mg + Zeaxanthin 4mg": {
-        "price": 450, "category": "Supplement", "type": "Tablet", "volume": "30 tablets",
-        "manufacturer": "Bausch + Lomb", "prescription_required": False, "dosage": "1 tablet daily",
-        "indication": "Macular degeneration prevention", "side_effects": "None reported",
-        "contraindications": "None known", "storage": "Room temperature",
-        "expiry_months": 24, "availability": "In Stock", "source": "lenskart.com",
-        "collected_date": "2024-01-15", "generic_available": False
     }
+
 }
+
 
 def get_medicines_by_category(category="All"):
     """Get medicines filtered by category"""

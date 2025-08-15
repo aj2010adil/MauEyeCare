@@ -79,7 +79,7 @@ def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age,
     pdf.cell(120, 5, f'{doctor_name}, B.Sc. Optometry', ln=2)
     pdf.set_x(32)
     pdf.set_font('Arial', '', 9)
-    pdf.cell(120, 5, 'Optometrist & Eye Specialist | Reg. No.: UP-123456', ln=2)
+    pdf.cell(120, 5, 'Optometrist & Eye Specialist | Reg. No.: UPS 2908', ln=2)
     
     # Header line
     pdf.set_draw_color(41, 171, 226)

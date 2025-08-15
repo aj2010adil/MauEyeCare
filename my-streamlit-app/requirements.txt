@@ -3,3 +3,9 @@ pandas
 fpdf2
 requests
 schedule
+python-docx
+opencv-python
+Pillow
+numpy
+beautifulsoup4
+soupsieve

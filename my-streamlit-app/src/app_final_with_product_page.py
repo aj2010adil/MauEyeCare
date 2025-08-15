@@ -55,7 +55,13 @@ from modules.medicine_gallery import (
     create_medicine_recommendations_page,
     show_medicine_inventory_status
 )
-from modules.web_scraper import scrape_fashioneyewear_rb3447, update_database_with_scraped_data
+try:
+    from modules.web_scraper import scrape_fashioneyewear_rb3447, update_database_with_scraped_data
+except ImportError:
+    def scrape_fashioneyewear_rb3447():
+        return None
+    def update_database_with_scraped_data():
+        return 0
 
 db.init_db()
 
@@ -206,6 +212,32 @@ def main():
             
             patient_name = f"{first_name} {last_name}".strip()
             
+            # Medical Tests Section
+            st.markdown("**🩺 Medical Tests**")
+            col_test1, col_test2 = st.columns(2)
+            
+            with col_test1:
+                blood_pressure = st.text_input("Blood Pressure", placeholder="e.g., 120/80")
+                blood_sugar = st.text_input("Blood Sugar", placeholder="e.g., 95 mg/dL")
+                complete_blood_test = st.text_input("Complete Blood Test", placeholder="Normal/Abnormal")
+            
+            with col_test2:
+                viral_marker = st.text_input("Viral Marker", placeholder="Negative/Positive")
+                fundus_examination = st.text_input("Fundus Examination", placeholder="Normal/Abnormal")
+                iop = st.text_input("IOP (Intraocular Pressure)", placeholder="e.g., 15 mmHg")
+            
+            # Special Investigations
+            st.markdown("**🔬 Special Investigations**")
+            col_special1, col_special2 = st.columns(2)
+            
+            with col_special1:
+                retinoscopy_dry = st.text_input("Retinoscopy (Dry)", placeholder="Results")
+                retinoscopy_wet = st.text_input("Retinoscopy (Wet)", placeholder="Results")
+            
+            with col_special2:
+                syringing = st.text_input("Syringing", placeholder="Patent/Blocked")
+                other_tests = st.text_input("Other Tests", placeholder="Additional tests")
+            
             # RX Table
             st.markdown("**👁️ Prescription Details (RX Table)**")
             rx_table = {}
@@ -228,6 +260,20 @@ def main():
             rx_table = {
                 "OD": {"Sphere": od_sphere, "Cylinder": od_cylinder, "Axis": od_axis},
                 "OS": {"Sphere": os_sphere, "Cylinder": os_cylinder, "Axis": os_axis}
+            }
+            
+            # Store medical tests in session
+            medical_tests = {
+                "blood_pressure": blood_pressure,
+                "blood_sugar": blood_sugar,
+                "complete_blood_test": complete_blood_test,
+                "viral_marker": viral_marker,
+                "fundus_examination": fundus_examination,
+                "iop": iop,
+                "retinoscopy_dry": retinoscopy_dry,
+                "retinoscopy_wet": retinoscopy_wet,
+                "syringing": syringing,
+                "other_tests": other_tests
             }
             
             submitted = st.form_submit_button("💾 Save Patient", type="primary")
@@ -254,6 +300,7 @@ def main():
                     'advice': advice,
                     'patient_issue': patient_issue,
                     'rx_table': rx_table,
+                    'medical_tests': medical_tests,
                     'show_pdf': True
                 })
                 
@@ -385,9 +432,11 @@ def main():
             gender = st.session_state.get('gender', 'Male')
             
             st.success(f"👤 **Current Patient:** {patient_name} | Age: {age} | Gender: {gender}")
+            st.markdown("🔄 **Camera will open automatically below for instant AI analysis!**")
             
-            # Camera capture
-            st.markdown("### 📷 Capture Patient Photo")
+            # Camera capture - Auto-opens camera
+            st.markdown("### 📷 AI Face Analysis Camera")
+            st.info("🤖 **AI will automatically analyze your face shape and recommend the best spectacles!**")
             captured_image = show_camera_with_preview()
             
             if captured_image is not None:
