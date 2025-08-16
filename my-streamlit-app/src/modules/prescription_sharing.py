@@ -8,6 +8,7 @@ import base64
 from urllib.parse import quote
 import json
 import time
+from modules.google_drive_integration import drive_integrator
 
 def generate_qr_code_fallback(data):
     """Generate QR code using Google Charts API (cloud compatible)"""
@@ -164,13 +165,13 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
         if st.button("🖨️ Print Instructions", key=f"print_btn_{key_suffix}"):
             st.info("Use browser's print function (Ctrl+P) to print the prescription")
     
-    # Mobile-friendly HTML prescription download with WhatsApp sharing (Priority)
+    # Mobile-friendly HTML prescription download with WhatsApp sharing
     st.markdown("---")
-    st.markdown("**📱 Recommended: HTML Prescription for Mobile Sharing**")
+    st.markdown("**📱 HTML Prescription Sharing Options**")
     if patient_mobile:
-        st.success(f"✅ HTML format works best on mobile devices. Patient mobile {patient_mobile} will auto-populate in sharing apps.")
+        st.info(f"💡 Choose your preferred sharing method. Patient mobile {patient_mobile} will auto-populate in sharing apps.")
     else:
-        st.info("✅ HTML format works best on mobile devices and can be easily shared via WhatsApp")
+        st.info("💡 Choose your preferred sharing method. Add patient mobile for auto-populated sharing.")
     
     # Generate HTML prescription
     html_prescription = create_patient_portal_link(prescription_data, patient_name)
@@ -178,17 +179,16 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
     col1, col2 = st.columns(2)
     with col1:
         st.download_button(
-            label="📥 Download HTML Prescription (Recommended)",
+            label="📥 Download HTML Prescription",
             data=html_prescription,
             file_name=f"prescription_{patient_name.replace(' ', '_')}.html",
             mime="text/html",
-            key=f"download_html_{key_suffix}",
-            type="primary"
+            key=f"download_html_{key_suffix}"
         )
         if patient_mobile:
-            st.caption(f"✅ Best for mobile sharing - patient mobile {patient_mobile} included")
+            st.caption(f"✅ Manual sharing - patient mobile {patient_mobile} included")
         else:
-            st.caption("✅ Best for mobile sharing - works on all devices")
+            st.caption("✅ Manual sharing - works on all devices")
     
     with col2:
         # Enhanced sharing with patient mobile auto-populated
@@ -213,11 +213,144 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
                 st.caption("✅ Opens SMS with patient number")
             
             st.success("✅ Patient mobile auto-populated in sharing links")
+            
+            # Enhanced workflow instructions
+            st.markdown("**🚀 Sharing Options:**")
+            st.markdown("""
+            **Option 1 - Google Drive (Recommended):**
+            1. 🌐 **Upload to Google Drive** (button below)
+            2. 📱 **Click WhatsApp link** (opens with patient number & link)
+            3. ➡️ **Send** - Patient gets direct link!
+            
+            **Option 2 - Manual File Sharing:**
+            1. 📥 **Download HTML** (above button)
+            2. 📱 **Click WhatsApp/SMS** (opens with patient number)
+            3. 📎 **Attach downloaded file** (from Downloads folder)
+            4. ➡️ **Send** - Done!
+            """)
+            
+            # Alternative: Share prescription content directly
+            st.markdown("---")
+            st.markdown("**⚡ Alternative: Send Prescription Text Directly**")
+            
+            # Create comprehensive prescription text
+            prescription_summary = f"""Hi {patient_name}!
+
+Your prescription from MauEyeCare is ready:
+
+"""
+            
+            if prescription_data.get('prescription'):
+                prescription_summary += "MEDICINES:\n"
+                for med, qty in prescription_data['prescription'].items():
+                    prescription_summary += f"• {med} - Qty: {qty}\n"
+                prescription_summary += "\n"
+            
+            if prescription_data.get('rx_table'):
+                prescription_summary += "EYE PRESCRIPTION:\n"
+                for eye in ['OD', 'OS']:
+                    eye_data = prescription_data['rx_table'].get(eye, {})
+                    if eye_data.get('Sphere'):
+                        prescription_summary += f"{eye}: SPH {eye_data.get('Sphere', '')} CYL {eye_data.get('Cylinder', '')} AXIS {eye_data.get('Axis', '')}\n"
+                prescription_summary += "\n"
+            
+            prescription_summary += f"""INSTRUCTIONS:
+• Take medications as prescribed
+• Follow up if symptoms persist
+• Contact us: +91 92356-47410
+
+Best regards,
+Dr. Danish
+MauEyeCare Optical Center"""
+            
+            # Direct sharing with full prescription text
+            col_direct_wa, col_direct_sms = st.columns(2)
+            
+            with col_direct_wa:
+                direct_wa_link = f"https://wa.me/{clean_mobile}?text={quote(prescription_summary)}"
+                st.markdown(f"[🚀 Send Complete Prescription via WhatsApp]({direct_wa_link})")
+                st.caption("✅ No file attachment needed")
+            
+            with col_direct_sms:
+                # SMS has character limit, so send shorter version
+                sms_summary = f"Hi {patient_name}! Your prescription is ready. Please visit MauEyeCare or call +91 92356-47410 for details. - Dr. Danish"
+                direct_sms_link = f"sms:{patient_mobile}?body={quote(sms_summary)}"
+                st.markdown(f"[🚀 Send SMS Notification]({direct_sms_link})")
+                st.caption("✅ Quick notification to patient")
+            
+            # Google Drive Integration
+            st.markdown("---")
+            st.markdown("**🌐 Google Drive Auto-Upload & Share**")
+            
+            col_drive, col_status = st.columns([2, 1])
+            
+            with col_drive:
+                if st.button("🚀 Upload to Google Drive & Share Link", key=f"drive_upload_{key_suffix}", type="primary"):
+                    with st.spinner("Uploading prescription to Google Drive..."):
+                        # Generate HTML prescription
+                        html_prescription = create_patient_portal_link(prescription_data, patient_name)
+                        
+                        # Upload to Google Drive
+                        upload_result = drive_integrator.upload_prescription_to_drive(
+                            html_prescription, patient_name
+                        )
+                        
+                        if upload_result['success']:
+                            # Save link to database
+                            drive_integrator.save_prescription_link_to_db(
+                                patient_name, upload_result['link'], upload_result['file_id']
+                            )
+                            
+                            st.success("✅ Prescription uploaded to Google Drive!")
+                            
+                            # Auto-share via WhatsApp with Google Drive link
+                            drive_message = f"Hi {patient_name}! Your prescription from MauEyeCare is ready. View it here: {upload_result['link']} - Dr. Danish"
+                            drive_wa_link = f"https://wa.me/{clean_mobile}?text={quote(drive_message)}"
+                            
+                            st.markdown(f"[📱 Share Google Drive Link via WhatsApp]({drive_wa_link})")
+                            st.info(f"🔗 **Direct Link**: {upload_result['link']}")
+                            
+                            # Store in session for later use
+                            st.session_state[f'drive_link_{patient_name}'] = upload_result['link']
+                            
+                        else:
+                            if upload_result.get('fallback'):
+                                st.warning("⚠️ Google Drive not configured. Using fallback method.")
+                                st.info("💡 Configure Google Drive API token for automatic uploads")
+                            else:
+                                st.error("❌ Failed to upload to Google Drive")
+            
+            with col_status:
+                # Show existing Google Drive link if available
+                existing_link = st.session_state.get(f'drive_link_{patient_name}')
+                if existing_link:
+                    st.success("✅ Already uploaded")
+                    st.markdown(f"[🔗 View Link]({existing_link})")
+                else:
+                    st.info("📁 Not uploaded yet")
         else:
             whatsapp_html_text = f"Hi! Here's your prescription from MauEyeCare. Patient: {patient_name}. Please find the prescription file attached."
             whatsapp_html_link = f"https://wa.me/?text={quote(whatsapp_html_text)}"
             st.markdown(f"[📱 Share via WhatsApp]({whatsapp_html_link})")
             st.warning("⚠️ No patient mobile - you'll need to select contact manually")
+            st.info("💡 **Tip**: Add patient mobile number in the Patient form to enable auto-populated sharing")
+            
+            # Google Drive option even without mobile
+            st.markdown("---")
+            st.markdown("**🌐 Google Drive Upload (No Mobile Required)**")
+            
+            if st.button("🚀 Upload to Google Drive", key=f"drive_upload_no_mobile_{key_suffix}"):
+                with st.spinner("Uploading prescription to Google Drive..."):
+                    html_prescription = create_patient_portal_link(prescription_data, patient_name)
+                    upload_result = drive_integrator.upload_prescription_to_drive(html_prescription, patient_name)
+                    
+                    if upload_result['success']:
+                        drive_integrator.save_prescription_link_to_db(patient_name, upload_result['link'], upload_result['file_id'])
+                        st.success("✅ Prescription uploaded to Google Drive!")
+                        st.info(f"🔗 **Share this link**: {upload_result['link']}")
+                        st.session_state[f'drive_link_{patient_name}'] = upload_result['link']
+                    else:
+                        st.warning("⚠️ Google Drive not configured. Please set up API token.")
 
 def create_patient_portal_link(prescription_data, patient_name):
     """Create a mobile-friendly patient portal view"""

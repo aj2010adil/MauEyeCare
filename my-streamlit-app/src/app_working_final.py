@@ -13,6 +13,7 @@ import db
 from modules.inventory_utils import get_inventory_dict, add_or_update_inventory, reduce_inventory
 from modules.cloud_prescription_generator import generate_prescription_text, generate_prescription_html
 from modules.prescription_sharing import render_sharing_options, create_patient_portal_link
+from modules.google_drive_integration import drive_integrator
 from modules.ai_doctor_tools import analyze_symptoms_ai
 from modules.enhanced_spectacle_data import (
     ENHANCED_SPECTACLE_DATA, 
@@ -31,13 +32,21 @@ from modules.ai_inventory_agent import ai_agent
 
 db.init_db()
 
-# Load configuration
+# Load configuration securely
 try:
-    from config import CONFIG
-    grok_key = CONFIG.get('GROK_API_KEY')
-    whatsapp_token = CONFIG.get('WHATSAPP_ACCESS_TOKEN')
-    whatsapp_phone_id = CONFIG.get('WHATSAPP_PHONE_NUMBER_ID')
-    print(f"Config loaded - Token: {whatsapp_token[:10] if whatsapp_token else 'None'}... Phone ID: {whatsapp_phone_id}")
+    # Primary: Streamlit secrets (secure for public repos)
+    if hasattr(st, 'secrets'):
+        grok_key = st.secrets.get('GROK_API_KEY')
+        whatsapp_token = st.secrets.get('WHATSAPP_ACCESS_TOKEN')
+        whatsapp_phone_id = st.secrets.get('WHATSAPP_PHONE_NUMBER_ID')
+    else:
+        # Fallback: Environment variables
+        import os
+        grok_key = os.getenv('GROK_API_KEY')
+        whatsapp_token = os.getenv('WHATSAPP_ACCESS_TOKEN')
+        whatsapp_phone_id = os.getenv('WHATSAPP_PHONE_NUMBER_ID')
+    
+    print(f"Config loaded - Grok: {'✅' if grok_key else '❌'} | WhatsApp: {'✅' if whatsapp_token else '❌'}")
 except Exception as e:
     print(f"Config error: {e}")
     grok_key = None
