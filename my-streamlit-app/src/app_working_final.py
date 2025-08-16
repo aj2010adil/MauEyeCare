@@ -9,7 +9,7 @@ import numpy as np
 from PIL import Image
 sys.path.append(os.path.dirname(__file__))
 import db
-from modules.pdf_utils import generate_pdf
+# from modules.pdf_utils import generate_pdf  # Removed PDF option
 from modules.inventory_utils import get_inventory_dict, add_or_update_inventory, reduce_inventory
 from modules.enhanced_docx_utils import generate_professional_prescription_docx
 from modules.ai_doctor_tools import analyze_symptoms_ai
@@ -18,7 +18,7 @@ from modules.enhanced_spectacle_data import (
     generate_pricing_table_data,
     create_comprehensive_report_image
 )
-from modules.fixed_camera_analysis import trigger_immediate_analysis_workflow
+# from modules.fixed_camera_analysis import trigger_immediate_analysis_workflow  # Disabled due to cv2 dependency
 from modules.enhanced_medicine_ui import render_medicine_selection_ui, render_prescription_summary
 from modules.enhanced_inventory_manager import enhanced_inventory
 from modules.mcp_medicine_integration import mcp_integrator
@@ -459,105 +459,43 @@ def main():
             
             st.success(f"👤 Patient Selected: {patient_name} | Age: {age} | Gender: {gender}")
             
-            # Instant Analysis Workflow
+            # Face Analysis (Simplified)
             st.markdown("---")
+            st.subheader("👓 Spectacle Recommendations")
             
-            # Option 1: Camera Capture with Instant Analysis
-            with st.expander("📷 Camera Capture with Instant AI Analysis", expanded=True):
-                st.markdown("**🎯 Professional Camera Analysis**")
-                st.info("📋 **Instructions:**\n• Position face in center\n• Look directly at camera\n• Ensure good lighting\n• Remove existing glasses")
-                
-                if st.button("🚀 Start Instant Camera Analysis", type="primary"):
-                    success = trigger_immediate_analysis_workflow(patient_name, age, gender)
-                    
-                    if success:
-                        st.success("✅ Complete analysis workflow completed!")
+            # Manual face shape selection
+            face_shapes = ["Round", "Square", "Oval", "Heart", "Diamond", "Oblong"]
+            selected_face_shape = st.selectbox("Select Face Shape", face_shapes)
             
-            # Option 2: Upload Photo Analysis
-            with st.expander("📁 Upload Photo for Analysis"):
-                uploaded_file = st.file_uploader(
-                    "Upload clear front-facing photo", 
-                    type=['jpg', 'jpeg', 'png'],
-                    help="Upload a high-quality photo with good lighting"
-                )
+            if st.button("🎯 Get Spectacle Recommendations", type="primary"):
+                # Get recommendations based on face shape
+                recommended_spectacles = spectacle_tool.get_spectacles_by_face_shape(selected_face_shape)
                 
-                if uploaded_file is not None:
-                    image = Image.open(uploaded_file)
-                    image_array = np.array(image)
+                if recommended_spectacles:
+                    st.success(f"✅ Found {len(recommended_spectacles)} recommended spectacles for {selected_face_shape} face")
                     
-                    st.image(image, caption="📁 Uploaded Photo", width=400)
-                    
-                    if st.button("🤖 Analyze Uploaded Photo", type="primary"):
-                        from modules.fixed_camera_analysis import analyze_face_immediately, create_instant_analysis_display
-                        
-                        with st.spinner("🤖 AI analyzing uploaded photo..."):
-                            analysis_result = analyze_face_immediately(image_array, patient_name, age, gender)
-                        
-                        # Display results
-                        success = create_instant_analysis_display(analysis_result)
-                        
-                        if success:
-                            # Generate comprehensive report
-                            if st.button("📋 Generate Complete Report", type="primary", key="upload_report"):
-                                pricing_table = generate_pricing_table_data(analysis_result["recommended_spectacles"], "Single Vision")
-                                
-                                if pricing_table:
-                                    st.markdown("**💰 Detailed Pricing Table:**")
-                                    df_pricing = pd.DataFrame(pricing_table)
-                                    st.dataframe(df_pricing, use_container_width=True)
-                                    
-                                    # Create visual report
-                                    comprehensive_report = create_comprehensive_report_image(
-                                        image_array, analysis_result, pricing_table
-                                    )
-                                    
-                                    st.image(comprehensive_report, caption="📋 Complete Analysis Report", use_column_width=True)
-                                    
-                                    # Download options
-                                    col1, col2 = st.columns(2)
-                                    
-                                    with col1:
-                                        img_buffer = BytesIO()
-                                        comprehensive_report.save(img_buffer, format='PNG')
-                                        img_buffer.seek(0)
-                                        
-                                        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-                                        
-                                        st.download_button(
-                                            label="📄 Download Visual Report",
-                                            data=img_buffer.getvalue(),
-                                            file_name=f"Spectacle_Analysis_{patient_name.replace(' ', '_')}_{timestamp}.png",
-                                            mime="image/png"
-                                        )
-                                    
-                                    with col2:
-                                        csv_buffer = StringIO()
-                                        df_pricing.to_csv(csv_buffer, index=False)
-                                        
-                                        st.download_button(
-                                            label="📊 Download Pricing Table",
-                                            data=csv_buffer.getvalue(),
-                                            file_name=f"Spectacle_Pricing_{patient_name.replace(' ', '_')}_{timestamp}.csv",
-                                            mime="text/csv"
-                                        )
-                                    
-                                    st.balloons()
-            
-            # Display previous analysis if available
-            if 'instant_analysis' in st.session_state:
-                st.markdown("---")
-                st.subheader("📊 Previous Analysis Results")
-                
-                analysis = st.session_state['instant_analysis']
-                if analysis['status'] == 'success':
-                    st.info(f"Last analysis: {analysis['analysis_date']}")
-                    st.write(f"**Face Shape:** {analysis['face_shape']}")
-                    st.write(f"**Confidence:** {analysis['confidence']:.1f}%")
-                    st.write(f"**Recommendations:** {len(analysis['recommended_spectacles'])} spectacles")
+                    for spec_name, spec_data in list(recommended_spectacles.items())[:5]:  # Show top 5
+                        with st.container():
+                            col1, col2, col3 = st.columns([2, 1, 1])
+                            
+                            with col1:
+                                st.write(f"**{spec_name}**")
+                                st.write(f"{spec_data['brand']} | {spec_data['category']}")
+                            
+                            with col2:
+                                total_price = spec_data['price'] + spec_data['lens_price']
+                                st.write(f"**₹{total_price}**")
+                            
+                            with col3:
+                                st.write(f"Shape: {spec_data['shape']}")
+                else:
+                    st.info("No specific recommendations found. Please check the spectacle inventory.")
+
+
         
         else:
-            st.warning("⚠️ Please select a patient first in the 'Patient & Prescription' tab to use AI analysis features.")
-            st.info("💡 Go to the first tab and fill in patient information to enable AI spectacle recommendations.")
+            st.warning("⚠️ Please select a patient first in the 'Patient & Prescription' tab.")
+            st.info("💡 Go to the first tab and fill in patient information to enable recommendations.")
 
 if __name__ == "__main__":
     main()
