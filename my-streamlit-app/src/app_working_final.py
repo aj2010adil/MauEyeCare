@@ -20,7 +20,10 @@ from modules.enhanced_spectacle_data import (
 )
 # from modules.fixed_camera_analysis import trigger_immediate_analysis_workflow  # Disabled due to cv2 dependency
 from modules.enhanced_medicine_ui import render_medicine_selection_ui, render_prescription_summary
-from modules.enhanced_inventory_manager import enhanced_inventory
+try:
+    from modules.enhanced_inventory_manager import enhanced_inventory
+except Exception:
+    from modules.fallback_inventory import fallback_inventory as enhanced_inventory
 from modules.mcp_medicine_integration import mcp_integrator
 from modules.spectacle_inventory_tool import spectacle_tool
 from modules.ai_inventory_agent import ai_agent
@@ -320,7 +323,11 @@ def main():
             st.subheader("Current Medicine Inventory")
             
             # Get all medicines with current stock
-            all_medicines = enhanced_inventory.get_all_medicines(include_external=False)
+            try:
+                all_medicines = enhanced_inventory.get_all_medicines(include_external=False)
+            except Exception as e:
+                st.error(f"Error loading medicines: {str(e)}")
+                all_medicines = {}
             
             if all_medicines:
                 medicine_data = []
@@ -430,7 +437,11 @@ def main():
             
             # Generate and display inventory report
             if st.button("📈 Generate Analytics Report"):
-                report_df = enhanced_inventory.generate_inventory_report()
+                try:
+                    report_df = enhanced_inventory.generate_inventory_report()
+                except Exception as e:
+                    st.error(f"Error generating report: {str(e)}")
+                    report_df = pd.DataFrame()
                 
                 if not report_df.empty:
                     # Category distribution
