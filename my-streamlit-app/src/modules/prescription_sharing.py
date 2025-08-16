@@ -96,7 +96,7 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
     
     with col2:
         st.markdown("**📋 Copy Text**")
-        st.text_area("Prescription Text (Copy & Share)", sharing_links['text'], height=200)
+        st.text_area("Prescription Text (Copy & Share)", sharing_links['text'], height=200, key=f"prescription_text_{patient_name.replace(' ', '_')}")
     
     # Quick actions
     st.markdown("---")
@@ -105,26 +105,51 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        if st.button("📱 Open WhatsApp Web"):
+        if st.button("📱 Open WhatsApp Web", key=f"whatsapp_btn_{patient_name.replace(' ', '_')}"):
             st.markdown(f"[Open WhatsApp]({sharing_links['whatsapp']})")
     
     with col2:
-        if st.button("📧 Open Email Client"):
+        if st.button("📧 Open Email Client", key=f"email_btn_{patient_name.replace(' ', '_')}"):
             st.markdown(f"[Open Email]({sharing_links['email']})")
     
     with col3:
-        if st.button("📋 Copy to Clipboard"):
+        if st.button("📋 Copy to Clipboard", key=f"copy_btn_{patient_name.replace(' ', '_')}"):
             st.code(sharing_links['text'])
             st.success("Text ready to copy!")
     
     with col4:
-        if st.button("🖨️ Print Instructions"):
+        if st.button("🖨️ Print Instructions", key=f"print_btn_{patient_name.replace(' ', '_')}"):
             st.info("Use browser's print function (Ctrl+P) to print the prescription")
+    
+    # Mobile-friendly HTML prescription download with WhatsApp sharing
+    st.markdown("---")
+    st.markdown("**📱 Mobile Sharing (HTML Prescription)**")
+    
+    # Generate HTML prescription
+    html_prescription = create_patient_portal_link(prescription_data, patient_name)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.download_button(
+            label="📥 Download HTML Prescription",
+            data=html_prescription,
+            file_name=f"prescription_{patient_name.replace(' ', '_')}.html",
+            mime="text/html",
+            key=f"download_html_{patient_name.replace(' ', '_')}"
+        )
+        st.caption("Download and share via WhatsApp on mobile")
+    
+    with col2:
+        # Create WhatsApp sharing text for HTML file
+        whatsapp_html_text = f"Hi! Here's your prescription from MauEyeCare. Please download the attached HTML file to view complete details. Patient: {patient_name}"
+        whatsapp_html_link = f"https://wa.me/?text={quote(whatsapp_html_text)}"
+        st.markdown(f"[📱 Share HTML via WhatsApp]({whatsapp_html_link})")
+        st.caption("Send WhatsApp message, then attach downloaded HTML file")
 
 def create_patient_portal_link(prescription_data, patient_name):
-    """Create a simple patient portal view"""
+    """Create a mobile-friendly patient portal view"""
     
-    # Create a simple HTML page
+    # Create a mobile-optimized HTML page
     html_content = f"""
 <!DOCTYPE html>
 <html>
@@ -132,15 +157,18 @@ def create_patient_portal_link(prescription_data, patient_name):
     <title>Prescription - {patient_name}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }}
-        .container {{ max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+        body {{ font-family: Arial, sans-serif; margin: 10px; background: #f5f5f5; font-size: 16px; }}
+        .container {{ max-width: 100%; margin: 0 auto; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
         .header {{ text-align: center; border-bottom: 2px solid #2c5aa0; padding-bottom: 15px; margin-bottom: 20px; }}
-        .clinic-name {{ font-size: 24px; font-weight: bold; color: #2c5aa0; }}
+        .clinic-name {{ font-size: 20px; font-weight: bold; color: #2c5aa0; }}
         .section {{ margin: 15px 0; }}
-        .section-title {{ font-weight: bold; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px; }}
-        .medicine {{ background: #f8f9fa; padding: 10px; margin: 5px 0; border-left: 3px solid #2c5aa0; }}
+        .section-title {{ font-weight: bold; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px; font-size: 18px; }}
+        .medicine {{ background: #f8f9fa; padding: 10px; margin: 5px 0; border-left: 3px solid #2c5aa0; border-radius: 5px; }}
         .footer {{ text-align: center; margin-top: 30px; color: #666; font-size: 12px; }}
-        @media print {{ body {{ background: white; }} .container {{ box-shadow: none; }} }}
+        .whatsapp-share {{ background: #25d366; color: white; padding: 10px; text-align: center; border-radius: 5px; margin: 10px 0; }}
+        .whatsapp-share a {{ color: white; text-decoration: none; font-weight: bold; }}
+        @media print {{ body {{ background: white; }} .container {{ box-shadow: none; }} .whatsapp-share {{ display: none; }} }}
+        @media (max-width: 600px) {{ .container {{ margin: 5px; padding: 10px; }} .clinic-name {{ font-size: 18px; }} }}
     </style>
 </head>
 <body>
@@ -175,8 +203,15 @@ def create_patient_portal_link(prescription_data, patient_name):
             • Contact clinic for emergencies: +91 92356-47410
         </div>
         
+        <div class="whatsapp-share">
+            <a href="https://wa.me/?text=I have received my prescription from MauEyeCare. Thank you Dr. Danish!" target="_blank">
+                📱 Share on WhatsApp - Thank the Doctor
+            </a>
+        </div>
+        
         <div class="footer">
-            MauEyeCare Optical Center - Your vision is our priority
+            MauEyeCare Optical Center - Your vision is our priority<br>
+            📞 +91 92356-47410 | 📧 Contact us for any queries
         </div>
     </div>
     
@@ -184,6 +219,13 @@ def create_patient_portal_link(prescription_data, patient_name):
         // Auto-print option
         if(window.location.hash === '#print') {{
             window.print();
+        }}
+        
+        // Mobile-friendly sharing
+        function shareViaWhatsApp() {{
+            const text = "I received my prescription from MauEyeCare. Patient: {patient_name}";
+            const url = `https://wa.me/?text=${{encodeURIComponent(text)}}`;
+            window.open(url, '_blank');
         }}
     </script>
 </body>
