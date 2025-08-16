@@ -1,27 +1,18 @@
 """
-Prescription Sharing Module
+Prescription Sharing Module - Cloud Compatible
 Multiple ways to share prescriptions with patients
 """
 import streamlit as st
-import qrcode
 from io import BytesIO
 import base64
 from urllib.parse import quote
+import json
 
-def generate_qr_code(prescription_url):
-    """Generate QR code for prescription sharing"""
-    qr = qrcode.QRCode(version=1, box_size=10, border=5)
-    qr.add_data(prescription_url)
-    qr.make(fit=True)
-    
-    img = qr.make_image(fill_color="black", back_color="white")
-    
-    # Convert to bytes
-    img_buffer = BytesIO()
-    img.save(img_buffer, format='PNG')
-    img_buffer.seek(0)
-    
-    return img_buffer.getvalue()
+def generate_qr_code_fallback(data):
+    """Generate QR code using Google Charts API (cloud compatible)"""
+    encoded_data = quote(data)
+    qr_url = f"https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl={encoded_data}"
+    return qr_url
 
 def create_shareable_link(prescription_data, patient_name):
     """Create shareable link for prescription"""
@@ -98,20 +89,10 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
     
     with col1:
         st.markdown("**📱 QR Code**")
-        try:
-            qr_data = sharing_links['text']
-            qr_image = generate_qr_code(qr_data)
-            st.image(qr_image, caption="Scan to view prescription", width=200)
-            
-            # Download QR code
-            st.download_button(
-                label="📥 Download QR Code",
-                data=qr_image,
-                file_name=f"prescription_qr_{patient_name.replace(' ', '_')}.png",
-                mime="image/png"
-            )
-        except Exception as e:
-            st.error("QR code generation failed. Install qrcode package.")
+        qr_data = sharing_links['text']
+        qr_url = generate_qr_code_fallback(qr_data)
+        st.markdown(f'<img src="{qr_url}" alt="Prescription QR Code" style="max-width: 200px;">', unsafe_allow_html=True)
+        st.caption("Scan to view prescription")
     
     with col2:
         st.markdown("**📋 Copy Text**")
@@ -142,18 +123,6 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
 
 def create_patient_portal_link(prescription_data, patient_name):
     """Create a simple patient portal view"""
-    
-    # Encode prescription data as base64 for URL
-    import json
-    prescription_json = json.dumps({
-        "patient": patient_name,
-        "prescription": prescription_data.get('prescription', {}),
-        "rx_table": prescription_data.get('rx_table', {}),
-        "advice": prescription_data.get('advice', ''),
-        "date": prescription_data.get('date', '')
-    })
-    
-    encoded_data = base64.b64encode(prescription_json.encode()).decode()
     
     # Create a simple HTML page
     html_content = f"""
