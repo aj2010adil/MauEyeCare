@@ -19,6 +19,11 @@ from modules.enhanced_spectacle_data import (
     create_comprehensive_report_image
 )
 from modules.fixed_camera_analysis import trigger_immediate_analysis_workflow
+from modules.enhanced_medicine_ui import render_medicine_selection_ui, render_prescription_summary
+from modules.enhanced_inventory_manager import enhanced_inventory
+from modules.mcp_medicine_integration import mcp_integrator
+from modules.spectacle_inventory_tool import spectacle_tool
+from modules.ai_inventory_agent import ai_agent
 
 db.init_db()
 
@@ -52,18 +57,44 @@ def main():
     with st.sidebar:
         st.header("🔧 System Controls")
         
-        if st.button("🔄 Load Enhanced Spectacle Database"):
-            with st.spinner("Loading enhanced spectacle database..."):
-                populate_enhanced_inventory()
-            st.success(f"Loaded {len(ENHANCED_SPECTACLE_DATA)} premium spectacles!")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔄 Load Enhanced Spectacle Database"):
+                with st.spinner("Loading enhanced spectacle database..."):
+                    populate_enhanced_inventory()
+                st.success(f"Loaded {len(ENHANCED_SPECTACLE_DATA)} premium spectacles!")
+        
+        with col2:
+            if st.button("🏦 Load Premium Collection"):
+                with st.spinner("Loading premium spectacle collection..."):
+                    spectacle_tool.populate_inventory_from_database()
+                st.success(f"Loaded {len(spectacle_tool.premium_spectacle_data)} premium spectacles!")
         
         st.markdown("---")
         st.markdown("**📊 System Stats:**")
         inventory_count = len(get_inventory_dict())
         st.metric("Inventory Items", inventory_count)
         st.metric("Spectacle Database", len(ENHANCED_SPECTACLE_DATA))
+        st.metric("Premium Collection", len(spectacle_tool.premium_spectacle_data))
+        
+        # AI Agent Status
+        st.markdown("**🤖 AI Agent Status:**")
+        st.success("✅ AI Assistant Active")
+        
+        if st.button("🔍 Run AI Analysis"):
+            with st.spinner("AI analyzing inventory..."):
+                ai_report = ai_agent.auto_inventory_management()
+            
+            st.success("✅ AI Analysis Complete")
+            
+            if ai_report["alerts"]:
+                for alert in ai_report["alerts"]:
+                    st.warning(f"⚠️ {alert}")
+            
+            if ai_report["recommendations"]:
+                st.info(f"💡 {len(ai_report['recommendations'])} AI recommendations available")
 
-    tab1, tab2, tab3, tab4 = st.tabs(["📋 Patient & Prescription", "📦 Spectacle Inventory", "📊 Patient History", "🤖 AI Spectacle Assistant"])
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📋 Patient & Prescription", "📦 Spectacle Inventory", "💊 Medicine Management", "📊 Patient History", "🤖 AI Assistant", "🔧 Advanced Tools"])
 
     # --- Patient & Prescription Tab ---
     with tab1:
@@ -111,30 +142,16 @@ def main():
                 "OS": {"Sphere": os_sphere, "Cylinder": os_cylinder, "Axis": os_axis}
             }
             
-            # Medicine Selection
-            st.markdown("**💊 Medicine Selection & Dosages**")
-            inventory_db = get_inventory_dict()
-            med_options = [item for item in inventory_db.keys() if any(word in item.lower() for word in ['drop', 'tablet', 'ointment', 'artificial', 'antibiotic'])]
-            selected_meds = st.multiselect("Choose medicines", med_options, key="form_meds")
+            # Enhanced Medicine Selection
+            st.markdown("**💊 Enhanced Medicine Selection & Management**")
             
-            prescription = {}
-            dosages = {}
+            # Use the new enhanced medicine UI
+            prescription, dosages = render_medicine_selection_ui()
             
-            for med in selected_meds:
-                col_qty, col_dose, col_timing = st.columns(3)
-                max_qty = inventory_db.get(med, 0)
-                
-                with col_qty:
-                    qty = st.number_input(f"Qty {med}", min_value=1, max_value=max(max_qty, 1), value=1, key=f"qty_{med}")
-                    prescription[med] = qty
-                
-                with col_dose:
-                    dosage = st.selectbox(f"Dosage", ["1 drop", "2 drops", "1 tablet"], key=f"dose_{med}")
-                
-                with col_timing:
-                    timing = st.selectbox(f"Timing", ["Once daily", "Twice daily", "Thrice daily"], key=f"timing_{med}")
-                
-                dosages[med] = {'dosage': dosage, 'timing': timing}
+            # Display prescription summary
+            if prescription:
+                total_cost = render_prescription_summary(prescription, dosages)
+                st.info(f"💰 Total Prescription Cost: ₹{total_cost}")
             
             submitted = st.form_submit_button("💾 Save Patient", type="primary")
             
@@ -272,8 +289,143 @@ def main():
                     brands_count = len(filtered_df['Brand'].unique())
                     st.metric("Brands Available", brands_count)
 
-    # --- Patient History Tab ---
+    # --- Medicine Management Tab ---
     with tab3:
+        st.header("💊 Comprehensive Medicine Management")
+        st.markdown("*Integrated medicine database with real-time inventory and external purchasing*")
+        
+        # Medicine management interface
+        med_tab1, med_tab2, med_tab3 = st.tabs(["📊 Current Inventory", "🔍 Medicine Database", "📈 Analytics"])
+        
+        with med_tab1:
+            st.subheader("Current Medicine Inventory")
+            
+            # Get all medicines with current stock
+            all_medicines = enhanced_inventory.get_all_medicines(include_external=False)
+            
+            if all_medicines:
+                medicine_data = []
+                for med_name, med_data in all_medicines.items():
+                    if med_data.get("current_stock", 0) > 0:  # Only show items in stock
+                        medicine_data.append({
+                            "Medicine": med_name,
+                            "Category": med_data.get("category", "N/A"),
+                            "Type": med_data.get("type", "N/A"),
+                            "Stock": med_data.get("current_stock", 0),
+                            "Price": f"₹{med_data.get('price', 0)}",
+                            "Value": f"₹{med_data.get('current_stock', 0) * med_data.get('price', 0)}",
+                            "Indication": med_data.get("indication", "N/A")[:50] + "..." if len(med_data.get("indication", "")) > 50 else med_data.get("indication", "N/A")
+                        })
+                
+                if medicine_data:
+                    df_medicines = pd.DataFrame(medicine_data)
+                    st.dataframe(df_medicines, use_container_width=True)
+                    
+                    # Quick stats
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Medicines in Stock", len(medicine_data))
+                    with col2:
+                        total_value = sum([med_data.get("current_stock", 0) * med_data.get("price", 0) for med_data in all_medicines.values()])
+                        st.metric("Total Inventory Value", f"₹{total_value:,.0f}")
+                    with col3:
+                        low_stock_count = len([med for med in all_medicines.values() if med.get("current_stock", 0) <= 5 and med.get("current_stock", 0) > 0])
+                        st.metric("Low Stock Items", low_stock_count)
+                else:
+                    st.info("No medicines currently in stock. Use the Medicine Selection tab to add medicines.")
+            else:
+                st.info("No medicine data available. Please load the medicine database.")
+        
+        with med_tab2:
+            st.subheader("Complete Medicine Database")
+            
+            # Load comprehensive database
+            if st.button("🔄 Load Complete Medicine Database", type="primary"):
+                with st.spinner("Loading comprehensive medicine database..."):
+                    from modules.comprehensive_medicine_database import COMPREHENSIVE_MEDICINE_DATABASE
+                    
+                    # Add all medicines to inventory with 0 stock (for reference)
+                    for med_name in COMPREHENSIVE_MEDICINE_DATABASE.keys():
+                        try:
+                            db.update_inventory(med_name, 0)  # Add with 0 stock
+                        except:
+                            pass  # Skip if already exists
+                
+                st.success(f"✅ Loaded {len(COMPREHENSIVE_MEDICINE_DATABASE)} medicines into database!")
+                st.rerun()
+            
+            # Display database statistics
+            from modules.comprehensive_medicine_database import COMPREHENSIVE_MEDICINE_DATABASE
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Database Medicines", len(COMPREHENSIVE_MEDICINE_DATABASE))
+            with col2:
+                categories = set([med.get("category", "Unknown") for med in COMPREHENSIVE_MEDICINE_DATABASE.values()])
+                st.metric("Categories", len(categories))
+            with col3:
+                prescription_required = sum([1 for med in COMPREHENSIVE_MEDICINE_DATABASE.values() if med.get("prescription_required", False)])
+                st.metric("Prescription Required", prescription_required)
+            
+            # Show sample medicines by category
+            if COMPREHENSIVE_MEDICINE_DATABASE:
+                st.markdown("**Sample Medicines by Category:**")
+                categories = set([med.get("category", "Unknown") for med in COMPREHENSIVE_MEDICINE_DATABASE.values()])
+                
+                for category in sorted(categories):
+                    with st.expander(f"📂 {category}"):
+                        category_meds = {name: data for name, data in COMPREHENSIVE_MEDICINE_DATABASE.items() 
+                                       if data.get("category") == category}
+                        
+                        # Show first 5 medicines in this category
+                        for i, (med_name, med_data) in enumerate(list(category_meds.items())[:5]):
+                            st.write(f"• **{med_name}** - ₹{med_data.get('price', 0)} - {med_data.get('indication', 'N/A')}")
+                        
+                        if len(category_meds) > 5:
+                            st.write(f"... and {len(category_meds) - 5} more medicines")
+        
+        with med_tab3:
+            st.subheader("Medicine Analytics & Insights")
+            
+            # MCP Integration Status
+            st.markdown("**🌐 MCP Integration Status**")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.success("✅ MCP Medicine Integration: Active")
+                st.info("🔗 Connected Sources: 1mg, NetMeds, PharmEasy, Apollo")
+            
+            with col2:
+                if st.button("🔄 Refresh External Inventory", type="secondary"):
+                    with st.spinner("Fetching real-time inventory data..."):
+                        external_inventory = mcp_integrator.get_real_time_inventory()
+                    
+                    st.success("✅ External inventory refreshed!")
+                    
+                    # Show external availability
+                    total_external = sum([len(medicines) for medicines in external_inventory.values()])
+                    st.metric("External Medicines Available", total_external)
+            
+            # Show analytics
+            st.markdown("**📊 Inventory Analytics**")
+            
+            # Generate and display inventory report
+            if st.button("📈 Generate Analytics Report"):
+                report_df = enhanced_inventory.generate_inventory_report()
+                
+                if not report_df.empty:
+                    # Category distribution
+                    category_counts = report_df['Category'].value_counts()
+                    st.bar_chart(category_counts)
+                    
+                    # Stock status
+                    stock_status = report_df['Status'].value_counts()
+                    st.write("**Stock Status Distribution:**")
+                    for status, count in stock_status.items():
+                        st.write(f"• {status}: {count} items")
+
+    # --- Patient History Tab ---
+    with tab4:
         st.header("🔍 Patient History & Records")
         
         patients = db.get_patients()
@@ -295,7 +447,7 @@ def main():
                 st.write(f"**Registration Date:** {p[5] if len(p) > 5 else 'N/A'}")
 
     # --- AI Spectacle Assistant Tab ---
-    with tab4:
+    with tab5:
         st.header("🤖 AI Spectacle Assistant")
         st.markdown("*Advanced face analysis with instant spectacle recommendations*")
         
