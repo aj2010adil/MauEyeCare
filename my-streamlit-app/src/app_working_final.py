@@ -12,6 +12,7 @@ import db
 # from modules.pdf_utils import generate_pdf  # Removed PDF option
 from modules.inventory_utils import get_inventory_dict, add_or_update_inventory, reduce_inventory
 from modules.cloud_prescription_generator import generate_prescription_text, generate_prescription_html
+from modules.prescription_sharing import render_sharing_options, create_patient_portal_link
 from modules.ai_doctor_tools import analyze_symptoms_ai
 from modules.enhanced_spectacle_data import (
     ENHANCED_SPECTACLE_DATA, 
@@ -97,7 +98,7 @@ def main():
             if ai_report["recommendations"]:
                 st.info(f"💡 {len(ai_report['recommendations'])} AI recommendations available")
 
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📋 Patient & Prescription", "📦 Spectacle Inventory", "💊 Medicine Management", "📊 Patient History", "🤖 AI Assistant", "🔧 Advanced Tools"])
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📋 Patient & Prescription", "📦 Spectacle Inventory", "💊 Medicine Management", "📊 Patient History", "🤖 AI Assistant", "📤 Share Prescription"])
 
     # --- Patient & Prescription Tab ---
     with tab1:
@@ -201,45 +202,81 @@ def main():
                 total_cost = render_prescription_summary(prescription, dosages)
                 st.info(f"💰 Total Prescription Cost: ₹{total_cost}")
 
-        # Prescription Generation
+        # Prescription Generation & Sharing
         if st.session_state.get('show_pdf', False) and st.session_state.get('prescription'):
             st.markdown("---")
-            st.subheader("📄 Download Prescription")
             
-            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+            # Tabs for download and sharing
+            download_tab, share_tab = st.tabs(["📄 Download", "📤 Share with Patient"])
             
-            col1, col2 = st.columns(2)
+            with download_tab:
+                st.subheader("📄 Download Prescription")
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+                
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    # Text format
+                    text_file = generate_prescription_text(
+                        st.session_state['prescription'], "Dr Danish", 
+                        st.session_state['patient_name'], st.session_state['age'], 
+                        st.session_state['gender'], st.session_state['advice'], 
+                        st.session_state['rx_table'], [], st.session_state.get('dosages', {})
+                    )
+                    st.download_button(
+                        label="📄 Download as Text",
+                        data=text_file,
+                        file_name=f"RX_{st.session_state['patient_name'].replace(' ', '_')}_{timestamp}.txt",
+                        mime="text/plain"
+                    )
+                
+                with col2:
+                    # HTML format
+                    html_file = generate_prescription_html(
+                        st.session_state['prescription'], "Dr Danish", 
+                        st.session_state['patient_name'], st.session_state['age'], 
+                        st.session_state['gender'], st.session_state['advice'], 
+                        st.session_state['rx_table'], [], st.session_state.get('dosages', {})
+                    )
+                    st.download_button(
+                        label="🌐 Download as HTML",
+                        data=html_file,
+                        file_name=f"RX_{st.session_state['patient_name'].replace(' ', '_')}_{timestamp}.html",
+                        mime="text/html"
+                    )
+                
+                with col3:
+                    # Patient portal format
+                    portal_file = create_patient_portal_link(
+                        {
+                            'prescription': st.session_state['prescription'],
+                            'rx_table': st.session_state['rx_table'],
+                            'advice': st.session_state['advice'],
+                            'date': datetime.datetime.now().strftime("%d/%m/%Y")
+                        },
+                        st.session_state['patient_name']
+                    )
+                    st.download_button(
+                        label="📱 Patient Portal",
+                        data=portal_file,
+                        file_name=f"Patient_Portal_{st.session_state['patient_name'].replace(' ', '_')}_{timestamp}.html",
+                        mime="text/html"
+                    )
             
-            with col1:
-                # Text format
-                text_file = generate_prescription_text(
-                    st.session_state['prescription'], "Dr Danish", 
-                    st.session_state['patient_name'], st.session_state['age'], 
-                    st.session_state['gender'], st.session_state['advice'], 
-                    st.session_state['rx_table'], [], st.session_state.get('dosages', {})
-                )
-                st.download_button(
-                    label="📄 Download as Text",
-                    data=text_file,
-                    file_name=f"RX_{st.session_state['patient_name'].replace(' ', '_')}_{timestamp}.txt",
-                    mime="text/plain",
-                    type="primary"
-                )
-            
-            with col2:
-                # HTML format
-                html_file = generate_prescription_html(
-                    st.session_state['prescription'], "Dr Danish", 
-                    st.session_state['patient_name'], st.session_state['age'], 
-                    st.session_state['gender'], st.session_state['advice'], 
-                    st.session_state['rx_table'], [], st.session_state.get('dosages', {})
-                )
-                st.download_button(
-                    label="🌐 Download as HTML",
-                    data=html_file,
-                    file_name=f"RX_{st.session_state['patient_name'].replace(' ', '_')}_{timestamp}.html",
-                    mime="text/html",
-                    type="secondary"
+            with share_tab:
+                # Sharing options
+                prescription_data = {
+                    'prescription': st.session_state['prescription'],
+                    'rx_table': st.session_state['rx_table'],
+                    'advice': st.session_state['advice'],
+                    'dosages': st.session_state.get('dosages', {}),
+                    'date': datetime.datetime.now().strftime("%d/%m/%Y")
+                }
+                
+                render_sharing_options(
+                    prescription_data,
+                    st.session_state['patient_name'],
+                    st.session_state.get('patient_mobile', '')
                 )
 
     # --- Spectacle Inventory Tab ---
@@ -526,6 +563,78 @@ def main():
         else:
             st.warning("⚠️ Please select a patient first in the 'Patient & Prescription' tab.")
             st.info("💡 Go to the first tab and fill in patient information to enable recommendations.")
+
+    # --- Share Prescription Tab ---
+    with tab6:
+        st.header("📤 Share Prescription with Patient")
+        st.markdown("*Multiple ways to share prescriptions instantly*")
+        
+        if st.session_state.get('patient_name') and st.session_state.get('prescription'):
+            # Quick sharing interface
+            prescription_data = {
+                'prescription': st.session_state['prescription'],
+                'rx_table': st.session_state['rx_table'],
+                'advice': st.session_state['advice'],
+                'dosages': st.session_state.get('dosages', {}),
+                'date': datetime.datetime.now().strftime("%d/%m/%Y")
+            }
+            
+            # Patient info display
+            col1, col2 = st.columns(2)
+            with col1:
+                st.info(f"👤 **Patient:** {st.session_state['patient_name']}")
+            with col2:
+                if st.session_state.get('patient_mobile'):
+                    st.info(f"📱 **Mobile:** {st.session_state['patient_mobile']}")
+            
+            # Sharing options
+            render_sharing_options(
+                prescription_data,
+                st.session_state['patient_name'],
+                st.session_state.get('patient_mobile', '')
+            )
+            
+            # Additional sharing features
+            st.markdown("---")
+            st.subheader("🔗 Additional Sharing Options")
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.markdown("**📱 Mobile Apps**")
+                st.write("• WhatsApp")
+                st.write("• Telegram")
+                st.write("• SMS")
+                st.write("• Any messaging app")
+            
+            with col2:
+                st.markdown("**📧 Email Options**")
+                st.write("• Gmail")
+                st.write("• Outlook")
+                st.write("• Yahoo Mail")
+                st.write("• Any email client")
+            
+            with col3:
+                st.markdown("**📱 QR Code Uses**")
+                st.write("• Scan with phone camera")
+                st.write("• Share QR image")
+                st.write("• Print on paper")
+                st.write("• Display on screen")
+            
+            # Instructions
+            st.markdown("---")
+            st.info("""
+            **📝 How to share:**
+            1. **WhatsApp/SMS**: Click the link to open your messaging app
+            2. **Email**: Click to open your email client with pre-filled content
+            3. **QR Code**: Patient scans with phone camera to view prescription
+            4. **Copy Text**: Copy the text and paste anywhere
+            5. **Patient Portal**: Download HTML file and send to patient
+            """)
+        
+        else:
+            st.warning("⚠️ Please create a prescription first in the 'Patient & Prescription' tab.")
+            st.info("💡 Fill in patient details and select medicines to enable sharing options.")
 
 if __name__ == "__main__":
     main()
