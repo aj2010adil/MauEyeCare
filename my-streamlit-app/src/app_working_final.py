@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(__file__))
 import db
 # from modules.pdf_utils import generate_pdf  # Removed PDF option
 from modules.inventory_utils import get_inventory_dict, add_or_update_inventory, reduce_inventory
-from modules.enhanced_docx_utils import generate_professional_prescription_docx
+from modules.simple_docx_generator import generate_simple_prescription_docx
 from modules.ai_doctor_tools import analyze_symptoms_ai
 from modules.enhanced_spectacle_data import (
     ENHANCED_SPECTACLE_DATA, 
@@ -203,7 +203,7 @@ def main():
             st.subheader("📄 Generate Prescription Document")
             
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-            docx_file = generate_professional_prescription_docx(
+            docx_file = generate_simple_prescription_docx(
                 st.session_state['prescription'], "Dr Danish", 
                 st.session_state['patient_name'], st.session_state['age'], 
                 st.session_state['gender'], st.session_state['advice'], 

@@ -7,7 +7,10 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import db
 from modules.comprehensive_medicine_database import COMPREHENSIVE_MEDICINE_DATABASE
-from modules.comprehensive_spectacle_database import COMPREHENSIVE_SPECTACLE_DATABASE
+try:
+    from modules.comprehensive_spectacle_database import COMPREHENSIVE_SPECTACLE_DATABASE
+except ImportError:
+    COMPREHENSIVE_SPECTACLE_DATABASE = {}
 from modules.mcp_medicine_integration import mcp_integrator
 import streamlit as st
 from datetime import datetime
@@ -17,8 +20,16 @@ class EnhancedInventoryManager:
     """Enhanced inventory manager with MCP integration"""
     
     def __init__(self):
-        self.medicine_db = COMPREHENSIVE_MEDICINE_DATABASE
-        self.spectacle_db = COMPREHENSIVE_SPECTACLE_DATABASE
+        try:
+            self.medicine_db = COMPREHENSIVE_MEDICINE_DATABASE
+        except:
+            self.medicine_db = {}
+        
+        try:
+            self.spectacle_db = COMPREHENSIVE_SPECTACLE_DATABASE
+        except:
+            self.spectacle_db = {}
+        
         self.mcp = mcp_integrator
     
     def get_all_medicines(self, include_external=True):
