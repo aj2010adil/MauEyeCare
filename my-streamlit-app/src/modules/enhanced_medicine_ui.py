@@ -25,19 +25,12 @@ def render_medicine_selection_ui():
         st.markdown("**Search and Select Medicines**")
         
         # Search functionality
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            search_term = st.text_input("🔍 Search medicines by name or condition", 
-                                      placeholder="e.g., eye drops, dry eyes, antibiotic")
-        with col2:
-            search_button = st.button("Search", type="primary")
+        search_term = st.text_input("🔍 Search medicines by name or condition", 
+                                  placeholder="e.g., eye drops, dry eyes, antibiotic")
         
         # Get all medicines
-        if search_term or search_button:
-            if search_term:
-                medicines = enhanced_inventory.search_medicines(search_term)
-            else:
-                medicines = enhanced_inventory.get_all_medicines()
+        if search_term:
+            medicines = enhanced_inventory.search_medicines(search_term)
         else:
             medicines = enhanced_inventory.get_all_medicines()
         
@@ -149,7 +142,8 @@ def render_medicine_selection_ui():
         with col2:
             patient_age = st.number_input("Patient Age", min_value=1, max_value=120, value=30)
         
-        if st.button("Get Recommendations", type="primary"):
+        get_recommendations = st.checkbox("Get Recommendations")
+        if get_recommendations:
             recommendations = enhanced_inventory.get_medicines_by_condition(selected_condition, patient_age)
             
             # Display local recommendations
@@ -162,11 +156,10 @@ def render_medicine_selection_ui():
                             st.write(f"**{med_name}**")
                             st.write(f"Price: ₹{med_data.get('price', 0)} | {med_data.get('indication', 'N/A')}")
                         with col2:
-                            if st.button(f"Add", key=f"add_local_{med_name}"):
+                            if st.checkbox(f"Select", key=f"add_local_{med_name}"):
                                 if "selected_medicines" not in st.session_state:
                                     st.session_state["selected_medicines"] = {}
                                 st.session_state["selected_medicines"][med_name] = 1
-                                st.success(f"Added {med_name}")
             
             # Display MCP recommendations
             if recommendations["mcp_recommendations"]:
@@ -207,25 +200,22 @@ def render_medicine_selection_ui():
                                                      value=1, key=f"purchase_qty_{med_name}")
                     
                     with col4:
-                        if st.button(f"Purchase", key=f"purchase_{med_name}"):
-                            with st.spinner("Processing purchase..."):
-                                result = enhanced_inventory.purchase_medicine_external(
-                                    med_name, purchase_qty, med_data['source']
-                                )
+                        purchase_key = f"purchase_{med_name}"
+                        if st.checkbox(f"Buy", key=purchase_key):
+                            result = enhanced_inventory.purchase_medicine_external(
+                                med_name, purchase_qty, med_data['source']
+                            )
                             
                             if result["status"] == "success":
-                                st.success(f"✅ Purchased {purchase_qty} units of {med_name}")
-                                st.info(f"Tracking ID: {result['tracking_id']}")
-                                st.info(f"Estimated Delivery: {result['estimated_delivery']}")
-                                st.rerun()
-                            else:
-                                st.error("❌ Purchase failed")
+                                st.success(f"✅ Purchased {purchase_qty} units")
+                                st.info(f"Tracking: {result['tracking_id']}")
     
     with tab4:
         st.markdown("**Inventory Status & Management**")
         
         # Generate inventory report
-        if st.button("📊 Generate Inventory Report", type="primary"):
+        generate_report = st.checkbox("📊 Generate Inventory Report")
+        if generate_report:
             report_df = enhanced_inventory.generate_inventory_report()
             
             # Display summary metrics

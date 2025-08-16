@@ -142,16 +142,12 @@ def main():
                 "OS": {"Sphere": os_sphere, "Cylinder": os_cylinder, "Axis": os_axis}
             }
             
-            # Enhanced Medicine Selection
-            st.markdown("**💊 Enhanced Medicine Selection & Management**")
+            # Medicine selection placeholder
+            st.markdown("**💊 Medicine Selection**")
+            st.info("💡 Medicine selection available after saving patient details")
             
-            # Use the new enhanced medicine UI
-            prescription, dosages = render_medicine_selection_ui()
-            
-            # Display prescription summary
-            if prescription:
-                total_cost = render_prescription_summary(prescription, dosages)
-                st.info(f"💰 Total Prescription Cost: ₹{total_cost}")
+            prescription = st.session_state.get('prescription', {})
+            dosages = st.session_state.get('dosages', {})
             
             submitted = st.form_submit_button("💾 Save Patient", type="primary")
             
@@ -183,42 +179,43 @@ def main():
                 })
                 
                 st.success(f"✅ Patient {patient_name} saved successfully!")
-
-        # PDF Generation
-        if st.session_state.get('show_pdf', False):
+        
+        # Enhanced Medicine Selection (Outside Form)
+        if st.session_state.get('patient_name'):
             st.markdown("---")
-            st.subheader("📄 Generate Prescription Documents")
+            st.markdown("**💊 Enhanced Medicine Selection & Management**")
             
-            col1, col2 = st.columns(2)
+            # Use the new enhanced medicine UI
+            prescription, dosages = render_medicine_selection_ui()
             
-            with col1:
-                pdf_file = generate_pdf(
-                    st.session_state['prescription'], '', '', "Dr Danish", 
-                    st.session_state['patient_name'], st.session_state['age'], 
-                    st.session_state['gender'], st.session_state['advice'], 
-                    st.session_state['rx_table'], []
-                )
-                st.download_button(
-                    label="📄 Download PDF Prescription",
-                    data=pdf_file,
-                    file_name=f"prescription_{st.session_state['patient_name'].replace(' ', '_')}.pdf",
-                    mime="application/pdf"
-                )
+            # Update session state
+            if prescription:
+                st.session_state['prescription'] = prescription
+                st.session_state['dosages'] = dosages
+                
+                # Display prescription summary
+                total_cost = render_prescription_summary(prescription, dosages)
+                st.info(f"💰 Total Prescription Cost: ₹{total_cost}")
+
+        # DOCX Generation Only
+        if st.session_state.get('show_pdf', False) and st.session_state.get('prescription'):
+            st.markdown("---")
+            st.subheader("📄 Generate Prescription Document")
             
-            with col2:
-                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-                docx_file = generate_professional_prescription_docx(
-                    st.session_state['prescription'], "Dr Danish", 
-                    st.session_state['patient_name'], st.session_state['age'], 
-                    st.session_state['gender'], st.session_state['advice'], 
-                    st.session_state['rx_table'], [], st.session_state.get('dosages', {})
-                )
-                st.download_button(
-                    label="📄 Download DOCX Prescription",
-                    data=docx_file,
-                    file_name=f"RX_{st.session_state['patient_name'].replace(' ', '_')}_{timestamp}.docx",
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                )
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+            docx_file = generate_professional_prescription_docx(
+                st.session_state['prescription'], "Dr Danish", 
+                st.session_state['patient_name'], st.session_state['age'], 
+                st.session_state['gender'], st.session_state['advice'], 
+                st.session_state['rx_table'], [], st.session_state.get('dosages', {})
+            )
+            st.download_button(
+                label="📄 Download Prescription (DOCX)",
+                data=docx_file,
+                file_name=f"RX_{st.session_state['patient_name'].replace(' ', '_')}_{timestamp}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                type="primary"
+            )
 
     # --- Spectacle Inventory Tab ---
     with tab2:
