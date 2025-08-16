@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(__file__))
 import db
 # from modules.pdf_utils import generate_pdf  # Removed PDF option
 from modules.inventory_utils import get_inventory_dict, add_or_update_inventory, reduce_inventory
-from modules.simple_docx_generator import generate_simple_prescription_docx
+from modules.cloud_prescription_generator import generate_prescription_text, generate_prescription_html
 from modules.ai_doctor_tools import analyze_symptoms_ai
 from modules.enhanced_spectacle_data import (
     ENHANCED_SPECTACLE_DATA, 
@@ -145,6 +145,7 @@ def main():
             # Medicine selection placeholder
             st.markdown("**💊 Medicine Selection**")
             st.info("💡 Medicine selection available after saving patient details")
+            st.info("🌐 Cloud-compatible version - Downloads as Text/HTML format")
             
             prescription = st.session_state.get('prescription', {})
             dosages = st.session_state.get('dosages', {})
@@ -197,25 +198,46 @@ def main():
                 total_cost = render_prescription_summary(prescription, dosages)
                 st.info(f"💰 Total Prescription Cost: ₹{total_cost}")
 
-        # DOCX Generation Only
+        # Prescription Generation
         if st.session_state.get('show_pdf', False) and st.session_state.get('prescription'):
             st.markdown("---")
-            st.subheader("📄 Generate Prescription Document")
+            st.subheader("📄 Download Prescription")
             
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-            docx_file = generate_simple_prescription_docx(
-                st.session_state['prescription'], "Dr Danish", 
-                st.session_state['patient_name'], st.session_state['age'], 
-                st.session_state['gender'], st.session_state['advice'], 
-                st.session_state['rx_table'], [], st.session_state.get('dosages', {})
-            )
-            st.download_button(
-                label="📄 Download Prescription (DOCX)",
-                data=docx_file,
-                file_name=f"RX_{st.session_state['patient_name'].replace(' ', '_')}_{timestamp}.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                type="primary"
-            )
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Text format
+                text_file = generate_prescription_text(
+                    st.session_state['prescription'], "Dr Danish", 
+                    st.session_state['patient_name'], st.session_state['age'], 
+                    st.session_state['gender'], st.session_state['advice'], 
+                    st.session_state['rx_table'], [], st.session_state.get('dosages', {})
+                )
+                st.download_button(
+                    label="📄 Download as Text",
+                    data=text_file,
+                    file_name=f"RX_{st.session_state['patient_name'].replace(' ', '_')}_{timestamp}.txt",
+                    mime="text/plain",
+                    type="primary"
+                )
+            
+            with col2:
+                # HTML format
+                html_file = generate_prescription_html(
+                    st.session_state['prescription'], "Dr Danish", 
+                    st.session_state['patient_name'], st.session_state['age'], 
+                    st.session_state['gender'], st.session_state['advice'], 
+                    st.session_state['rx_table'], [], st.session_state.get('dosages', {})
+                )
+                st.download_button(
+                    label="🌐 Download as HTML",
+                    data=html_file,
+                    file_name=f"RX_{st.session_state['patient_name'].replace(' ', '_')}_{timestamp}.html",
+                    mime="text/html",
+                    type="secondary"
+                )
 
     # --- Spectacle Inventory Tab ---
     with tab2:
