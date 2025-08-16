@@ -1,54 +1,53 @@
-# My Streamlit App
+# 🔍 MauEyeCare Optical Center
 
-This is a simple Streamlit application designed to demonstrate the capabilities of Streamlit for building interactive web applications.
+## AI-Powered Eye Care Management System
 
-## Project Structure
+**Live Demo**: [https://maueyecare.streamlit.app](https://maueyecare.streamlit.app)
 
-```
-my-streamlit-app
-├── src
-│   ├── app.py          # Main entry point of the Streamlit application
-│   └── utils
-│       └── __init__.py # Package for utility functions
-├── requirements.txt     # List of dependencies
-└── README.md            # Project documentation
-```
+### 🎯 Features
+- **Patient Management**: Complete patient records with medical history
+- **Digital Prescriptions**: PDF generation with professional formatting
+- **AI Agent Integration**: LangGraph-powered automation tools
+- **Inventory Management**: Real-time stock tracking and market updates
+- **Medical Tests**: Blood pressure, sugar, eye examinations tracking
+- **Market Data Sync**: Automated inventory updates from market sources
 
-## Installation
+### 🚀 Quick Start
+1. Visit the live app: [https://maueyecare.streamlit.app](https://maueyecare.streamlit.app)
+2. Add a new patient in the "Prescription & Patient" tab
+3. Generate prescriptions with PDF download
+4. Explore AI agent tools for automation
+5. Manage inventory in real-time
 
-To get started with this project, you need to have Python installed on your machine. Follow these steps to set up the project:
+### 🛠️ Local Development
+```bash
+# Clone repository
+git clone https://github.com/yourusername/maueyecare.git
+cd maueyecare/my-streamlit-app
 
-1. Clone the repository:
-   ```
-   git clone <repository-url>
-   cd my-streamlit-app
-   ```
+# Install dependencies
+pip install -r requirements.txt
 
-2. Create a virtual environment (optional but recommended):
-   ```
-   python -m venv venv
-   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-   ```
-
-3. Install the required dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-
-## Running the Application
-
-To run the Streamlit application, execute the following command:
-
-```
+# Run application
 streamlit run src/app.py
 ```
 
-This will start the Streamlit server and open the application in your default web browser.
+### 📋 Tech Stack
+- **Frontend**: Streamlit
+- **Backend**: Python, SQLite
+- **AI**: LangGraph, LangChain
+- **PDF**: FPDF2
+- **Deployment**: Streamlit Cloud
 
-## Contributing
+### 🔧 Configuration
+- Database: SQLite (auto-created)
+- Port: 8501 (default)
+- AI Features: LangGraph agents with specialized tools
 
-If you would like to contribute to this project, please fork the repository and submit a pull request with your changes.
+### 📞 Support
+- **Documentation**: See DOCUMENTATION.md
+- **Issues**: GitHub Issues
+- **Contact**: info@maueyeycare.com
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+---
+*Built with ❤️ for better eye care management*
