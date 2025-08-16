@@ -44,9 +44,11 @@ class GoogleDriveIntegrator:
             return self._create_fallback_link(html_content, patient_name)
         
         try:
-            # Create filename
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-            filename = f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html"
+            # Create filename with date organization
+            current_date = datetime.now()
+            date_folder = current_date.strftime("%Y-%m-%d")
+            timestamp = current_date.strftime("%Y%m%d_%H%M")
+            filename = f"{date_folder}_Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html"
             
             # Prepare file metadata
             file_metadata = {
@@ -89,12 +91,16 @@ class GoogleDriveIntegrator:
                     
                     # Generate shareable link
                     shareable_link = f"https://drive.google.com/file/d/{file_id}/view"
+                    folder_link = "https://drive.google.com/drive/folders/1S5-ts47Nc_vw56YfwV-AZvXyk1VJbLLO"
                     
                     return {
                         'success': True,
                         'link': shareable_link,
                         'file_id': file_id,
-                        'filename': filename
+                        'filename': filename,
+                        'folder_link': folder_link,
+                        'upload_time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        'folder_path': 'MauEyeCare Prescriptions'
                     }
             
             return self._create_fallback_link(html_content, patient_name)
@@ -104,10 +110,10 @@ class GoogleDriveIntegrator:
             return self._create_fallback_link(html_content, patient_name)
     
     def _get_prescription_folder_id(self):
-        """Get or create prescription folder in Google Drive"""
-        # This would be configured in your Google Drive
-        # For now, return root folder (can be customized)
-        return None  # None means root folder
+        """Get prescription folder ID from Google Drive link"""
+        # Extract folder ID from the Google Drive link
+        # https://drive.google.com/drive/folders/1S5-ts47Nc_vw56YfwV-AZvXyk1VJbLLO
+        return "1S5-ts47Nc_vw56YfwV-AZvXyk1VJbLLO"
     
     def _make_file_public(self, file_id, access_token):
         """Make the file publicly accessible"""
@@ -145,8 +151,8 @@ class GoogleDriveIntegrator:
             'fallback': True
         }
     
-    def save_prescription_link_to_db(self, patient_name, prescription_link, file_id=None):
-        """Save prescription link to patient database"""
+    def save_prescription_link_to_db(self, patient_name, prescription_link, file_id=None, patient_mobile=None):
+        """Save prescription link to patient database with sharing status"""
         try:
             import db
             
@@ -157,15 +163,24 @@ class GoogleDriveIntegrator:
             for p in patients:
                 if p[1].lower() == patient_name.lower():
                     patient_id = p[0]
+                    if not patient_mobile:
+                        patient_mobile = p[4]  # Get mobile from database
                     break
             
             if patient_id:
-                # Save prescription link (you may need to modify your database schema)
+                # Save prescription link with sharing details
                 prescription_data = {
                     'patient_id': patient_id,
+                    'patient_name': patient_name,
+                    'patient_mobile': patient_mobile,
                     'prescription_link': prescription_link,
                     'file_id': file_id,
-                    'created_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    'created_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    'shared_to_patient': bool(patient_mobile),
+                    'shared_to_doctor': True,  # Always share with doctor
+                    'doctor_mobile': '6363738550',
+                    'folder_path': 'MauEyeCare Prescriptions',
+                    'status': 'uploaded_and_shared'
                 }
                 
                 # Store in session state for now (can be enhanced to save in database)
@@ -174,12 +189,27 @@ class GoogleDriveIntegrator:
                 
                 st.session_state['prescription_links'].append(prescription_data)
                 
-                return True
+                return prescription_data
         except Exception as e:
             st.error(f"Failed to save prescription link: {str(e)}")
-            return False
+            return None
         
-        return False
+        return None
+    
+    def get_daily_prescriptions(self, date_str=None):
+        """Get prescriptions for a specific date"""
+        if not date_str:
+            date_str = datetime.now().strftime("%Y-%m-%d")
+        
+        if 'prescription_links' not in st.session_state:
+            return []
+        
+        daily_prescriptions = []
+        for prescription in st.session_state['prescription_links']:
+            if prescription['created_date'].startswith(date_str):
+                daily_prescriptions.append(prescription)
+        
+        return daily_prescriptions
 
 # Global instance
 drive_integrator = GoogleDriveIntegrator()

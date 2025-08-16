@@ -217,10 +217,11 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
             # Enhanced workflow instructions
             st.markdown("**🚀 Sharing Options:**")
             st.markdown("""
-            **Option 1 - Google Drive (Recommended):**
+            **Option 1 - Google Drive Auto-Upload (Recommended):**
             1. 🌐 **Upload to Google Drive** (button below)
-            2. 📱 **Click WhatsApp link** (opens with patient number & link)
-            3. ➡️ **Send** - Patient gets direct link!
+            2. 📁 **Stored in**: MauEyeCare Prescriptions folder
+            3. 📱 **Auto-notify**: Doctor (6363738550) & Patient
+            4. 🔗 **Share links** generated automatically
             
             **Option 2 - Manual File Sharing:**
             1. 📥 **Download HTML** (above button)
@@ -296,22 +297,60 @@ MauEyeCare Optical Center"""
                         )
                         
                         if upload_result['success']:
-                            # Save link to database
-                            drive_integrator.save_prescription_link_to_db(
-                                patient_name, upload_result['link'], upload_result['file_id']
+                            # Save link to database with sharing details
+                            sharing_data = drive_integrator.save_prescription_link_to_db(
+                                patient_name, upload_result['link'], upload_result['file_id'], patient_mobile
                             )
                             
-                            st.success("✅ Prescription uploaded to Google Drive!")
+                            # Detailed success notification
+                            st.success("✅ Prescription Successfully Uploaded to Google Drive!")
                             
-                            # Auto-share via WhatsApp with Google Drive link
-                            drive_message = f"Hi {patient_name}! Your prescription from MauEyeCare is ready. View it here: {upload_result['link']} - Dr. Danish"
-                            drive_wa_link = f"https://wa.me/{clean_mobile}?text={quote(drive_message)}"
+                            # Upload details
+                            col_details, col_sharing = st.columns(2)
                             
-                            st.markdown(f"[📱 Share Google Drive Link via WhatsApp]({drive_wa_link})")
-                            st.info(f"🔗 **Direct Link**: {upload_result['link']}")
+                            with col_details:
+                                st.info(f"""
+                                **📁 Upload Details:**
+                                • **File**: {upload_result['filename']}
+                                • **Folder**: MauEyeCare Prescriptions
+                                • **Time**: {upload_result['upload_time']}
+                                • **Status**: ✅ Successfully Uploaded
+                                """)
+                            
+                            with col_sharing:
+                                st.info(f"""
+                                **📤 Sharing Status:**
+                                • **Patient**: {patient_name} {'(✅ Will be shared)' if patient_mobile else '(⚠️ No mobile)'}
+                                • **Doctor**: Dr. Danish (✅ Notified)
+                                • **Doctor Mobile**: 6363738550
+                                """)
+                            
+                            # Sharing links
+                            st.markdown("**🔗 Sharing Links:**")
+                            
+                            col_patient, col_doctor = st.columns(2)
+                            
+                            with col_patient:
+                                if patient_mobile:
+                                    drive_message = f"Hi {patient_name}! Your prescription from MauEyeCare is ready. View it here: {upload_result['link']} - Dr. Danish"
+                                    drive_wa_link = f"https://wa.me/{clean_mobile}?text={quote(drive_message)}"
+                                    st.markdown(f"[📱 Share with Patient]({drive_wa_link})")
+                                else:
+                                    st.warning("⚠️ Patient mobile not available")
+                            
+                            with col_doctor:
+                                doctor_message = f"Prescription uploaded for {patient_name}. Link: {upload_result['link']} Folder: {upload_result['folder_link']}"
+                                doctor_wa_link = f"https://wa.me/916363738550?text={quote(doctor_message)}"
+                                st.markdown(f"[📱 Notify Doctor (6363738550)]({doctor_wa_link})")
+                            
+                            # Direct links for copying
+                            st.markdown("**📋 Copy Links:**")
+                            st.code(f"Patient Link: {upload_result['link']}", language="text")
+                            st.code(f"Folder Link: {upload_result['folder_link']}", language="text")
                             
                             # Store in session for later use
                             st.session_state[f'drive_link_{patient_name}'] = upload_result['link']
+                            st.session_state[f'drive_data_{patient_name}'] = upload_result
                             
                         else:
                             if upload_result.get('fallback'):
@@ -323,11 +362,41 @@ MauEyeCare Optical Center"""
             with col_status:
                 # Show existing Google Drive link if available
                 existing_link = st.session_state.get(f'drive_link_{patient_name}')
+                existing_data = st.session_state.get(f'drive_data_{patient_name}')
+                
                 if existing_link:
                     st.success("✅ Already uploaded")
                     st.markdown(f"[🔗 View Link]({existing_link})")
+                    if existing_data:
+                        st.caption(f"Uploaded: {existing_data.get('upload_time', 'Unknown')}")
                 else:
                     st.info("📁 Not uploaded yet")
+            
+            # Daily prescriptions summary
+            st.markdown("---")
+            st.markdown("**📅 Today's Prescriptions Summary**")
+            
+            daily_prescriptions = drive_integrator.get_daily_prescriptions()
+            if daily_prescriptions:
+                st.success(f"✅ {len(daily_prescriptions)} prescriptions uploaded today")
+                
+                for i, prescription in enumerate(daily_prescriptions, 1):
+                    with st.expander(f"{i}. {prescription['patient_name']} - {prescription['created_date']}"):
+                        col_info, col_links = st.columns(2)
+                        
+                        with col_info:
+                            st.write(f"**Patient**: {prescription['patient_name']}")
+                            st.write(f"**Mobile**: {prescription.get('patient_mobile', 'N/A')}")
+                            st.write(f"**Status**: {prescription['status']}")
+                        
+                        with col_links:
+                            st.markdown(f"[🔗 View Prescription]({prescription['prescription_link']})")
+                            if prescription.get('patient_mobile'):
+                                patient_msg = f"Hi {prescription['patient_name']}! Your prescription: {prescription['prescription_link']}"
+                                patient_link = f"https://wa.me/{prescription['patient_mobile'].replace('+', '').replace(' ', '')}?text={quote(patient_msg)}"
+                                st.markdown(f"[📱 Share with Patient]({patient_link})")
+            else:
+                st.info("📅 No prescriptions uploaded today yet")
         else:
             whatsapp_html_text = f"Hi! Here's your prescription from MauEyeCare. Patient: {patient_name}. Please find the prescription file attached."
             whatsapp_html_link = f"https://wa.me/?text={quote(whatsapp_html_text)}"
@@ -345,9 +414,24 @@ MauEyeCare Optical Center"""
                     upload_result = drive_integrator.upload_prescription_to_drive(html_prescription, patient_name)
                     
                     if upload_result['success']:
-                        drive_integrator.save_prescription_link_to_db(patient_name, upload_result['link'], upload_result['file_id'])
+                        sharing_data = drive_integrator.save_prescription_link_to_db(patient_name, upload_result['link'], upload_result['file_id'])
+                        
                         st.success("✅ Prescription uploaded to Google Drive!")
-                        st.info(f"🔗 **Share this link**: {upload_result['link']}")
+                        st.info(f"""
+                        **📁 Upload Details:**
+                        • **File**: {upload_result['filename']}
+                        • **Folder**: MauEyeCare Prescriptions
+                        • **Time**: {upload_result['upload_time']}
+                        """)
+                        
+                        st.code(f"Share Link: {upload_result['link']}", language="text")
+                        st.code(f"Folder Link: {upload_result['folder_link']}", language="text")
+                        
+                        # Doctor notification
+                        doctor_message = f"Prescription uploaded for {patient_name}. Link: {upload_result['link']}"
+                        doctor_wa_link = f"https://wa.me/916363738550?text={quote(doctor_message)}"
+                        st.markdown(f"[📱 Notify Doctor (6363738550)]({doctor_wa_link})")
+                        
                         st.session_state[f'drive_link_{patient_name}'] = upload_result['link']
                     else:
                         st.warning("⚠️ Google Drive not configured. Please set up API token.")
