@@ -53,10 +53,45 @@ def create_shareable_link(prescription_data, patient_name):
         "text": prescription_text
     }
 
+def normalize_indian_mobile(mobile):
+    """Normalize Indian mobile number with +91 prefix"""
+    if not mobile:
+        return mobile
+    
+    # Remove all spaces and special characters except +
+    mobile = mobile.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+    
+    # If already has +91, return as is
+    if mobile.startswith('+91'):
+        return mobile
+    
+    # If starts with 91, add +
+    if mobile.startswith('91') and len(mobile) == 12:
+        return '+' + mobile
+    
+    # If 10 digit number, add +91
+    if len(mobile) == 10 and mobile.isdigit():
+        return '+91' + mobile
+    
+    return mobile
+
 def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
     """Render prescription sharing UI"""
     
+    # Extract mobile from prescription data if not provided
+    if not patient_mobile and prescription_data.get('patient_mobile'):
+        patient_mobile = prescription_data['patient_mobile']
+    
+    # Normalize mobile number with +91 prefix
+    if patient_mobile:
+        patient_mobile = normalize_indian_mobile(patient_mobile)
+    
     st.subheader("📤 Share Prescription with Patient")
+    
+    if patient_mobile:
+        st.success(f"📱 Patient Mobile: {patient_mobile}")
+    else:
+        st.warning("📱 No mobile number available - sharing options limited")
     
     # Create sharing links
     sharing_links = create_shareable_link(prescription_data, patient_name)
@@ -67,7 +102,9 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
     with col1:
         st.markdown("**📱 WhatsApp**")
         if patient_mobile:
-            whatsapp_direct = f"https://wa.me/{patient_mobile.replace('+', '').replace(' ', '')}?text={quote(sharing_links['text'])}"
+            # Clean mobile number for WhatsApp URL
+            clean_mobile = patient_mobile.replace('+', '').replace(' ', '').replace('-', '')
+            whatsapp_direct = f"https://wa.me/{clean_mobile}?text={quote(sharing_links['text'])}"
             st.markdown(f"[Send to {patient_mobile}]({whatsapp_direct})")
         st.markdown(f"[Share via WhatsApp]({sharing_links['whatsapp']})")
     
@@ -92,11 +129,12 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
         qr_data = sharing_links['text']
         qr_url = generate_qr_code_fallback(qr_data)
         st.markdown(f'<img src="{qr_url}" alt="Prescription QR Code" style="max-width: 200px;">', unsafe_allow_html=True)
-        st.caption("Scan to view prescription")
+        st.caption("Patient can scan with phone camera to view prescription instantly")
     
     with col2:
-        st.markdown("**📋 Copy Text**")
+        st.markdown("**📋 Copy Text (Alternative)**")
         st.text_area("Prescription Text (Copy & Share)", sharing_links['text'], height=200, key=f"prescription_text_{patient_name.replace(' ', '_')}")
+        st.caption("Copy this text and paste in any messaging app")
     
     # Quick actions
     st.markdown("---")
@@ -121,9 +159,10 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
         if st.button("🖨️ Print Instructions", key=f"print_btn_{patient_name.replace(' ', '_')}"):
             st.info("Use browser's print function (Ctrl+P) to print the prescription")
     
-    # Mobile-friendly HTML prescription download with WhatsApp sharing
+    # Mobile-friendly HTML prescription download with WhatsApp sharing (Priority)
     st.markdown("---")
-    st.markdown("**📱 Mobile Sharing (HTML Prescription)**")
+    st.markdown("**📱 Recommended: HTML Prescription for Mobile Sharing**")
+    st.info("✅ HTML format works best on mobile devices and can be easily shared via WhatsApp")
     
     # Generate HTML prescription
     html_prescription = create_patient_portal_link(prescription_data, patient_name)
@@ -131,20 +170,29 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
     col1, col2 = st.columns(2)
     with col1:
         st.download_button(
-            label="📥 Download HTML Prescription",
+            label="📥 Download HTML Prescription (Recommended)",
             data=html_prescription,
             file_name=f"prescription_{patient_name.replace(' ', '_')}.html",
             mime="text/html",
-            key=f"download_html_{patient_name.replace(' ', '_')}"
+            key=f"download_html_{patient_name.replace(' ', '_')}",
+            type="primary"
         )
-        st.caption("Download and share via WhatsApp on mobile")
+        st.caption("✅ Best for mobile sharing - works on all devices")
     
     with col2:
         # Create WhatsApp sharing text for HTML file
-        whatsapp_html_text = f"Hi! Here's your prescription from MauEyeCare. Please download the attached HTML file to view complete details. Patient: {patient_name}"
-        whatsapp_html_link = f"https://wa.me/?text={quote(whatsapp_html_text)}"
-        st.markdown(f"[📱 Share HTML via WhatsApp]({whatsapp_html_link})")
-        st.caption("Send WhatsApp message, then attach downloaded HTML file")
+        if patient_mobile:
+            whatsapp_html_text = f"Hi {patient_name}! Your prescription from MauEyeCare is ready. I'm sending you the prescription file. Please open it on your phone to view all details. - Dr. Danish"
+            # Clean mobile number for WhatsApp URL
+            clean_mobile = patient_mobile.replace('+', '').replace(' ', '').replace('-', '')
+            whatsapp_direct_link = f"https://wa.me/{clean_mobile}?text={quote(whatsapp_html_text)}"
+            st.markdown(f"[📱 Send to {patient_mobile}]({whatsapp_direct_link})")
+            st.caption("Direct WhatsApp to patient - attach HTML file after sending message")
+        else:
+            whatsapp_html_text = f"Hi! Here's your prescription from MauEyeCare. Patient: {patient_name}. Please find the prescription file attached."
+            whatsapp_html_link = f"https://wa.me/?text={quote(whatsapp_html_text)}"
+            st.markdown(f"[📱 Share via WhatsApp]({whatsapp_html_link})")
+            st.caption("Send WhatsApp message, then attach downloaded HTML file")
 
 def create_patient_portal_link(prescription_data, patient_name):
     """Create a mobile-friendly patient portal view"""

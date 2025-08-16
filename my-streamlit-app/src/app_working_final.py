@@ -114,7 +114,17 @@ def main():
                 gender = st.selectbox("Gender", ["Male", "Female", "Other"])
             
             with col2:
-                contact = st.text_input("Mobile Number")
+                # Auto-populate mobile number based on name
+                auto_mobile = ""
+                if first_name and last_name:
+                    full_name = f"{first_name} {last_name}".strip()
+                    patients = db.get_patients()
+                    for p in patients:
+                        if p[1].lower() == full_name.lower():
+                            auto_mobile = p[4]
+                            break
+                
+                contact = st.text_input("Mobile Number", value=auto_mobile)
                 issue_options = ["Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Other"]
                 patient_issue = st.selectbox("Patient Issue/Complaint", issue_options)
                 advice_options = ["Spectacle Prescription", "Regular Eye Checkup", "Dry Eye Treatment", "Other"]
@@ -149,7 +159,7 @@ def main():
             # Medicine selection placeholder
             st.markdown("**💊 Medicine Selection**")
             st.info("💡 Medicine selection available after saving patient details")
-            st.info("🌐 Cloud-compatible version - Downloads as Text/HTML format")
+            st.info("🌐 Cloud-compatible version - HTML format recommended for mobile sharing")
             
             prescription = st.session_state.get('prescription', {})
             dosages = st.session_state.get('dosages', {})
@@ -231,7 +241,7 @@ def main():
                     )
                 
                 with col2:
-                    # HTML format
+                    # HTML format (recommended for sharing)
                     html_file = generate_prescription_html(
                         st.session_state['prescription'], "Dr Danish", 
                         st.session_state['patient_name'], st.session_state['age'], 
@@ -239,11 +249,12 @@ def main():
                         st.session_state['rx_table'], [], st.session_state.get('dosages', {})
                     )
                     st.download_button(
-                        label="🌐 Download as HTML",
+                        label="🌐 Download as HTML (Recommended)",
                         data=html_file,
                         file_name=f"RX_{st.session_state['patient_name'].replace(' ', '_')}_{timestamp}.html",
                         mime="text/html"
                     )
+                    st.caption("✅ Best for mobile sharing via WhatsApp")
                 
                 with col3:
                     # Patient portal format
@@ -264,19 +275,29 @@ def main():
                     )
             
             with share_tab:
-                # Sharing options
+                # Get mobile number from database if not in session
+                patient_mobile = st.session_state.get('patient_mobile', '')
+                if not patient_mobile and st.session_state.get('patient_name'):
+                    patients = db.get_patients()
+                    for p in patients:
+                        if p[1].lower() == st.session_state['patient_name'].lower():
+                            patient_mobile = p[4]
+                            st.session_state['patient_mobile'] = patient_mobile
+                            break
+                
                 prescription_data = {
                     'prescription': st.session_state['prescription'],
                     'rx_table': st.session_state['rx_table'],
                     'advice': st.session_state['advice'],
                     'dosages': st.session_state.get('dosages', {}),
-                    'date': datetime.datetime.now().strftime("%d/%m/%Y")
+                    'date': datetime.datetime.now().strftime("%d/%m/%Y"),
+                    'patient_mobile': patient_mobile
                 }
                 
                 render_sharing_options(
                     prescription_data,
                     st.session_state['patient_name'],
-                    st.session_state.get('patient_mobile', '')
+                    patient_mobile
                 )
 
     # --- Spectacle Inventory Tab ---
@@ -579,19 +600,40 @@ def main():
                 'date': datetime.datetime.now().strftime("%d/%m/%Y")
             }
             
-            # Patient info display
+            # Patient info display with mobile lookup
+            patient_mobile = st.session_state.get('patient_mobile', '')
+            if not patient_mobile and st.session_state.get('patient_name'):
+                patients = db.get_patients()
+                for p in patients:
+                    if p[1].lower() == st.session_state['patient_name'].lower():
+                        patient_mobile = p[4]
+                        st.session_state['patient_mobile'] = patient_mobile
+                        break
+            
             col1, col2 = st.columns(2)
             with col1:
                 st.info(f"👤 **Patient:** {st.session_state['patient_name']}")
             with col2:
-                if st.session_state.get('patient_mobile'):
-                    st.info(f"📱 **Mobile:** {st.session_state['patient_mobile']}")
+                if patient_mobile:
+                    st.info(f"📱 **Mobile:** {patient_mobile}")
+                else:
+                    st.warning("📱 **Mobile:** Not available")
             
-            # Sharing options
+            # Get mobile number from database if not available
+            patient_mobile = st.session_state.get('patient_mobile', '')
+            if not patient_mobile and st.session_state.get('patient_name'):
+                patients = db.get_patients()
+                for p in patients:
+                    if p[1].lower() == st.session_state['patient_name'].lower():
+                        patient_mobile = p[4]
+                        break
+            
+            prescription_data['patient_mobile'] = patient_mobile
+            
             render_sharing_options(
                 prescription_data,
                 st.session_state['patient_name'],
-                st.session_state.get('patient_mobile', '')
+                patient_mobile
             )
             
             # Additional sharing features
@@ -624,12 +666,14 @@ def main():
             # Instructions
             st.markdown("---")
             st.info("""
-            **📝 How to share:**
-            1. **WhatsApp/SMS**: Click the link to open your messaging app
-            2. **Email**: Click to open your email client with pre-filled content
+            **📝 How to share (Mobile-Friendly):**
+            1. **Download HTML**: Best format for mobile sharing via WhatsApp
+            2. **WhatsApp Direct**: Click link to send message, then attach HTML file
             3. **QR Code**: Patient scans with phone camera to view prescription
-            4. **Copy Text**: Copy the text and paste anywhere
-            5. **Patient Portal**: Download HTML file and send to patient
+            4. **Copy Text**: Copy and paste in any messaging app
+            5. **Email**: Send HTML file as attachment
+            
+            💡 **For Mobile Doctors**: Download HTML prescription and manually attach to WhatsApp message
             """)
         
         else:
