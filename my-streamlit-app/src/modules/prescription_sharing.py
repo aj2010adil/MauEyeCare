@@ -283,6 +283,19 @@ MauEyeCare Optical Center"""
             st.markdown("---")
             st.markdown("**🌐 Google Drive Auto-Upload & Share**")
             
+            # Test connection button
+            if st.button("🔍 Test Google Drive Connection", key=f"test_drive_{key_suffix}"):
+                with st.spinner("Testing Google Drive connection..."):
+                    test_result = drive_integrator.test_drive_connection()
+                
+                if test_result['success']:
+                    st.success("✅ Google Drive connection successful!")
+                    if 'user' in test_result:
+                        st.info(f"👤 Connected as: {test_result['user'].get('displayName', 'Unknown')}")
+                else:
+                    st.error(f"❌ Connection failed: {test_result['error']}")
+                    st.error(f"Details: {test_result.get('details', 'No details')}")
+            
             col_drive, col_status = st.columns([2, 1])
             
             with col_drive:
@@ -354,10 +367,14 @@ MauEyeCare Optical Center"""
                             
                         else:
                             if upload_result.get('fallback'):
-                                st.warning("⚠️ Google Drive not configured. Using fallback method.")
-                                st.info("💡 Configure Google Drive API token for automatic uploads")
+                                st.warning("⚠️ Google Drive upload failed. Using fallback method.")
+                                st.error(f"Error: {upload_result.get('error', 'Unknown error')}")
+                                if upload_result.get('details'):
+                                    st.error(f"Details: {upload_result['details']}")
+                                st.info("💡 Use 'Test Google Drive Connection' button to diagnose issues")
                             else:
                                 st.error("❌ Failed to upload to Google Drive")
+                                st.error(f"Error: {upload_result.get('error', 'Unknown error')}")
             
             with col_status:
                 # Show existing Google Drive link if available
@@ -434,7 +451,11 @@ MauEyeCare Optical Center"""
                         
                         st.session_state[f'drive_link_{patient_name}'] = upload_result['link']
                     else:
-                        st.warning("⚠️ Google Drive not configured. Please set up API token.")
+                        st.error("❌ Google Drive upload failed")
+                        st.error(f"Error: {upload_result.get('error', 'Unknown error')}")
+                        if upload_result.get('details'):
+                            st.error(f"Details: {upload_result['details']}")
+                        st.info("💡 Use 'Test Google Drive Connection' button to diagnose issues")
 
 def create_patient_portal_link(prescription_data, patient_name):
     """Create a mobile-friendly patient portal view"""

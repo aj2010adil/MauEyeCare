@@ -36,12 +36,61 @@ class GoogleDriveIntegrator:
             st.warning(f"Google Drive API key not configured: {str(e)}")
             return None
     
+    def test_drive_connection(self):
+        """Test Google Drive API connection"""
+        access_token = self.get_access_token()
+        
+        if not access_token:
+            return {
+                'success': False,
+                'error': 'No access token available',
+                'details': 'Check if GOOGLE_DRIVE_TOKEN is set in secrets'
+            }
+        
+        try:
+            # Test API connection
+            headers = {
+                'Authorization': f'Bearer {access_token}',
+                'Content-Type': 'application/json'
+            }
+            
+            response = requests.get(
+                'https://www.googleapis.com/drive/v3/about?fields=user',
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                user_info = response.json()
+                return {
+                    'success': True,
+                    'user': user_info.get('user', {}),
+                    'token_valid': True
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': f'API Error: {response.status_code}',
+                    'details': response.text
+                }
+                
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'Connection failed: {str(e)}',
+                'details': 'Check internet connection and API key'
+            }
+    
     def upload_prescription_to_drive(self, html_content, patient_name, prescription_id=None):
         """Upload HTML prescription to Google Drive and return shareable link"""
         
         access_token = self.get_access_token()
         if not access_token:
-            return self._create_fallback_link(html_content, patient_name)
+            return {
+                'success': False,
+                'error': 'No access token',
+                'fallback': True,
+                **self._create_fallback_link(html_content, patient_name)
+            }
         
         try:
             # Create filename with date organization
@@ -49,6 +98,11 @@ class GoogleDriveIntegrator:
             date_folder = current_date.strftime("%Y-%m-%d")
             timestamp = current_date.strftime("%Y%m%d_%H%M")
             filename = f"{date_folder}_Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html"
+            
+            # Debug info
+            st.info(f"🔍 Debug: Attempting upload with token: {access_token[:20]}...")
+            st.info(f"📁 Target folder ID: {self._get_prescription_folder_id()}")
+            st.info(f"📄 Filename: {filename}")
             
             # Prepare file metadata
             file_metadata = {
@@ -103,11 +157,22 @@ class GoogleDriveIntegrator:
                         'folder_path': 'MauEyeCare Prescriptions'
                     }
             
-            return self._create_fallback_link(html_content, patient_name)
+            return {
+                'success': False,
+                'error': 'Upload failed',
+                'details': f'Status: {response.status_code}',
+                'fallback': True,
+                **self._create_fallback_link(html_content, patient_name)
+            }
             
         except Exception as e:
             st.error(f"Google Drive upload failed: {str(e)}")
-            return self._create_fallback_link(html_content, patient_name)
+            return {
+                'success': False,
+                'error': str(e),
+                'fallback': True,
+                **self._create_fallback_link(html_content, patient_name)
+            }
     
     def _get_prescription_folder_id(self):
         """Get prescription folder ID from Google Drive link"""
