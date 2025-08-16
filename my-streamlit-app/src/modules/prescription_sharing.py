@@ -167,7 +167,10 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
     # Mobile-friendly HTML prescription download with WhatsApp sharing (Priority)
     st.markdown("---")
     st.markdown("**📱 Recommended: HTML Prescription for Mobile Sharing**")
-    st.info("✅ HTML format works best on mobile devices and can be easily shared via WhatsApp")
+    if patient_mobile:
+        st.success(f"✅ HTML format works best on mobile devices. Patient mobile {patient_mobile} will auto-populate in sharing apps.")
+    else:
+        st.info("✅ HTML format works best on mobile devices and can be easily shared via WhatsApp")
     
     # Generate HTML prescription
     html_prescription = create_patient_portal_link(prescription_data, patient_name)
@@ -182,22 +185,39 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
             key=f"download_html_{key_suffix}",
             type="primary"
         )
-        st.caption("✅ Best for mobile sharing - works on all devices")
+        if patient_mobile:
+            st.caption(f"✅ Best for mobile sharing - patient mobile {patient_mobile} included")
+        else:
+            st.caption("✅ Best for mobile sharing - works on all devices")
     
     with col2:
-        # Create WhatsApp sharing text for HTML file
+        # Enhanced sharing with patient mobile auto-populated
         if patient_mobile:
-            whatsapp_html_text = f"Hi {patient_name}! Your prescription from MauEyeCare is ready. I'm sending you the prescription file. Please open it on your phone to view all details. - Dr. Danish"
             # Clean mobile number for WhatsApp URL
             clean_mobile = patient_mobile.replace('+', '').replace(' ', '').replace('-', '')
+            
+            # WhatsApp sharing
+            whatsapp_html_text = f"Hi {patient_name}! Your prescription from MauEyeCare is ready. I'm sending you the prescription file. Please open it on your phone to view all details. - Dr. Danish"
             whatsapp_direct_link = f"https://wa.me/{clean_mobile}?text={quote(whatsapp_html_text)}"
-            st.markdown(f"[📱 Send to {patient_mobile}]({whatsapp_direct_link})")
-            st.caption("Direct WhatsApp to patient - attach HTML file after sending message")
+            
+            col_wa, col_sms = st.columns(2)
+            with col_wa:
+                st.markdown(f"[📱 WhatsApp to {patient_mobile}]({whatsapp_direct_link})")
+                st.caption("✅ Opens WhatsApp with patient number")
+            
+            with col_sms:
+                # SMS sharing with patient mobile
+                sms_text = f"Hi {patient_name}! Your prescription from MauEyeCare is ready. Please check the attached file. - Dr. Danish"
+                sms_link = f"sms:{patient_mobile}?body={quote(sms_text)}"
+                st.markdown(f"[💬 SMS to {patient_mobile}]({sms_link})")
+                st.caption("✅ Opens SMS with patient number")
+            
+            st.success("✅ Patient mobile auto-populated in sharing links")
         else:
             whatsapp_html_text = f"Hi! Here's your prescription from MauEyeCare. Patient: {patient_name}. Please find the prescription file attached."
             whatsapp_html_link = f"https://wa.me/?text={quote(whatsapp_html_text)}"
             st.markdown(f"[📱 Share via WhatsApp]({whatsapp_html_link})")
-            st.caption("Send WhatsApp message, then attach downloaded HTML file")
+            st.warning("⚠️ No patient mobile - you'll need to select contact manually")
 
 def create_patient_portal_link(prescription_data, patient_name):
     """Create a mobile-friendly patient portal view"""
