@@ -106,6 +106,10 @@ dmypy.json
 src/perplexity_config.py
 my-streamlit-app/src/perplexity_config.py
 
+# Service Account Keys (CRITICAL: Keep secure)
+service-account-key.json
+*.json
+
 # Config files with sensitive data
 config.py
 perplexity_config.py
