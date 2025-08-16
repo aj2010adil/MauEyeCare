@@ -187,9 +187,10 @@ class GoogleDriveIntegrator:
             filename = f"{date_folder}_Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html"
             
             # Debug info
-            st.info(f"🔍 Debug: Attempting upload with token: {access_token[:20]}...")
+            st.info(f"🔍 Debug: Attempting upload with token: {access_token[:20] if access_token else 'None'}...")
             st.info(f"📁 Target folder ID: {self._get_prescription_folder_id()}")
             st.info(f"📄 Filename: {filename}")
+            st.info(f"🔗 Upload URL: {self.upload_url}")
             
             # Prepare file metadata
             file_metadata = {
@@ -204,6 +205,9 @@ class GoogleDriveIntegrator:
                 'Content-Type': 'application/json'
             }
             
+            # Debug: Show request details
+            st.info(f"📤 Creating file with metadata: {json.dumps(file_metadata, indent=2)}")
+            
             # First, create the file
             response = requests.post(
                 self.drive_api_url,
@@ -211,8 +215,11 @@ class GoogleDriveIntegrator:
                 data=json.dumps(file_metadata)
             )
             
+            st.info(f"📊 File creation response: {response.status_code} - {response.text[:200]}")
+            
             if response.status_code == 200:
                 file_id = response.json()['id']
+                st.success(f"✅ File created with ID: {file_id}")
                 
                 # Upload content
                 upload_headers = {
@@ -220,11 +227,15 @@ class GoogleDriveIntegrator:
                     'Content-Type': 'text/html'
                 }
                 
+                st.info(f"📤 Uploading content to file ID: {file_id}")
+                
                 upload_response = requests.patch(
                     f"{self.upload_url}/{file_id}?uploadType=media",
                     headers=upload_headers,
                     data=html_content
                 )
+                
+                st.info(f"📊 Upload response: {upload_response.status_code} - {upload_response.text[:200]}")
                 
                 if upload_response.status_code == 200:
                     # Make file publicly accessible
@@ -244,10 +255,13 @@ class GoogleDriveIntegrator:
                         'folder_path': 'MauEyeCare Prescriptions'
                     }
             
+            st.error(f"❌ File creation failed: {response.status_code}")
+            st.error(f"Response: {response.text}")
+            
             return {
                 'success': False,
-                'error': 'Upload failed',
-                'details': f'Status: {response.status_code}',
+                'error': f'File creation failed: {response.status_code}',
+                'details': response.text,
                 'fallback': True,
                 **self._create_fallback_link(html_content, patient_name)
             }
