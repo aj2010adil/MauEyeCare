@@ -7,6 +7,7 @@ from io import BytesIO
 import base64
 from urllib.parse import quote
 import json
+import time
 
 def generate_qr_code_fallback(data):
     """Generate QR code using Google Charts API (cloud compatible)"""
@@ -86,6 +87,10 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
     if patient_mobile:
         patient_mobile = normalize_indian_mobile(patient_mobile)
     
+    # Create unique key suffix
+    unique_id = str(int(time.time() * 1000))[-6:]
+    key_suffix = f"{patient_name.replace(' ', '_')}_{unique_id}"
+    
     st.subheader("📤 Share Prescription with Patient")
     
     if patient_mobile:
@@ -133,7 +138,7 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
     
     with col2:
         st.markdown("**📋 Copy Text (Alternative)**")
-        st.text_area("Prescription Text (Copy & Share)", sharing_links['text'], height=200, key=f"prescription_text_{patient_name.replace(' ', '_')}")
+        st.text_area("Prescription Text (Copy & Share)", sharing_links['text'], height=200, key=f"prescription_text_{key_suffix}")
         st.caption("Copy this text and paste in any messaging app")
     
     # Quick actions
@@ -143,20 +148,20 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        if st.button("📱 Open WhatsApp Web", key=f"whatsapp_btn_{patient_name.replace(' ', '_')}"):
+        if st.button("📱 Open WhatsApp Web", key=f"whatsapp_btn_{key_suffix}"):
             st.markdown(f"[Open WhatsApp]({sharing_links['whatsapp']})")
     
     with col2:
-        if st.button("📧 Open Email Client", key=f"email_btn_{patient_name.replace(' ', '_')}"):
+        if st.button("📧 Open Email Client", key=f"email_btn_{key_suffix}"):
             st.markdown(f"[Open Email]({sharing_links['email']})")
     
     with col3:
-        if st.button("📋 Copy to Clipboard", key=f"copy_btn_{patient_name.replace(' ', '_')}"):
+        if st.button("📋 Copy to Clipboard", key=f"copy_btn_{key_suffix}"):
             st.code(sharing_links['text'])
             st.success("Text ready to copy!")
     
     with col4:
-        if st.button("🖨️ Print Instructions", key=f"print_btn_{patient_name.replace(' ', '_')}"):
+        if st.button("🖨️ Print Instructions", key=f"print_btn_{key_suffix}"):
             st.info("Use browser's print function (Ctrl+P) to print the prescription")
     
     # Mobile-friendly HTML prescription download with WhatsApp sharing (Priority)
@@ -174,7 +179,7 @@ def render_sharing_options(prescription_data, patient_name, patient_mobile=""):
             data=html_prescription,
             file_name=f"prescription_{patient_name.replace(' ', '_')}.html",
             mime="text/html",
-            key=f"download_html_{patient_name.replace(' ', '_')}",
+            key=f"download_html_{key_suffix}",
             type="primary"
         )
         st.caption("✅ Best for mobile sharing - works on all devices")
