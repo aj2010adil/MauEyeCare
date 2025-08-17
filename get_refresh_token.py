@@ -6,9 +6,9 @@ import requests
 from urllib.parse import urlencode
 import webbrowser
 
-# Your OAuth credentials
-CLIENT_ID = "641133812410-phlnghc1fau2gjt3e7m73sm5ec7n0s6v.apps.googleusercontent.com"
-CLIENT_SECRET = "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"
+# Your OAuth credentials - Replace with your actual values
+CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID_HERE"
+CLIENT_SECRET = "YOUR_GOOGLE_CLIENT_SECRET_HERE"
 REDIRECT_URI = "https://maueyecare.streamlit.app"
 
 def get_refresh_token():

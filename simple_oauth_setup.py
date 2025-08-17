@@ -7,10 +7,10 @@ from urllib.parse import urlencode
 import webbrowser
 import json
 
-# Your credentials from the JSON
+# Your credentials from the JSON - Replace with your actual values
 CREDENTIALS = {
-    "client_id": "641133812410-phlnghc1fau2gjt3e7m73sm5ec7n0s6v.apps.googleusercontent.com",
-    "client_secret": "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",
+    "client_id": "YOUR_GOOGLE_CLIENT_ID_HERE",
+    "client_secret": "YOUR_GOOGLE_CLIENT_SECRET_HERE",
     "project_id": "maueyecare"
 }
 
