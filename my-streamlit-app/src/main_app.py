@@ -17,7 +17,7 @@ sys.path.append(os.path.dirname(__file__))
 
 # Core imports
 import db
-from modules.google_drive_integration import GoogleDriveIntegrator
+from modules.google_drive_integration import GoogleDriveIntegrator, drive_integrator
 from modules.whatsapp_utils import send_text_message
 from modules.inventory_utils import get_inventory_dict, add_or_update_inventory, reduce_inventory
 from modules.comprehensive_spectacle_database import COMPREHENSIVE_SPECTACLE_DATABASE
@@ -25,9 +25,8 @@ from modules.comprehensive_medicine_database import COMPREHENSIVE_MEDICINE_DATAB
 from modules.real_spectacle_images import load_spectacle_image
 from modules.simple_camera import show_camera_with_preview, analyze_captured_photo
 
-# Initialize database and integrations
+# Initialize database
 db.init_db()
-drive_integrator = GoogleDriveIntegrator()
 
 def populate_inventory():
     """Populate inventory with spectacles and medicines"""
@@ -102,20 +101,27 @@ def main():
             st.error("📱 WhatsApp: Not Configured")
         
         # Test Google Drive
-        drive_status = drive_integrator.test_drive_connection()
-        if drive_status['success']:
-            st.success("☁️ Google Drive: Connected")
-        else:
-            st.error("☁️ Google Drive: Not Configured")
+        try:
+            drive_status = drive_integrator.test_drive_connection()
+            if drive_status['success']:
+                if drive_status.get('demo'):
+                    st.warning("☁️ Google Drive: Demo Mode")
+                else:
+                    st.success("☁️ Google Drive: Connected")
+            else:
+                st.error("☁️ Google Drive: Not Configured")
+        except Exception as e:
+            st.error(f"☁️ Google Drive: Error - {str(e)}")
 
     # Main tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
         "👥 Patient Registration", 
         "👓 Spectacle Gallery", 
         "💊 Medicine Gallery",
         "📸 AI Camera Analysis",
         "📋 Patient History",
         "📤 Prescription & Sharing",
+        "📦 Inventory Management",
         "🔧 Integration Setup"
     ])
 
@@ -580,73 +586,127 @@ def main():
                     
                     # Upload to Google Drive
                     with st.spinner("📤 Uploading prescription to Google Drive..."):
-                        drive_integrator = GoogleDriveIntegrator()
                         result = drive_integrator.upload_prescription_to_drive(
                             prescription_html, 
                             patient_name
                         )
                     
                     if result['success']:
-                        st.success("✅ Prescription uploaded to Google Drive successfully!")
+                        # Success message with detailed info
+                        st.success("✅ **Prescription uploaded to Google Drive successfully!**")
                         
-                        col1, col2 = st.columns(2)
+                        # Professional file information display
+                        st.markdown("### 📁 Prescription Details")
+                        
+                        col1, col2, col3 = st.columns(3)
+                        
                         with col1:
-                            st.info(f"📁 **File:** {result['filename']}")
-                            st.markdown(f"🔗 **[View Prescription]({result['link']})**")
+                            st.markdown("**📄 File Information**")
+                            st.info(f"**Filename:** {result['filename']}")
+                            st.info(f"**File ID:** {result.get('file_id', 'N/A')}")
+                            st.info(f"**Upload Time:** {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}")
                         
                         with col2:
-                            st.info(f"📂 **Folder:** {result['folder_name']}")
-                            st.markdown(f"📂 **[Open Folder]({result['folder_link']})**")
+                            st.markdown("**📂 Storage Location**")
+                            st.info(f"**Folder:** {result['folder_name']}")
+                            st.success("**Status:** Uploaded & Public")
+                            if 'file_size' in result:
+                                st.info(f"**File Size:** {result['file_size']} bytes")
+                            st.info(f"**Patient:** {patient_name}")
                         
-                        # Send to patient via WhatsApp
+                        with col3:
+                            st.markdown("**🔗 Access Links**")
+                            st.markdown(f"**[📄 View Prescription]({result['link']})**")
+                            st.markdown(f"**[📂 Open Folder]({result['folder_link']})**")
+                            
+                            # Copy link button
+                            if st.button("📋 Copy Link", key="copy_prescription_link"):
+                                st.code(result['link'], language=None)
+                                st.success("Link copied! Share this with the patient.")
+                        
+                        # Professional patient communication section
                         patient_mobile = st.session_state.get('patient_mobile')
                         if patient_mobile:
                             st.markdown("---")
-                            st.subheader("📱 Send to Patient")
+                            st.markdown("### 📱 Patient Communication")
                             
-                            # WhatsApp message
-                            whatsapp_message = f"""Hi {patient_name},
-
-Your prescription from MauEyeCare is ready! 👁️
-
-📄 View your prescription: {result['link']}
-
-📞 For any queries, call: +91 92356-47410
-
-Thank you for choosing MauEyeCare!
-- Dr. Danish"""
+                            # Patient info display
+                            st.markdown(f"**👤 Patient:** {patient_name}")
+                            st.markdown(f"**📞 Mobile:** +91 {patient_mobile}")
+                            st.markdown(f"**🔗 Prescription Link:** {result['link']}")
                             
-                            col1, col2 = st.columns(2)
+                            # Professional WhatsApp message
+                            whatsapp_message = f"""🏥 *MauEyeCare Prescription Ready*
+
+Dear {patient_name},
+
+Your eye care prescription has been prepared by Dr. Danish.
+
+📄 *View Prescription:* {result['link']}
+
+📋 *Prescription Details:*
+• Patient: {patient_name}
+• Date: {datetime.datetime.now().strftime('%d/%m/%Y')}
+• Doctor: Dr. Danish (Reg: UPS 2908)
+
+📞 *For queries:* +91 92356-47410
+📧 *Email:* tech@maueyecare.com
+
+*Thank you for choosing MauEyeCare!*
+
+---
+🏥 MauEyeCare Optical Center
+👁️ Complete AI-Powered Eye Care"""
+                            
+                            # Professional communication options
+                            col1, col2, col3 = st.columns(3)
                             
                             with col1:
-                                if st.button("📱 Send via WhatsApp API", type="primary"):
-                                    try:
-                                        # Format mobile number
-                                        mobile = patient_mobile.replace("+91", "").replace(" ", "").replace("-", "")
-                                        if not mobile.startswith("91"):
-                                            mobile = "91" + mobile
-                                        
-                                        # Send WhatsApp message
-                                        whatsapp_result = send_text_message(mobile, whatsapp_message)
-                                        
-                                        if whatsapp_result.get('success'):
-                                            if whatsapp_result.get('demo'):
-                                                st.info(f"📱 Demo Mode: {whatsapp_result.get('details')}")
-                                            else:
-                                                st.success(f"✅ WhatsApp sent to +91 {patient_mobile}")
-                                        else:
-                                            st.error(f"❌ WhatsApp failed: {whatsapp_result.get('error', 'Unknown error')}")
+                                st.markdown("**📱 WhatsApp API**")
+                                if st.button("🚀 Send via API", type="primary", key="whatsapp_api"):
+                                    with st.spinner("Sending WhatsApp message..."):
+                                        try:
+                                            # Format mobile number
+                                            mobile = patient_mobile.replace("+91", "").replace(" ", "").replace("-", "")
+                                            if not mobile.startswith("91"):
+                                                mobile = "91" + mobile
                                             
-                                    except Exception as e:
-                                        st.error(f"❌ WhatsApp error: {str(e)}")
-                                
-                                # Alternative WhatsApp Web method
-                                if st.button("🌐 Open WhatsApp Web"):
+                                            # Send WhatsApp message
+                                            whatsapp_result = send_text_message(mobile, whatsapp_message)
+                                            
+                                            if whatsapp_result.get('success'):
+                                                if whatsapp_result.get('demo'):
+                                                    st.info(f"📱 **Demo Mode:** Message prepared for +91 {patient_mobile}")
+                                                    st.success("✅ WhatsApp API integration working!")
+                                                else:
+                                                    st.success(f"✅ **Message sent** to +91 {patient_mobile}")
+                                                    st.balloons()
+                                            else:
+                                                st.error(f"❌ **Send failed:** {whatsapp_result.get('error')}")
+                                                
+                                        except Exception as e:
+                                            st.error(f"❌ **Error:** {str(e)}")
+                            
+                            with col2:
+                                st.markdown("**🌐 WhatsApp Web**")
+                                if st.button("🔗 Open Web App", key="whatsapp_web"):
                                     from modules.whatsapp_utils import send_via_whatsapp_web
                                     
                                     whatsapp_url = send_via_whatsapp_web(patient_mobile, whatsapp_message)
-                                    st.markdown(f"**[Click here to send via WhatsApp Web]({whatsapp_url})**")
-                                    st.info("📱 This will open WhatsApp Web in your browser")
+                                    st.markdown(f"**[🚀 Send via WhatsApp Web]({whatsapp_url})**")
+                                    st.success("📱 WhatsApp Web will open in new tab")
+                                    st.info("💡 Click the link above to send message")
+                            
+                            with col3:
+                                st.markdown("**📲 SMS/Manual**")
+                                if st.button("📋 Copy Message", key="copy_message"):
+                                    st.text_area(
+                                        "Copy this message:",
+                                        value=whatsapp_message,
+                                        height=150,
+                                        help="Copy and send manually via SMS or any messaging app"
+                                    )
+                                    st.success("📋 Message ready to copy!")
                             
                             with col2:
                                 # Copy message button
@@ -660,38 +720,157 @@ Thank you for choosing MauEyeCare!
                                             help="Copy this link to share directly")
                         
                         else:
-                            st.warning("📱 Patient mobile number required for WhatsApp")
-                        
-                        # Update inventory
-                        st.markdown("---")
-                        with st.spinner("📦 Updating inventory..."):
-                            for med_name, quantity in selected_medicines.items():
-                                reduce_inventory(med_name, quantity)
+                            st.warning("⚠️ **Patient mobile number required for direct communication**")
+                            st.info("💡 **Tip:** Add patient mobile number in the registration form to enable WhatsApp sharing")
                             
+                            # Still show the prescription link for manual sharing
+                            st.markdown("### 🔗 Manual Sharing")
+                            st.text_input("Share this link with patient:", value=result['link'], help="Copy this link to share manually")
+                        
+                        # Professional inventory management
+                        st.markdown("---")
+                        st.markdown("### 📦 Inventory Management")
+                        
+                        with st.spinner("🔄 Updating inventory levels..."):
+                            inventory_updates = []
+                            
+                            # Update medicine inventory
+                            for med_name, quantity in selected_medicines.items():
+                                old_stock = get_inventory_dict().get(med_name, 0)
+                                reduce_inventory(med_name, quantity)
+                                new_stock = get_inventory_dict().get(med_name, 0)
+                                inventory_updates.append({
+                                    'item': med_name,
+                                    'type': 'Medicine',
+                                    'quantity_used': quantity,
+                                    'old_stock': old_stock,
+                                    'new_stock': new_stock
+                                })
+                            
+                            # Update spectacle inventory
                             for spec_name in selected_spectacles:
+                                old_stock = get_inventory_dict().get(spec_name, 0)
                                 reduce_inventory(spec_name, 1)
+                                new_stock = get_inventory_dict().get(spec_name, 0)
+                                inventory_updates.append({
+                                    'item': spec_name,
+                                    'type': 'Spectacle',
+                                    'quantity_used': 1,
+                                    'old_stock': old_stock,
+                                    'new_stock': new_stock
+                                })
                         
-                        st.success("📦 Inventory updated automatically")
+                        # Display inventory updates
+                        if inventory_updates:
+                            st.success("✅ **Inventory updated successfully!**")
+                            
+                            with st.expander("📈 View Inventory Changes"):
+                                for update in inventory_updates:
+                                    col1, col2, col3, col4 = st.columns(4)
+                                    
+                                    with col1:
+                                        st.write(f"**{update['type']}**")
+                                        st.write(update['item'])
+                                    
+                                    with col2:
+                                        st.metric("Used", update['quantity_used'])
+                                    
+                                    with col3:
+                                        st.metric("Previous Stock", update['old_stock'])
+                                    
+                                    with col4:
+                                        st.metric("Current Stock", update['new_stock'], 
+                                                delta=update['new_stock'] - update['old_stock'])
+                        else:
+                            st.info("📈 No inventory changes (no items selected)")
                         
-                        # Clear selections
-                        if st.button("🔄 Clear Selections & Start New Prescription"):
-                            if 'selected_spectacles' in st.session_state:
-                                del st.session_state['selected_spectacles']
-                            if 'selected_medicines' in st.session_state:
-                                del st.session_state['selected_medicines']
-                            st.rerun()
+                        # Professional prescription completion
+                        st.markdown("---")
+                        st.markdown("### ✅ Prescription Complete")
+                        
+                        col1, col2, col3 = st.columns(3)
+                        
+                        with col1:
+                            if st.button("🔄 New Prescription", type="primary"):
+                                # Clear all selections
+                                keys_to_clear = ['selected_spectacles', 'selected_medicines', 'analysis_photo', 'analysis_result']
+                                for key in keys_to_clear:
+                                    if key in st.session_state:
+                                        del st.session_state[key]
+                                st.success("🎆 Ready for new prescription!")
+                                st.rerun()
+                        
+                        with col2:
+                            if st.button("📋 Print Summary"):
+                                st.info("🖨️ Print functionality coming soon!")
+                        
+                        with col3:
+                            if st.button("📊 View Reports"):
+                                st.info("📊 Reporting dashboard coming soon!")
+                        
+                        # Success message
+                        st.success("🎉 **Prescription successfully generated and shared with patient!**")
+                        st.balloons()
                     
                     else:
-                        st.error(f"❌ Upload failed: {result['error']}")
-                        st.info("💡 Please check your Google Drive configuration")
+                        # Professional error handling
+                        st.error("❌ **Google Drive Upload Failed**")
+                        
+                        with st.expander("🔍 Error Details"):
+                            st.error(f"**Error:** {result.get('error', 'Unknown error')}")
+                            st.info(f"**Details:** {result.get('details', 'No additional details')}")
+                            
+                            # Troubleshooting suggestions
+                            st.markdown("**🔧 Troubleshooting:**")
+                            st.markdown("- Check Google Drive API configuration")
+                            st.markdown("- Verify access token is valid")
+                            st.markdown("- Ensure folder permissions are correct")
+                            st.markdown("- Check internet connection")
+                        
+                        # Fallback options
+                        st.markdown("### 🔄 Alternative Options")
+                        
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            # Save as HTML file
+                            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+                            filename = f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html"
+                            
+                            st.download_button(
+                                label="💾 Download HTML Prescription",
+                                data=prescription_html.encode('utf-8'),
+                                file_name=filename,
+                                mime="text/html",
+                                help="Download prescription as HTML file to share manually",
+                                type="primary"
+                            )
+                        
+                        with col2:
+                            # Manual upload instructions
+                            if st.button("📝 Manual Upload Guide"):
+                                st.info("""
+                                **Manual Upload Steps:**
+                                1. Download the HTML file above
+                                2. Go to Google Drive
+                                3. Upload to 'MauEyeCare Prescriptions' folder
+                                4. Share the file publicly
+                                5. Copy the share link
+                                6. Send link to patient
+                                """)
                     
                 else:
                     st.warning("⚠️ Please select at least one spectacle or medicine")
         else:
             st.warning("⚠️ Please select a patient first")
 
-    # --- Integration Setup Tab ---
+    # --- Inventory Management Tab ---
     with tab7:
+        from modules.professional_inventory_manager import inventory_manager
+        inventory_manager.show_inventory_management_page()
+    
+    # --- Integration Setup Tab ---
+    with tab8:
         from integration_config import show_integration_setup
         show_integration_setup()
 
