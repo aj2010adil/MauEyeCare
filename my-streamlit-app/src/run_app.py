@@ -1,45 +1,66 @@
+#!/usr/bin/env python3
 """
-Run MauEyeCare Streamlit App
+MauEyeCare Application Launcher
 """
+
 import subprocess
 import sys
 import os
 
-def main():
-    print("=" * 60)
-    print("MauEyeCare Optical Center - Starting Application")
-    print("=" * 60)
+def install_requirements():
+    """Install required packages"""
+    requirements = [
+        "streamlit>=1.28.0",
+        "pandas>=1.5.0", 
+        "fpdf2>=2.8.0",
+        "requests>=2.28.0",
+        "python-docx>=0.8.11",
+        "opencv-python-headless>=4.8.0",
+        "Pillow>=9.0.0",
+        "numpy>=1.21.0",
+        "beautifulsoup4>=4.11.0"
+    ]
     
-    # Test core functionality first
-    print("Testing core functionality...")
+    print("Installing required packages...")
+    for req in requirements:
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", req])
+        except subprocess.CalledProcessError:
+            print(f"Warning: Failed to install {req}")
+    
+    print("Installation complete!")
+
+def run_app():
+    """Run the MauEyeCare application"""
     try:
-        import app
-        print("[OK] App imports successfully")
-        print("[OK] Database initialized")
-        print("[OK] LangGraph components loaded")
-        print("[OK] All systems ready")
-    except Exception as e:
-        print(f"[ERROR] Startup error: {e}")
-        return
-    
-    print("\n" + "=" * 60)
-    print("Starting Streamlit Server...")
-    print("Access the app at: http://localhost:8507")
-    print("Press Ctrl+C to stop the server")
-    print("=" * 60)
-    
-    # Start Streamlit
-    try:
+        print("Starting MauEyeCare Application...")
+        print("Access the app at: http://localhost:8507")
+        print("Press Ctrl+C to stop the application")
+        
+        # Run streamlit app
         subprocess.run([
-            sys.executable, "-m", "streamlit", "run", "app.py",
+            sys.executable, "-m", "streamlit", "run", "main_app.py", 
             "--server.port", "8507",
-            "--server.headless", "false",
-            "--browser.gatherUsageStats", "false"
+            "--server.headless", "true"
         ])
+        
     except KeyboardInterrupt:
-        print("\nServer stopped by user")
+        print("\nApplication stopped by user")
     except Exception as e:
-        print(f"[ERROR] Server error: {e}")
+        print(f"Error running application: {e}")
 
 if __name__ == "__main__":
-    main()
+    print("=" * 60)
+    print("MauEyeCare - AI Eye Care System")
+    print("=" * 60)
+    
+    # Check if streamlit is installed
+    try:
+        import streamlit
+        print("Streamlit found")
+    except ImportError:
+        print("Installing dependencies...")
+        install_requirements()
+    
+    # Run the application
+    run_app()

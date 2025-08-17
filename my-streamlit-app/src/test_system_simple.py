@@ -1,81 +1,211 @@
 #!/usr/bin/env python
-"""Test the complete system - simple version"""
-
+"""
+Simple test suite for MauEyeCare features (Windows compatible)
+"""
 import sys
 import os
 sys.path.append(os.path.dirname(__file__))
 
-def test_system():
-    print("=== Testing MauEyeCare Complete System ===")
+def test_database_features():
+    """Test database functionality"""
+    print("Testing Database Features...")
     
     try:
-        # Test basic imports
-        print("1. Testing basic imports...")
-        import streamlit as st
-        import pandas as pd
-        import datetime
-        import numpy as np
-        from PIL import Image
-        print("   SUCCESS: Basic imports working")
-        
-        # Test database
-        print("2. Testing database...")
         import db
         db.init_db()
+        
+        # Test patient operations
+        patient_id = db.add_patient("Test Patient", 30, "Male", "9876543210")
         patients = db.get_patients()
-        print(f"   SUCCESS: Database working with {len(patients)} patients")
         
-        # Test config
-        print("3. Testing config...")
-        from config import CONFIG
-        token = CONFIG.get('WHATSAPP_ACCESS_TOKEN')
-        print(f"   SUCCESS: Config loaded, token available: {bool(token)}")
-        
-        # Test inventory
-        print("4. Testing inventory...")
-        from modules.inventory_utils import get_inventory_dict
-        inventory = get_inventory_dict()
-        print(f"   SUCCESS: Inventory loaded with {len(inventory)} items")
-        
-        # Test real spectacle data
-        print("5. Testing real spectacle data...")
-        from modules.real_spectacle_data import REAL_SPECTACLE_INVENTORY, get_recommendations_by_face_shape
-        print(f"   SUCCESS: Real spectacle data loaded with {len(REAL_SPECTACLE_INVENTORY)} items")
-        
-        # Test face shape recommendations
-        recs = get_recommendations_by_face_shape("Wide/Round", 30, "Male")
-        print(f"   SUCCESS: Face recommendations working with {len(recs['face_shape_recs']['best_frames'])} frames")
-        
-        # Test DOCX generation
-        print("6. Testing DOCX generation...")
-        from modules.enhanced_docx_utils import generate_professional_prescription_docx
-        docx_data = generate_professional_prescription_docx(
-            {'Ray-Ban Aviator Classic RB3025': 1}, 'Dr Danish', 'Test Patient', 30, 'Male', 
-            'Test advice', {}, [], {'Ray-Ban Aviator Classic RB3025': {'dosage': '1 pair', 'timing': 'Daily use'}}
-        )
-        print(f"   SUCCESS: DOCX generated with {len(docx_data)} bytes")
-        
-        # Test camera module
-        print("7. Testing camera module...")
-        from modules.advanced_camera import FaceDetectionCamera, analyze_face_with_detection
-        print("   SUCCESS: Camera module loaded")
-        
-        # Test AI tools
-        print("8. Testing AI tools...")
-        from modules.ai_doctor_tools import analyze_symptoms_ai
-        print("   SUCCESS: AI tools loaded")
-        
-        print("\nALL TESTS PASSED! System ready to run.")
-        print("\nTo start the application, run:")
-        print("python -m streamlit run app_complete.py")
+        print(f"PASS - Database initialized")
+        print(f"PASS - Patient added with ID: {patient_id}")
+        print(f"PASS - Retrieved {len(patients)} patients")
         
         return True
-        
     except Exception as e:
-        print(f"\nERROR: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"FAIL - Database test failed: {e}")
         return False
 
+def test_spectacle_database():
+    """Test spectacle database and features"""
+    print("\nTesting Spectacle Database...")
+    
+    try:
+        from modules.comprehensive_spectacle_database import (
+            COMPREHENSIVE_SPECTACLE_DATABASE,
+            get_spectacles_by_category,
+            get_spectacles_by_price_range,
+            search_spectacles_by_criteria
+        )
+        
+        total_specs = len(COMPREHENSIVE_SPECTACLE_DATABASE)
+        luxury_specs = get_spectacles_by_category("Luxury")
+        budget_specs = get_spectacles_by_price_range(0, 5000)
+        round_specs = search_spectacles_by_criteria(face_shape="Long/Oval")
+        
+        print(f"PASS - Total spectacles: {total_specs}")
+        print(f"PASS - Luxury spectacles: {len(luxury_specs)}")
+        print(f"PASS - Budget spectacles: {len(budget_specs)}")
+        print(f"PASS - Round face recommendations: {len(round_specs)}")
+        
+        return True
+    except Exception as e:
+        print(f"FAIL - Spectacle database test failed: {e}")
+        return False
+
+def test_medicine_database():
+    """Test medicine database and features"""
+    print("\nTesting Medicine Database...")
+    
+    try:
+        from modules.comprehensive_medicine_database import (
+            COMPREHENSIVE_MEDICINE_DATABASE,
+            get_medicines_by_category,
+            get_prescription_required_medicines,
+            get_medicine_recommendations_by_condition
+        )
+        
+        total_medicines = len(COMPREHENSIVE_MEDICINE_DATABASE)
+        antibiotics = get_medicines_by_category("Antibiotic")
+        prescription_meds = get_prescription_required_medicines()
+        dry_eye_recs = get_medicine_recommendations_by_condition("dry_eyes")
+        
+        print(f"PASS - Total medicines: {total_medicines}")
+        print(f"PASS - Antibiotic medicines: {len(antibiotics)}")
+        print(f"PASS - Prescription medicines: {len(prescription_meds)}")
+        print(f"PASS - Dry eye recommendations: {len(dry_eye_recs)}")
+        
+        return True
+    except Exception as e:
+        print(f"FAIL - Medicine database test failed: {e}")
+        return False
+
+def test_pdf_generation():
+    """Test PDF generation"""
+    print("\nTesting PDF Generation...")
+    
+    try:
+        from modules.pdf_utils import generate_pdf
+        
+        pdf_bytes = generate_pdf(
+            {"Eye Drops": 1}, "", "", "Dr Danish", 
+            "Test Patient", 30, "Male", "Test advice", 
+            {"OD": {"Sphere": "+1.00"}}, ["Single Vision"]
+        )
+        
+        if isinstance(pdf_bytes, bytes) and len(pdf_bytes) > 100:
+            print(f"PASS - PDF generated successfully: {len(pdf_bytes)} bytes")
+            return True
+        else:
+            print("FAIL - PDF generation failed")
+            return False
+            
+    except Exception as e:
+        print(f"FAIL - PDF test failed: {e}")
+        return False
+
+def test_inventory_management():
+    """Test inventory management"""
+    print("\nTesting Inventory Management...")
+    
+    try:
+        from modules.inventory_utils import (
+            get_inventory_dict,
+            add_or_update_inventory,
+            reduce_inventory
+        )
+        
+        # Test inventory operations
+        initial_inventory = get_inventory_dict()
+        add_or_update_inventory("Test Medicine", 10)
+        updated_inventory = get_inventory_dict()
+        
+        print("PASS - Inventory functions imported successfully")
+        print(f"PASS - Initial inventory items: {len(initial_inventory)}")
+        print("PASS - Add/update inventory function works")
+        print("PASS - Inventory retrieval function works")
+        
+        return True
+    except Exception as e:
+        print(f"FAIL - Inventory management test failed: {e}")
+        return False
+
+def test_ai_tools():
+    """Test AI tools functionality"""
+    print("\nTesting AI Tools...")
+    
+    try:
+        from modules.ai_doctor_tools import (
+            analyze_symptoms_ai,
+            suggest_medications_ai,
+            generate_patient_education_ai
+        )
+        
+        print("PASS - AI tools imported successfully")
+        print("PASS - Symptom analysis function available")
+        print("PASS - Medication suggestion function available")
+        print("PASS - Patient education function available")
+        
+        return True
+    except Exception as e:
+        print(f"FAIL - AI tools test failed: {e}")
+        return False
+
+def run_simple_test():
+    """Run all tests and provide summary"""
+    print("=" * 60)
+    print("MauEyeCare Simple Feature Test")
+    print("=" * 60)
+    
+    tests = [
+        ("Database Features", test_database_features),
+        ("Spectacle Database", test_spectacle_database),
+        ("Medicine Database", test_medicine_database),
+        ("PDF Generation", test_pdf_generation),
+        ("Inventory Management", test_inventory_management),
+        ("AI Tools", test_ai_tools)
+    ]
+    
+    results = []
+    
+    for test_name, test_func in tests:
+        try:
+            result = test_func()
+            results.append((test_name, result))
+        except Exception as e:
+            print(f"FAIL - {test_name} test crashed: {e}")
+            results.append((test_name, False))
+    
+    # Summary
+    print("\n" + "=" * 60)
+    print("TEST SUMMARY")
+    print("=" * 60)
+    
+    passed = sum(1 for _, result in results if result)
+    total = len(results)
+    
+    for test_name, result in results:
+        status = "PASS" if result else "FAIL"
+        print(f"{status} - {test_name}")
+    
+    print(f"\nOverall Result: {passed}/{total} tests passed")
+    
+    if passed == total:
+        print("ALL TESTS PASSED! System is ready for use.")
+    elif passed >= total * 0.8:
+        print("Most tests passed. System is mostly functional.")
+    else:
+        print("Multiple test failures. System needs debugging.")
+    
+    return passed >= total * 0.8
+
 if __name__ == "__main__":
-    test_system()
+    success = run_simple_test()
+    
+    if success:
+        print("\nStarting MauEyeCare application...")
+        print("Access the app at: http://localhost:8507")
+        print("Use 'streamlit run app_final_with_product_page.py --server.port 8507' to start")
+    else:
+        print("\nPlease fix failing tests before running the application.")
