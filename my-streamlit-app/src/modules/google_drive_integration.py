@@ -170,12 +170,53 @@ class GoogleDriveIntegrator:
     def upload_prescription_to_drive(self, html_content, patient_name, prescription_id=None):
         """Upload HTML prescription to Google Drive and return shareable link"""
         
-        # DISABLED: Google Drive upload disabled
-        return {
-            'success': False,
-            'error': 'Google Drive upload disabled',
-            'disabled': True
-        }
+        # Create complete prescription with medicines and spectacles
+        access_token = self.get_access_token()
+        if not access_token:
+            return {'success': False, 'error': 'No access token'}
+        
+        try:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+            filename = f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html"
+            
+            file_metadata = {
+                'name': filename,
+                'parents': [self._get_prescription_folder_id()],
+                'description': f'Complete prescription for {patient_name} - {datetime.now().strftime("%d/%m/%Y %H:%M")}'
+            }
+            
+            headers = {'Authorization': f'Bearer {access_token}', 'Content-Type': 'application/json'}
+            response = requests.post(self.drive_api_url, headers=headers, data=json.dumps(file_metadata))
+            
+            if response.status_code == 200:
+                file_id = response.json()['id']
+                
+                upload_headers = {'Authorization': f'Bearer {access_token}', 'Content-Type': 'text/html'}
+                upload_response = requests.patch(
+                    f"{self.upload_url}/{file_id}?uploadType=media",
+                    headers=upload_headers,
+                    data=html_content
+                )
+                
+                if upload_response.status_code == 200:
+                    self._make_file_public(file_id, access_token)
+                    
+                    shareable_link = f"https://drive.google.com/file/d/{file_id}/view"
+                    folder_link = "https://drive.google.com/drive/folders/1S5-ts47Nc_vw56YfwV-AZvXyk1VJbLLO"
+                    
+                    return {
+                        'success': True,
+                        'link': shareable_link,
+                        'file_id': file_id,
+                        'filename': filename,
+                        'folder_link': folder_link,
+                        'folder_name': 'MauEyeCare Prescriptions'
+                    }
+            
+            return {'success': False, 'error': f'Upload failed: {response.status_code}'}
+            
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
         
         access_token = self.get_access_token()
         if not access_token:

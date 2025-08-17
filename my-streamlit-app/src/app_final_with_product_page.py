@@ -743,3 +743,78 @@ Prescription Details:
 
 if __name__ == "__main__":
     main()
+            
+            # Prescription Sharing Section
+            st.markdown("---")
+            st.subheader("📤 Share Complete Prescription")
+            st.info("💡 **Share prescription with medicines and spectacles to patient via Google Drive + WhatsApp/SMS**")
+            
+            if st.button("📤 Upload & Share Prescription", type="primary"):
+                from modules.google_drive_integration import drive_integrator
+                
+                # Create complete prescription HTML
+                prescription_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MauEyeCare Prescription - {st.session_state['patient_name']}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+        .header {{ text-align: center; color: #2E86AB; }}
+        .patient-info {{ background: #f5f5f5; padding: 15px; margin: 10px 0; }}
+        .prescription {{ border: 1px solid #ddd; padding: 15px; margin: 10px 0; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>👁️ MauEyeCare Optical Center</h1>
+        <p>Dr. Danish - Eye Care Specialist | Reg. No: UPS 2908</p>
+        <p>Phone: +91 92356-47410</p>
+    </div>
+    
+    <div class="patient-info">
+        <h3>Patient Information</h3>
+        <p><strong>Name:</strong> {st.session_state['patient_name']}</p>
+        <p><strong>Age:</strong> {st.session_state['age']} | <strong>Gender:</strong> {st.session_state['gender']}</p>
+        <p><strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')}</p>
+        <p><strong>Date:</strong> {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+    </div>
+    
+    <div class="prescription">
+        <h3>👁️ Eye Prescription</h3>"""
+                
+                if st.session_state.get('rx_table'):
+                    for eye in ['OD', 'OS']:
+                        eye_data = st.session_state['rx_table'].get(eye, {})
+                        if eye_data.get('Sphere'):
+                            prescription_html += f"<p><strong>{eye}:</strong> SPH {eye_data.get('Sphere', '')} CYL {eye_data.get('Cylinder', '')} AXIS {eye_data.get('Axis', '')}</p>"
+                
+                prescription_html += "</div></body></html>"
+                
+                with st.spinner("📤 Uploading prescription to Google Drive..."):
+                    result = drive_integrator.upload_prescription_to_drive(
+                        prescription_html, 
+                        st.session_state['patient_name']
+                    )
+                
+                if result['success']:
+                    st.success("✅ **Prescription uploaded successfully!**")
+                    st.info(f"📁 **Folder:** {result['folder_name']}")
+                    st.info(f"📄 **File:** {result['filename']}")
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.markdown(f"🔗 **[View Prescription]({result['link']})**")
+                    with col2:
+                        st.markdown(f"📂 **[Open Folder]({result['folder_link']})**")
+                    
+                    # Send to patient
+                    if st.session_state.get('patient_mobile'):
+                        if st.button("📱 Send to Patient (WhatsApp + SMS)"):
+                            message = f"Hi {st.session_state['patient_name']}, your prescription from MauEyeCare is ready. View: {result['link']} - Dr. Danish"
+                            st.success(f"📱 **Message prepared:** {message}")
+                            st.info("📞 **Sending to:** " + st.session_state['patient_mobile'])
+                    else:
+                        st.warning("📱 **Patient mobile number required for WhatsApp/SMS**")
+                else:
+                    st.error(f"❌ **Upload failed:** {result['error']}")
