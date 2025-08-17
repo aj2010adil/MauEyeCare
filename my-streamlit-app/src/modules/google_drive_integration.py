@@ -170,6 +170,13 @@ class GoogleDriveIntegrator:
     def upload_prescription_to_drive(self, html_content, patient_name, prescription_id=None):
         """Upload HTML prescription to Google Drive and return shareable link"""
         
+        # DISABLED: Google Drive upload disabled
+        return {
+            'success': False,
+            'error': 'Google Drive upload disabled',
+            'disabled': True
+        }
+        
         access_token = self.get_access_token()
         if not access_token:
             return {
