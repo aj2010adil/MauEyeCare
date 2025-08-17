@@ -199,12 +199,14 @@ class ProfessionalInventoryManager:
                 bridge_width = st.number_input("Bridge Width (mm)", min_value=0, max_value=50, step=1)
                 temple_length = st.number_input("Temple Length (mm)", min_value=0, max_value=200, step=1)
             
-            with col4:\n                color = st.text_input("Color", placeholder="e.g., Black, Gold, Silver")
+            with col4:
+                color = st.text_input("Color", placeholder="e.g., Black, Gold, Silver")
                 gender = st.selectbox("Gender", ["Unisex", "Male", "Female", "Kids"])
                 face_shapes = st.multiselect("Suitable Face Shapes", 
                     ["Round", "Square", "Oval", "Heart", "Long/Oval", "Diamond"])
             
-            # Lens options\n            st.markdown("**Lens Options**")
+            # Lens options
+            st.markdown("**Lens Options**")
             col5, col6 = st.columns(2)
             
             with col5:

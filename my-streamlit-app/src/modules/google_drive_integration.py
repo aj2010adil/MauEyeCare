@@ -36,8 +36,9 @@ class GoogleDriveIntegrator:
             except:
                 pass
             
-            # Real Google Drive API key (replace with your actual key)
-            return "ya29.a0AcM612xvQR8mK9vYzJ3nF2pL7sH4tE6wR9qA5bC8dG1fI2jK3lM4nO5pQ6rS7tU8vW9xY0zA1B2C3D4E5F6G7H8I9J0K"
+            # For demo purposes - replace with real token
+            st.warning("⚠️ Google Drive not configured. Please add GOOGLE_DRIVE_TOKEN to secrets.")
+            return None
             
         except Exception as e:
             st.error(f"Google Drive token error: {str(e)}")

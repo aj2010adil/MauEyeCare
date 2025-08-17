@@ -624,6 +624,103 @@ def main():
                                 st.code(result['link'], language=None)
                                 st.success("Link copied! Share this with the patient.")
                         
+                        # Always show download options regardless of Google Drive status
+                        st.markdown("---")
+                        st.markdown("### 💾 Download Prescription Files")
+                        
+                        col_dl1, col_dl2, col_dl3 = st.columns(3)
+                        
+                        with col_dl1:
+                            # HTML Download
+                            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+                            html_filename = f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html"
+                            
+                            st.download_button(
+                                label="💾 Download HTML",
+                                data=prescription_html.encode('utf-8'),
+                                file_name=html_filename,
+                                mime="text/html",
+                                help="Download as HTML file",
+                                use_container_width=True
+                            )
+                        
+                        with col_dl2:
+                            # Text Download
+                            text_prescription = f"""MauEyeCare Prescription
+
+Patient: {patient_name}
+Age: {st.session_state.get('age', 'N/A')}
+Gender: {st.session_state.get('gender', 'N/A')}
+Mobile: {st.session_state.get('patient_mobile', 'N/A')}
+Date: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}
+
+Prescribed Items:
+{'-'*40}
+"""
+                            
+                            if selected_spectacles:
+                                text_prescription += "\nSPECTACLES:\n"
+                                for spec_name in selected_spectacles:
+                                    if spec_name in COMPREHENSIVE_SPECTACLE_DATABASE:
+                                        spec_data = COMPREHENSIVE_SPECTACLE_DATABASE[spec_name]
+                                        total_price = spec_data['price'] + spec_data['lens_price']
+                                        text_prescription += f"- {spec_data['brand']} {spec_data['model']} - Rs.{total_price:,}\n"
+                            
+                            if selected_medicines:
+                                text_prescription += "\nMEDICINES:\n"
+                                for med_name, qty in selected_medicines.items():
+                                    if med_name in COMPREHENSIVE_MEDICINE_DATABASE:
+                                        med_data = COMPREHENSIVE_MEDICINE_DATABASE[med_name]
+                                        total_price = med_data['price'] * qty
+                                        text_prescription += f"- {med_name} (Qty: {qty}) - Rs.{total_price}\n"
+                            
+                            # Add RX details if available
+                            rx_table = st.session_state.get('rx_table', {})
+                            if rx_table and (rx_table.get('OD', {}).get('Sphere') or rx_table.get('OS', {}).get('Sphere')):
+                                text_prescription += "\nEYE PRESCRIPTION:\n"
+                                for eye in ['OD', 'OS']:
+                                    eye_data = rx_table.get(eye, {})
+                                    if eye_data.get('Sphere'):
+                                        eye_name = "Right Eye" if eye == "OD" else "Left Eye"
+                                        text_prescription += f"{eye} ({eye_name}): SPH {eye_data.get('Sphere', '')} CYL {eye_data.get('Cylinder', '')} AXIS {eye_data.get('Axis', '')}\n"
+                            
+                            text_prescription += f"\n{'-'*40}\nDr. Danish\nEye Care Specialist\nMauEyeCare Optical Center\nPhone: +91 92356-47410\nEmail: tech@maueyecare.com"
+                            
+                            st.download_button(
+                                label="📝 Download Text",
+                                data=text_prescription.encode('utf-8'),
+                                file_name=f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.txt",
+                                mime="text/plain",
+                                help="Download as text file",
+                                use_container_width=True
+                            )
+                        
+                        with col_dl3:
+                            # JSON Download (for data backup)
+                            prescription_data = {
+                                'patient_name': patient_name,
+                                'patient_age': st.session_state.get('age'),
+                                'patient_gender': st.session_state.get('gender'),
+                                'patient_mobile': st.session_state.get('patient_mobile'),
+                                'prescription_date': datetime.datetime.now().isoformat(),
+                                'doctor': 'Dr. Danish',
+                                'clinic': 'MauEyeCare Optical Center',
+                                'selected_spectacles': selected_spectacles,
+                                'selected_medicines': selected_medicines,
+                                'rx_table': st.session_state.get('rx_table', {}),
+                                'advice': st.session_state.get('advice', ''),
+                                'patient_issue': st.session_state.get('patient_issue', '')
+                            }
+                            
+                            st.download_button(
+                                label="📋 Download JSON",
+                                data=json.dumps(prescription_data, indent=2).encode('utf-8'),
+                                file_name=f"Prescription_Data_{patient_name.replace(' ', '_')}_{timestamp}.json",
+                                mime="application/json",
+                                help="Download as JSON data file",
+                                use_container_width=True
+                            )
+                        
                         # Professional patient communication section
                         patient_mobile = st.session_state.get('patient_mobile')
                         if patient_mobile:
@@ -827,8 +924,8 @@ Your eye care prescription has been prepared by Dr. Danish.
                             st.markdown("- Ensure folder permissions are correct")
                             st.markdown("- Check internet connection")
                         
-                        # Fallback options
-                        st.markdown("### 🔄 Alternative Options")
+                        # Always show download options when Google Drive fails
+                        st.markdown("### 💾 Download Options (Google Drive Alternative)")
                         
                         col1, col2 = st.columns(2)
                         
@@ -844,6 +941,36 @@ Your eye care prescription has been prepared by Dr. Danish.
                                 mime="text/html",
                                 help="Download prescription as HTML file to share manually",
                                 type="primary"
+                            )
+                        
+                        with col2:
+                            # Text version
+                            text_prescription = f"""MauEyeCare Prescription
+
+Patient: {patient_name}
+Age: {st.session_state.get('age', 'N/A')}
+Date: {datetime.datetime.now().strftime('%d/%m/%Y')}
+
+Prescribed Items:
+{'-'*30}
+"""
+                            
+                            for spec_name in selected_spectacles:
+                                if spec_name in COMPREHENSIVE_SPECTACLE_DATABASE:
+                                    spec_data = COMPREHENSIVE_SPECTACLE_DATABASE[spec_name]
+                                    text_prescription += f"Spectacle: {spec_data['brand']} {spec_data['model']}\n"
+                            
+                            for med_name, qty in selected_medicines.items():
+                                text_prescription += f"Medicine: {med_name} (Qty: {qty})\n"
+                            
+                            text_prescription += f"\nDr. Danish\nMauEyeCare Optical Center"
+                            
+                            st.download_button(
+                                label="📝 Download Text Version",
+                                data=text_prescription.encode('utf-8'),
+                                file_name=f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.txt",
+                                mime="text/plain",
+                                help="Download prescription as text file"
                             )
                         
                         with col2:
