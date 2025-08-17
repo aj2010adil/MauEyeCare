@@ -275,6 +275,68 @@ class GoogleDriveIntegrator:
                     'Content-Type': 'text/html'
                 }
                 
+                upload_response = requests.patch(
+                    f"{self.upload_url}/{file_id}?uploadType=media",
+                    headers=upload_headers,
+                    data=html_content
+                )
+                
+                if upload_response.status_code == 200:
+                    self._make_file_public(file_id, access_token)
+                    
+                    shareable_link = f"https://drive.google.com/file/d/{file_id}/view"
+                    folder_link = "https://drive.google.com/drive/folders/1S5-ts47Nc_vw56YfwV-AZvXyk1VJbLLO"
+                    
+                    return {
+                        'success': True,
+                        'link': shareable_link,
+                        'file_id': file_id,
+                        'filename': filename,
+                        'folder_link': folder_link,
+                        'folder_name': 'MauEyeCare Prescriptions'
+                    }
+            
+            return {'success': False, 'error': f'Upload failed: {response.status_code}'}
+            
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+    
+    def _make_file_public(self, file_id, access_token):
+        """Make file publicly viewable"""
+        try:
+            permission_url = f"https://www.googleapis.com/drive/v3/files/{file_id}/permissions"
+            
+            headers = {
+                'Authorization': f'Bearer {access_token}',
+                'Content-Type': 'application/json'
+            }
+            
+            permission_data = {
+                'role': 'reader',
+                'type': 'anyone'
+            }
+            
+            response = requests.post(
+                permission_url,
+                headers=headers,
+                data=json.dumps(permission_data)
+            )
+            
+            return response.status_code == 200
+            
+        except Exception:
+            return False
+    
+    def _get_prescription_folder_id(self):
+        """Get or create prescription folder ID"""
+        return "1S5-ts47Nc_vw56YfwV-AZvXyk1VJbLLO"  # Default folder ID
+
+# Create global instance
+drive_integrator = GoogleDriveIntegrator()
+                    'Authorization': f'Bearer {access_token}',
+                    'Content-Type': 'text/html'
+                }
+                
                 st.info(f"📤 Uploading content to file ID: {file_id}")
                 
                 upload_response = requests.patch(
