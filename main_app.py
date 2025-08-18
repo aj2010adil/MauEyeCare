@@ -1199,37 +1199,51 @@ Prescribed Items:
                 # Excel Export
                 st.markdown("**📤 Excel Export**")
                 
-                if inventory and st.button("📤 Export to Excel"):
+                if inventory:
                     df = pd.DataFrame([
                         {"Item": item, "Stock": stock, "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"}
                         for item, stock in inventory.items()
                     ])
                     
-                    # Convert to Excel bytes
-                    from io import BytesIO
-                    output = BytesIO()
-                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                        df.to_excel(writer, sheet_name='Inventory', index=False)
-                    
-                    st.download_button(
-                        "💾 Download Excel",
-                        output.getvalue(),
-                        f"inventory_{datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')}.xlsx",
-                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
+                    # Excel export with proper buffer handling
+                    try:
+                        output = BytesIO()
+                        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                            df.to_excel(writer, sheet_name='Inventory', index=False)
+                        output.seek(0)
+                        
+                        st.download_button(
+                            "📤 Download Excel",
+                            data=output.getvalue(),
+                            file_name=f"inventory_{datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            use_container_width=True
+                        )
+                    except Exception as e:
+                        st.error(f"Excel export failed: {str(e)}")
+                        # Fallback to CSV
+                        csv = df.to_csv(index=False)
+                        st.download_button(
+                            "📤 Download CSV (Fallback)",
+                            csv,
+                            f"inventory_{datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')}.csv",
+                            "text/csv",
+                            use_container_width=True
+                        )
                 
-                # CSV Export (simpler)
-                if inventory and st.button("📤 Export to CSV"):
+                # CSV Export (always works)
+                if inventory:
                     df = pd.DataFrame([
-                        {"Item": item, "Stock": stock}
+                        {"Item": item, "Stock": stock, "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"}
                         for item, stock in inventory.items()
                     ])
                     csv = df.to_csv(index=False)
                     st.download_button(
-                        "💾 Download CSV",
-                        csv,
-                        f"inventory_{datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')}.csv",
-                        "text/csv"
+                        "📤 Download CSV",
+                        data=csv,
+                        file_name=f"inventory_{datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')}.csv",
+                        mime="text/csv",
+                        use_container_width=True
                     )
             
             st.markdown("---")
