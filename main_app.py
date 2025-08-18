@@ -12,6 +12,7 @@ import numpy as np
 from PIL import Image
 import json
 from datetime import timezone, timedelta
+from io import BytesIO
 
 # Add current directory to path
 sys.path.append(os.path.dirname(__file__))
@@ -1135,11 +1136,118 @@ Prescribed Items:
                 low_stock = len([k for k, v in inventory.items() if v < 5]) if inventory else 0
                 st.metric("Low Stock", low_stock)
             
-            # Current Stock
+            # Inventory Management Options
+            st.subheader("🔧 Inventory Operations")
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                # Manual Update
+                st.markdown("**✏️ Manual Update**")
+                item_name = st.text_input("Item Name", placeholder="Enter item name")
+                new_stock = st.number_input("Stock Quantity", min_value=0, value=0)
+                
+                if st.button("💾 Update Stock"):
+                    if item_name:
+                        add_or_update_inventory(item_name, new_stock)
+                        st.success(f"✅ Updated {item_name}: {new_stock} units")
+                        st.rerun()
+            
+            with col2:
+                # Excel Import
+                st.markdown("**📄 Excel Import**")
+                uploaded_file = st.file_uploader("Upload Excel File", type=['xlsx', 'xls', 'csv'])
+                
+                if uploaded_file and st.button("📤 Import Data"):
+                    try:
+                        if uploaded_file.name.endswith('.csv'):
+                            df = pd.read_csv(uploaded_file)
+                        else:
+                            df = pd.read_excel(uploaded_file)
+                        
+                        # Expected columns: Item, Stock
+                        if 'Item' in df.columns and 'Stock' in df.columns:
+                            imported_count = 0
+                            for _, row in df.iterrows():
+                                item = str(row['Item']).strip()
+                                stock = int(row['Stock']) if pd.notna(row['Stock']) else 0
+                                add_or_update_inventory(item, stock)
+                                imported_count += 1
+                            
+                            st.success(f"✅ Imported {imported_count} items successfully!")
+                            st.rerun()
+                        else:
+                            st.error("❌ Excel must have 'Item' and 'Stock' columns")
+                    except Exception as e:
+                        st.error(f"❌ Import failed: {str(e)}")
+                
+                # Sample format
+                if st.button("📄 Download Sample Format"):
+                    sample_data = pd.DataFrame({
+                        'Item': ['Ray-Ban Aviator', 'Refresh Tears', 'Oakley Holbrook'],
+                        'Stock': [15, 25, 10]
+                    })
+                    csv = sample_data.to_csv(index=False)
+                    st.download_button(
+                        "💾 Download Sample CSV",
+                        csv,
+                        "inventory_sample.csv",
+                        "text/csv"
+                    )
+            
+            with col3:
+                # Excel Export
+                st.markdown("**📤 Excel Export**")
+                
+                if inventory and st.button("📤 Export to Excel"):
+                    df = pd.DataFrame([
+                        {"Item": item, "Stock": stock, "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"}
+                        for item, stock in inventory.items()
+                    ])
+                    
+                    # Convert to Excel bytes
+                    from io import BytesIO
+                    output = BytesIO()
+                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                        df.to_excel(writer, sheet_name='Inventory', index=False)
+                    
+                    st.download_button(
+                        "💾 Download Excel",
+                        output.getvalue(),
+                        f"inventory_{datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')}.xlsx",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                
+                # CSV Export (simpler)
+                if inventory and st.button("📤 Export to CSV"):
+                    df = pd.DataFrame([
+                        {"Item": item, "Stock": stock}
+                        for item, stock in inventory.items()
+                    ])
+                    csv = df.to_csv(index=False)
+                    st.download_button(
+                        "💾 Download CSV",
+                        csv,
+                        f"inventory_{datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')}.csv",
+                        "text/csv"
+                    )
+            
+            st.markdown("---")
+            
+            # Current Stock Display
             if inventory:
                 st.subheader("📋 Current Stock")
-                for item, stock in list(inventory.items())[:20]:
-                    col1, col2 = st.columns([3, 1])
+                
+                # Search filter
+                search_term = st.text_input("🔍 Search items", placeholder="Type to filter items...")
+                
+                filtered_items = inventory.items()
+                if search_term:
+                    filtered_items = [(k, v) for k, v in inventory.items() if search_term.lower() in k.lower()]
+                
+                # Display items
+                for item, stock in list(filtered_items)[:30]:  # Show up to 30 items
+                    col1, col2, col3 = st.columns([4, 1, 1])
                     with col1:
                         st.write(item)
                     with col2:
@@ -1149,8 +1257,13 @@ Prescribed Items:
                             st.warning(f"LOW: {stock}")
                         else:
                             st.success(f"OK: {stock}")
+                    with col3:
+                        # Quick update buttons
+                        if st.button("➕", key=f"add_{item}", help="Add 1"):
+                            add_or_update_inventory(item, stock + 1)
+                            st.rerun()
             else:
-                st.info("📦 No inventory items. Click 'Load Complete Database' in sidebar.")
+                st.info("📦 No inventory items. Click 'Load Complete Database' in sidebar or import Excel file.")
                 
         except Exception as e:
             st.error("😱 Inventory system not available")
