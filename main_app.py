@@ -137,7 +137,7 @@ def main():
             st.error(f"☁️ Google Drive: Error - {str(e)}")
 
     # Main tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
         "👥 Patient Registration", 
         "👓 Spectacle Gallery", 
         "💊 Medicine Gallery",
@@ -145,7 +145,8 @@ def main():
         "📋 Patient History",
         "📤 Prescription & Sharing",
         "📦 Inventory Management",
-        "🔧 Integration Setup"
+        "🔧 Integration Setup",
+        "📊 Analytics"
     ])
 
     # --- Patient Registration Tab ---
@@ -197,7 +198,7 @@ def main():
             submitted = st.form_submit_button("💾 Save Patient", type="primary")
             
             if submitted and patient_name:
-                # Save patient
+                # Save patient with visit tracking
                 patients = db.get_patients()
                 found = False
                 for p in patients:
@@ -207,6 +208,24 @@ def main():
                         break
                 if not found:
                     patient_id = db.add_patient(patient_name, age, gender, contact)
+                
+                # Track visit data for analytics
+                visit_data = {
+                    'patient_id': patient_id,
+                    'visit_date': datetime.datetime.now().isoformat(),
+                    'issue': patient_issue,
+                    'advice': advice,
+                    'rx_data': rx_table,
+                    'age_group': 'Child' if age < 18 else 'Adult' if age < 60 else 'Senior',
+                    'visit_type': 'Return' if found else 'New',
+                    'referral_source': 'Direct',  # Can be enhanced later
+                    'season': datetime.datetime.now().strftime('%B')
+                }
+                
+                # Store visit data in session for analytics
+                if 'visit_analytics' not in st.session_state:
+                    st.session_state['visit_analytics'] = []
+                st.session_state['visit_analytics'].append(visit_data)
                 
                 # Store in session
                 st.session_state.update({
@@ -220,7 +239,15 @@ def main():
                     'rx_table': rx_table
                 })
                 
-                st.success(f"✅ Patient {patient_name} saved successfully!")
+                visit_type = "New Patient" if not found else "Return Visit"
+                st.success(f"✅ {visit_type}: {patient_name} saved successfully!")
+                
+                # Show visit analytics
+                if found:
+                    st.info(f"🔄 **Return Visit** - Welcome back! Previous visits help us provide better care.")
+                else:
+                    st.info(f"🎆 **New Patient** - Welcome to MauEyeCare! We're excited to help with your eye care needs.")
+                
                 st.info("🎯 Now go to 'AI Camera Analysis' tab to capture photo and get recommendations!")
 
     # --- Spectacle Gallery Tab ---
@@ -301,33 +328,54 @@ def main():
         st.markdown("*Browse our collection of medicines*")
         
         # Medicine filters
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            med_category = st.selectbox("Medicine Category", 
-                ["All", "Antibiotic", "Anti-inflammatory", "Lubricant", "Antihistamine", "Antiviral"])
+            med_type = st.selectbox("Medicine Type", ["All", "Eye Related", "Other"])
         
         with col2:
-            prescription_req = st.selectbox("Prescription Required", ["All", "Yes", "No"])
+            usage_type = st.selectbox("Usage Type", ["All", "Internal", "External"])
         
         with col3:
-            condition_filter = st.selectbox("Condition", 
-                ["All", "dry_eyes", "infection", "allergy", "inflammation", "glaucoma"])
+            med_category = st.selectbox("Category", 
+                ["All", "Antibiotic", "Anti-inflammatory", "Lubricant", "Antihistamine", "Antiviral"])
+        
+        with col4:
+            prescription_req = st.selectbox("Prescription", ["All", "Required", "Not Required"])
         
         # Apply medicine filters
         COMPREHENSIVE_MEDICINE_DATABASE = get_medicine_database()
         filtered_medicines = COMPREHENSIVE_MEDICINE_DATABASE.copy()
         
+        # Filter by medicine type (eye related vs other)
+        if med_type == "Eye Related":
+            eye_keywords = ['eye', 'tear', 'vision', 'glaucoma', 'cataract', 'retina', 'conjunctiv', 'dry']
+            filtered_medicines = {k: v for k, v in filtered_medicines.items() 
+                                if any(keyword in k.lower() or keyword in v.get('category', '').lower() 
+                                      for keyword in eye_keywords)}
+        elif med_type == "Other":
+            eye_keywords = ['eye', 'tear', 'vision', 'glaucoma', 'cataract', 'retina', 'conjunctiv', 'dry']
+            filtered_medicines = {k: v for k, v in filtered_medicines.items() 
+                                if not any(keyword in k.lower() or keyword in v.get('category', '').lower() 
+                                          for keyword in eye_keywords)}
+        
+        # Filter by usage type
+        if usage_type == "External":
+            external_keywords = ['drop', 'ointment', 'gel', 'cream', 'solution']
+            filtered_medicines = {k: v for k, v in filtered_medicines.items() 
+                                if any(keyword in k.lower() for keyword in external_keywords)}
+        elif usage_type == "Internal":
+            external_keywords = ['drop', 'ointment', 'gel', 'cream', 'solution']
+            filtered_medicines = {k: v for k, v in filtered_medicines.items() 
+                                if not any(keyword in k.lower() for keyword in external_keywords)}
+        
         if med_category != "All":
             filtered_medicines = {k: v for k, v in filtered_medicines.items() if v['category'] == med_category}
         
-        if prescription_req != "All":
-            req_bool = prescription_req == "Yes"
-            filtered_medicines = {k: v for k, v in filtered_medicines.items() if v['prescription_required'] == req_bool}
-        
-        if condition_filter != "All":
-            filtered_medicines = {k: v for k, v in filtered_medicines.items() 
-                                if condition_filter in v.get('conditions', [])}
+        if prescription_req == "Required":
+            filtered_medicines = {k: v for k, v in filtered_medicines.items() if v['prescription_required'] == True}
+        elif prescription_req == "Not Required":
+            filtered_medicines = {k: v for k, v in filtered_medicines.items() if v['prescription_required'] == False}
         
         # Display medicine gallery (limited for speed)
         st.markdown(f"### 💊 Medicine Gallery ({min(len(filtered_medicines), 9)} items shown)")
@@ -515,7 +563,7 @@ def main():
 <head>
     <title>MauEyeCare Prescription - {patient_name}</title>
     <style>
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }}
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%), url('maueyecare_2_image.jpg'); background-size: cover; background-attachment: fixed; }}
         .prescription-container {{ max-width: 800px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; }}
         .header {{ text-align: center; background: linear-gradient(135deg, #2E86AB, #1e5f8b); color: white; padding: 30px; position: relative; }}
         .header::before {{ content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="30" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="70" r="1" fill="rgba(255,255,255,0.1)"/></svg>'); }}
@@ -552,7 +600,7 @@ def main():
         <p><strong>Age:</strong> {st.session_state.get('age', 'N/A')} | <strong>Gender:</strong> {st.session_state.get('gender', 'N/A')}</p>
         <p><strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')}</p>
         <p><strong>Issue:</strong> {st.session_state.get('patient_issue', 'N/A')}</p>
-        <p><strong>Date:</strong> {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+        <p><strong>Date & Time:</strong> {datetime.datetime.now().strftime('%d/%m/%Y %I:%M %p')}</p>
     </div>"""
                     
                     # Add eye prescription
@@ -770,9 +818,11 @@ Prescribed Items:
                                 'clinic': 'MauEyeCare Optical Center',
                                 'selected_spectacles': selected_spectacles,
                                 'selected_medicines': selected_medicines,
+                                'medicine_dosages': st.session_state.get('medicine_dosages', {}),
                                 'rx_table': st.session_state.get('rx_table', {}),
                                 'advice': st.session_state.get('advice', ''),
-                                'patient_issue': st.session_state.get('patient_issue', '')
+                                'patient_issue': st.session_state.get('patient_issue', ''),
+                                'visit_analytics': st.session_state.get('visit_analytics', [])
                             }
                             
                             st.download_button(
@@ -1108,6 +1158,94 @@ Prescribed Items:
             st.markdown("- ✅ Inventory management")
             st.markdown("- ✅ Prescription generation")
             st.markdown("- ✅ Download options")
+    
+    # --- Analytics Tab ---
+    with tab9:
+        st.header("📊 Professional Analytics")
+        
+        visit_data = st.session_state.get('visit_analytics', [])
+        
+        if visit_data:
+            # Key Metrics
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                total_visits = len(visit_data)
+                st.metric("Total Visits", total_visits)
+            
+            with col2:
+                new_patients = len([v for v in visit_data if v['visit_type'] == 'New'])
+                st.metric("New Patients", new_patients)
+            
+            with col3:
+                return_rate = len([v for v in visit_data if v['visit_type'] == 'Return'])
+                st.metric("Return Visits", return_rate)
+            
+            with col4:
+                avg_age = sum([int(v.get('age', 30)) for v in visit_data]) / len(visit_data) if visit_data else 0
+                st.metric("Avg Age", f"{avg_age:.1f}")
+            
+            # Visit Trends
+            st.subheader("📈 Visit Analysis")
+            
+            # Common Issues
+            issues = [v['issue'] for v in visit_data]
+            issue_counts = {}
+            for issue in issues:
+                issue_counts[issue] = issue_counts.get(issue, 0) + 1
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("**Most Common Issues:**")
+                for issue, count in sorted(issue_counts.items(), key=lambda x: x[1], reverse=True)[:5]:
+                    st.write(f"• {issue}: {count} patients")
+            
+            with col2:
+                st.markdown("**Age Distribution:**")
+                age_groups = [v['age_group'] for v in visit_data]
+                age_counts = {}
+                for group in age_groups:
+                    age_counts[group] = age_counts.get(group, 0) + 1
+                
+                for group, count in age_counts.items():
+                    st.write(f"• {group}: {count} patients")
+            
+            # Marketing Insights
+            st.subheader("💼 Marketing Insights")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("**Patient Retention:**")
+                retention_rate = (return_rate / total_visits * 100) if total_visits > 0 else 0
+                st.metric("Retention Rate", f"{retention_rate:.1f}%")
+                
+                if retention_rate > 30:
+                    st.success("✅ Good patient retention!")
+                else:
+                    st.warning("⚠️ Focus on patient follow-up")
+            
+            with col2:
+                st.markdown("**Growth Opportunities:**")
+                if new_patients > return_rate:
+                    st.info("📈 Strong new patient acquisition")
+                    st.write("• Focus on retention programs")
+                    st.write("• Implement follow-up reminders")
+                else:
+                    st.info("🔄 Good patient loyalty")
+                    st.write("• Expand marketing reach")
+                    st.write("• Referral programs")
+        
+        else:
+            st.info("📈 No visit data yet. Register patients to see analytics.")
+            st.markdown("**Analytics will track:**")
+            st.markdown("• Patient demographics and trends")
+            st.markdown("• Common eye issues and treatments")
+            st.markdown("• Return visit patterns")
+            st.markdown("• Marketing effectiveness")
+            st.markdown("• Seasonal patterns")
+            st.markdown("• Revenue analysis")
 
 if __name__ == "__main__":
     main()
