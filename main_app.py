@@ -1190,10 +1190,14 @@ Prescribed Items:
                             if 'Item' in df.columns and 'Stock' in df.columns:
                                 # Clear inventory if overwrite mode
                                 if import_mode == "Overwrite all":
-                                    # Clear existing inventory
+                                    # Clear existing inventory by setting all to 0
                                     current_inventory = get_inventory_dict()
-                                    for item in current_inventory.keys():
-                                        add_or_update_inventory(item, 0)  # Set to 0
+                                    for item in list(current_inventory.keys()):
+                                        from modules.inventory_utils import reduce_inventory
+                                        # Reduce to 0 by reducing current stock
+                                        current_stock = current_inventory[item]
+                                        if current_stock > 0:
+                                            reduce_inventory(item, current_stock)
                                     st.info("🗑️ Cleared existing inventory")
                                 
                                 imported_count = 0
@@ -1204,9 +1208,9 @@ Prescribed Items:
                                     if import_mode == "Add to existing":
                                         # Add to existing stock
                                         current_stock = get_inventory_dict().get(item, 0)
-                                        add_or_update_inventory(item, current_stock + stock)
+                                        add_or_update_inventory(item, stock)  # This adds to existing
                                     else:
-                                        # Overwrite with new stock
+                                        # Set new stock (inventory already cleared)
                                         add_or_update_inventory(item, stock)
                                     
                                     imported_count += 1
