@@ -1145,12 +1145,25 @@ Prescribed Items:
                 # Manual Update
                 st.markdown("**✏️ Manual Update**")
                 item_name = st.text_input("Item Name", placeholder="Enter item name")
-                new_stock = st.number_input("Stock Quantity", min_value=0, value=0)
+                
+                update_mode = st.radio(
+                    "Update Mode:",
+                    ["Set quantity", "Add quantity"],
+                    key="manual_mode"
+                )
+                
+                quantity = st.number_input("Quantity", min_value=0, value=1)
                 
                 if st.button("💾 Update Stock"):
                     if item_name:
-                        add_or_update_inventory(item_name, new_stock)
-                        st.success(f"✅ Updated {item_name}: {new_stock} units")
+                        if update_mode == "Add quantity":
+                            current_stock = get_inventory_dict().get(item_name, 0)
+                            new_stock = current_stock + quantity
+                            add_or_update_inventory(item_name, new_stock)
+                            st.success(f"✅ Added {quantity} to {item_name}: {new_stock} total")
+                        else:
+                            add_or_update_inventory(item_name, quantity)
+                            st.success(f"✅ Set {item_name}: {quantity} units")
                         st.rerun()
             
             with col2:
@@ -1158,42 +1171,67 @@ Prescribed Items:
                 st.markdown("**📄 Excel Import**")
                 uploaded_file = st.file_uploader("Upload Excel File", type=['xlsx', 'xls', 'csv'])
                 
-                if uploaded_file and st.button("📤 Import Data"):
-                    try:
-                        if uploaded_file.name.endswith('.csv'):
-                            df = pd.read_csv(uploaded_file)
-                        else:
-                            df = pd.read_excel(uploaded_file)
-                        
-                        # Expected columns: Item, Stock
-                        if 'Item' in df.columns and 'Stock' in df.columns:
-                            imported_count = 0
-                            for _, row in df.iterrows():
-                                item = str(row['Item']).strip()
-                                stock = int(row['Stock']) if pd.notna(row['Stock']) else 0
-                                add_or_update_inventory(item, stock)
-                                imported_count += 1
+                if uploaded_file:
+                    # Import mode selection
+                    import_mode = st.radio(
+                        "Import Mode:",
+                        ["Add to existing", "Overwrite all"],
+                        help="Add: Keep existing + add new items | Overwrite: Replace entire inventory"
+                    )
+                    
+                    if st.button("📤 Import Data"):
+                        try:
+                            if uploaded_file.name.endswith('.csv'):
+                                df = pd.read_csv(uploaded_file)
+                            else:
+                                df = pd.read_excel(uploaded_file)
                             
-                            st.success(f"✅ Imported {imported_count} items successfully!")
-                            st.rerun()
-                        else:
-                            st.error("❌ Excel must have 'Item' and 'Stock' columns")
-                    except Exception as e:
-                        st.error(f"❌ Import failed: {str(e)}")
+                            # Expected columns: Item, Stock
+                            if 'Item' in df.columns and 'Stock' in df.columns:
+                                # Clear inventory if overwrite mode
+                                if import_mode == "Overwrite all":
+                                    # Clear existing inventory
+                                    current_inventory = get_inventory_dict()
+                                    for item in current_inventory.keys():
+                                        add_or_update_inventory(item, 0)  # Set to 0
+                                    st.info("🗑️ Cleared existing inventory")
+                                
+                                imported_count = 0
+                                for _, row in df.iterrows():
+                                    item = str(row['Item']).strip()
+                                    stock = int(row['Stock']) if pd.notna(row['Stock']) else 0
+                                    
+                                    if import_mode == "Add to existing":
+                                        # Add to existing stock
+                                        current_stock = get_inventory_dict().get(item, 0)
+                                        add_or_update_inventory(item, current_stock + stock)
+                                    else:
+                                        # Overwrite with new stock
+                                        add_or_update_inventory(item, stock)
+                                    
+                                    imported_count += 1
+                                
+                                mode_text = "added to" if import_mode == "Add to existing" else "imported (overwrite)"
+                                st.success(f"✅ {imported_count} items {mode_text} inventory successfully!")
+                                st.rerun()
+                            else:
+                                st.error("❌ Excel must have 'Item' and 'Stock' columns")
+                        except Exception as e:
+                            st.error(f"❌ Import failed: {str(e)}")
                 
                 # Sample format
-                if st.button("📄 Download Sample Format"):
-                    sample_data = pd.DataFrame({
-                        'Item': ['Ray-Ban Aviator', 'Refresh Tears', 'Oakley Holbrook'],
-                        'Stock': [15, 25, 10]
-                    })
-                    csv = sample_data.to_csv(index=False)
-                    st.download_button(
-                        "💾 Download Sample CSV",
-                        csv,
-                        "inventory_sample.csv",
-                        "text/csv"
-                    )
+                sample_data = pd.DataFrame({
+                    'Item': ['Ray-Ban Aviator', 'Refresh Tears', 'Oakley Holbrook'],
+                    'Stock': [15, 25, 10]
+                })
+                csv = sample_data.to_csv(index=False)
+                st.download_button(
+                    "📄 Download Sample",
+                    csv,
+                    "inventory_sample.csv",
+                    "text/csv",
+                    use_container_width=True
+                )
             
             with col3:
                 # Excel Export
