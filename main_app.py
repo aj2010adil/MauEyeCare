@@ -813,7 +813,7 @@ Your eye care prescription has been prepared by Dr. Danish.
                                             
                                             # Send WhatsApp message
                                             from modules.whatsapp_utils import send_text_message
-                            whatsapp_result = send_text_message(mobile, whatsapp_message)
+                                            whatsapp_result = send_text_message(mobile, whatsapp_message)
                                             
                                             if whatsapp_result.get('success'):
                                                 if whatsapp_result.get('demo'):
