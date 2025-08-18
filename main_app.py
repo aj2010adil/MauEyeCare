@@ -86,8 +86,12 @@ def main():
             st.metric("💊 Medicines", len(get_medicine_database()))
         
         with col2:
-            inventory = get_inventory_dict()
-            st.metric("📦 Inventory Items", len(inventory))
+            try:
+                from modules.inventory_utils import get_inventory_dict
+                inventory = get_inventory_dict()
+                st.metric("📦 Inventory Items", len(inventory))
+            except:
+                st.metric("📦 Inventory Items", 0)
             patients = db.get_patients()
             st.metric("👥 Patients", len(patients))
         
