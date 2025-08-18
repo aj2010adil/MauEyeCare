@@ -268,13 +268,13 @@ def main():
         
         for i, (spec_name, spec_data) in enumerate(list(filtered_specs.items())[:12]):
             with cols[i % 4]:
-                # Load and display image (lazy loaded)
+                # Load and display image
                 try:
                     from modules.real_spectacle_images import load_spectacle_image
                     spec_image = load_spectacle_image(spec_name)
                     st.image(spec_image, width=180)
                 except:
-                    st.image("https://via.placeholder.com/180x120?text=Spectacle", width=180)
+                    st.image("https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=180&h=120&fit=crop", width=180)
                 
                 # Product info
                 st.markdown(f"**{spec_data['brand']}**")
@@ -410,7 +410,7 @@ def main():
                                         from modules.real_spectacle_images import load_spectacle_image
                                         spec_image = load_spectacle_image(spec_name)
                                     except:
-                                        spec_image = "https://via.placeholder.com/200x150?text=Spectacle"
+                                        spec_image = "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=200&h=150&fit=crop"
                                     
                                     st.image(spec_image, width=200)
                                     st.markdown(f"**{spec_data['brand']} {spec_data['model']}**")
@@ -515,23 +515,39 @@ def main():
 <head>
     <title>MauEyeCare Prescription - {patient_name}</title>
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }}
-        .header {{ text-align: center; color: #2E86AB; background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }}
-        .patient-info {{ background: white; padding: 20px; margin: 10px 0; border-radius: 10px; border-left: 5px solid #2E86AB; }}
-        .prescription {{ background: white; padding: 20px; margin: 10px 0; border-radius: 10px; }}
-        .item {{ background: #f0f8ff; padding: 10px; margin: 5px 0; border-radius: 5px; }}
-        .total {{ background: #e8f5e8; padding: 15px; border-radius: 10px; font-weight: bold; }}
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }}
+        .prescription-container {{ max-width: 800px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; }}
+        .header {{ text-align: center; background: linear-gradient(135deg, #2E86AB, #1e5f8b); color: white; padding: 30px; position: relative; }}
+        .header::before {{ content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="30" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="70" r="1" fill="rgba(255,255,255,0.1)"/></svg>'); }}
+        .logo {{ width: 60px; height: 60px; background: white; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 30px; }}
+        .clinic-name {{ font-size: 28px; font-weight: bold; margin: 10px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }}
+        .doctor-info {{ font-size: 16px; margin: 5px 0; opacity: 0.9; }}
+        .address {{ font-size: 14px; margin: 10px 0; line-height: 1.4; opacity: 0.8; }}
+        .patient-info {{ background: #f8f9ff; padding: 25px; margin: 0; border-left: 5px solid #2E86AB; }}
+        .prescription {{ background: white; padding: 25px; margin: 0; border-bottom: 1px solid #eee; }}
+        .prescription:last-child {{ border-bottom: none; }}
+        .item {{ background: linear-gradient(135deg, #f0f8ff, #e6f3ff); padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #2E86AB; }}
+        .total {{ background: linear-gradient(135deg, #e8f5e8, #d4f4d4); padding: 20px; border-radius: 10px; font-weight: bold; text-align: center; margin: 15px 0; }}
+        .footer {{ background: #f8f9fa; padding: 20px; text-align: center; color: #666; border-top: 2px solid #2E86AB; }}
+        .section-title {{ color: #2E86AB; font-size: 20px; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid #2E86AB; padding-bottom: 5px; }}
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>👁️ MauEyeCare Optical Center</h1>
-        <p>Dr. Danish - Eye Care Specialist | Reg. No: UPS 2908</p>
-        <p>📞 Phone: +91 92356-47410 | 📧 Email: tech@maueyecare.com</p>
-    </div>
+    <div class="prescription-container">
+        <div class="header">
+            <div class="logo"><img src="https://raw.githubusercontent.com/yourusername/maueyecare/main/MauEyeCAre_logo.png" alt="MauEyeCare Logo" style="width: 50px; height: 50px; border-radius: 50%;"></div>
+            <div class="clinic-name">MauEyeCare Optical Center</div>
+            <div class="doctor-info">Dr. Danish - Eye Care Specialist</div>
+            <div class="doctor-info">Registration No: UPS 2908</div>
+            <div class="address">
+                Pura Sofi Bhonu Kuraishi Dasai Kuwa Mubarakpur<br>
+                Azamgarh, Uttar Pradesh, India
+            </div>
+            <div class="doctor-info">📞 +91 92356-47410 | 📧 tech@maueyecare.com</div>
+        </div>
     
-    <div class="patient-info">
-        <h3>👤 Patient Information</h3>
+        <div class="patient-info">
+            <div class="section-title">👤 Patient Information</div>
         <p><strong>Name:</strong> {patient_name}</p>
         <p><strong>Age:</strong> {st.session_state.get('age', 'N/A')} | <strong>Gender:</strong> {st.session_state.get('gender', 'N/A')}</p>
         <p><strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')}</p>
@@ -543,8 +559,8 @@ def main():
                     rx_table = st.session_state.get('rx_table', {})
                     if rx_table and (rx_table.get('OD', {}).get('Sphere') or rx_table.get('OS', {}).get('Sphere')):
                         prescription_html += """
-    <div class="prescription">
-        <h3>👁️ Eye Prescription (RX)</h3>"""
+        <div class="prescription">
+            <div class="section-title">👁️ Eye Prescription (RX)</div>"""
                         
                         for eye in ['OD', 'OS']:
                             eye_data = rx_table.get(eye, {})
@@ -563,8 +579,8 @@ def main():
                     # Add selected spectacles
                     if selected_spectacles:
                         prescription_html += """
-    <div class="prescription">
-        <h3>👓 Recommended Spectacles</h3>"""
+        <div class="prescription">
+            <div class="section-title">👓 Recommended Spectacles</div>"""
                         
                         total_spec_cost = 0
                         for spec_name in selected_spectacles:
@@ -587,8 +603,8 @@ def main():
                     # Add selected medicines
                     if selected_medicines:
                         prescription_html += """
-    <div class="prescription">
-        <h3>💊 Prescribed Medicines</h3>"""
+        <div class="prescription">
+            <div class="section-title">💊 Prescribed Medicines</div>"""
                         
                         total_med_cost = 0
                         for med_name, quantity in selected_medicines.items():
@@ -611,14 +627,18 @@ def main():
                     
                     # Add advice and footer
                     prescription_html += f"""
-    <div class="prescription">
-        <h3>📋 Doctor's Advice</h3>
+        <div class="prescription">
+            <div class="section-title">📋 Doctor's Advice</div>
         <p>{st.session_state.get('advice', 'Regular eye checkup recommended')}</p>
     </div>
     
-    <div class="header">
-        <p><strong>Dr. Danish</strong><br>Eye Care Specialist<br>MauEyeCare Optical Center</p>
-        <p>📞 For queries: +91 92356-47410</p>
+        <div class="footer">
+            <p><strong>Dr. Danish</strong> - Eye Care Specialist</p>
+            <p>MauEyeCare Optical Center</p>
+            <p>Pura Sofi Bhonu Kuraishi Dasai Kuwa Mubarakpur, Azamgarh, UP</p>
+            <p>📞 +91 92356-47410 | 📧 tech@maueyecare.com</p>
+            <p style="margin-top: 15px; font-size: 12px; color: #999;">Professional Eye Care Services | Complete AI-Powered Solutions</p>
+        </div>
     </div>
 </body>
 </html>"""
