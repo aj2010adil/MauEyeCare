@@ -565,14 +565,20 @@ def main():
     <title>MauEyeCare Prescription - {patient_name}</title>
     <style>
         body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, rgba(46, 134, 171, 0.95) 0%, rgba(30, 95, 139, 0.95) 100%); }}
-        @media print {{ body {{ background: white !important; }} .prescription-container {{ box-shadow: none !important; }} }}
+        @media print {{ 
+            body {{ background: white !important; color: black !important; }} 
+            .prescription-container {{ box-shadow: none !important; border: 2px solid #2E86AB !important; }} 
+            .header {{ background: white !important; color: #2E86AB !important; border: 3px solid #2E86AB !important; }}
+            .logo {{ background: #2E86AB !important; color: white !important; }}
+            .contact-info {{ background: #f0f8ff !important; color: #2E86AB !important; }}
+        }}
         .prescription-container {{ max-width: 800px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; }}
-        .header {{ text-align: center; background: linear-gradient(135deg, #2E86AB, #1e5f8b); color: white; padding: 30px; position: relative; }}
-        .header::before {{ content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="30" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="70" r="1" fill="rgba(255,255,255,0.1)"/></svg>'); }}
-        .logo {{ width: 60px; height: 60px; background: white; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 30px; }}
-        .clinic-name {{ font-size: 28px; font-weight: bold; margin: 10px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }}
-        .doctor-info {{ font-size: 16px; margin: 5px 0; opacity: 0.9; }}
-        .address {{ font-size: 14px; margin: 10px 0; line-height: 1.4; opacity: 0.8; }}
+        .header {{ text-align: center; background: #2E86AB; color: white; padding: 40px 30px; border: 4px solid #1e5f8b; border-radius: 15px; margin-bottom: 30px; box-shadow: 0 8px 25px rgba(46, 134, 171, 0.3); }}
+        .logo {{ width: 80px; height: 80px; background: white; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 40px; border: 3px solid #1e5f8b; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }}
+        .clinic-name {{ font-size: 36px; font-weight: 900; margin: 15px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.4); letter-spacing: 1px; }}
+        .doctor-info {{ font-size: 18px; margin: 8px 0; font-weight: 600; }}
+        .address {{ font-size: 16px; margin: 12px 0; line-height: 1.6; font-weight: 500; }}
+        .contact-info {{ font-size: 17px; font-weight: 700; margin: 10px 0; background: rgba(255,255,255,0.1); padding: 8px 15px; border-radius: 25px; display: inline-block; }}
         .patient-info {{ background: #f8f9ff; padding: 25px; margin: 0; border-left: 5px solid #2E86AB; }}
         .prescription {{ background: white; padding: 25px; margin: 0; border-bottom: 1px solid #eee; }}
         .prescription:last-child {{ border-bottom: none; }}
@@ -593,8 +599,8 @@ def main():
                 Pura Sofi Bhonu Kuraishi Dasai Kuwa Mubarakpur<br>
                 Azamgarh, Uttar Pradesh, India
             </div>
-            <div class="doctor-info">📞 +91 92356-47410 | 📧 maueyecare@gmail.com</div>
-            <div class="doctor-info">🕘 Mon-Sat: {st.session_state.get('clinic_timing', '9:00 AM - 8:00 PM')} | Sunday: Closed</div>
+            <div class="contact-info">📞 +91 92356-47410 | 📧 maueyecare@gmail.com</div>
+            <div class="contact-info">🕘 Mon-Sat: {st.session_state.get('clinic_timing', '9:00 AM - 8:00 PM')} | Sunday: Closed</div>
         </div>
     
         <div class="patient-info">
