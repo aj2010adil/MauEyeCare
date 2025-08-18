@@ -226,7 +226,7 @@ def main():
     # --- Spectacle Gallery Tab ---
     with tab2:
         st.header("👓 Spectacle Gallery")
-        st.markdown(f"*Browse our collection of {len(COMPREHENSIVE_SPECTACLE_DATABASE)} spectacles*")
+        st.markdown(f"*Browse our collection of spectacles*")
         
         # Filters
         col1, col2, col3 = st.columns(3)
@@ -240,11 +240,11 @@ def main():
                 ["All", "Budget (≤₹5,000)", "Mid-Range (₹5,001-15,000)", "Luxury (>₹15,000)"])
         
         with col3:
+            COMPREHENSIVE_SPECTACLE_DATABASE = get_spectacle_database()
             brands = sorted(list(set([spec['brand'] for spec in COMPREHENSIVE_SPECTACLE_DATABASE.values()])))
             brand_filter = st.selectbox("Brand", ["All"] + brands)
         
         # Apply filters
-        COMPREHENSIVE_SPECTACLE_DATABASE = get_spectacle_database()
         filtered_specs = COMPREHENSIVE_SPECTACLE_DATABASE.copy()
         
         if category_filter != "All":
@@ -298,7 +298,7 @@ def main():
     # --- Medicine Gallery Tab ---
     with tab3:
         st.header("💊 Medicine Gallery")
-        st.markdown(f"*Browse our collection of {len(COMPREHENSIVE_MEDICINE_DATABASE)} medicines*")
+        st.markdown("*Browse our collection of medicines*")
         
         # Medicine filters
         col1, col2, col3 = st.columns(3)
