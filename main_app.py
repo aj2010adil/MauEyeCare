@@ -563,7 +563,7 @@ def main():
 <head>
     <title>MauEyeCare Prescription - {patient_name}</title>
     <style>
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%), url('maueyecare_2_image.jpg'); background-size: cover; background-attachment: fixed; }}
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, rgba(46, 134, 171, 0.95) 0%, rgba(30, 95, 139, 0.95) 100%), url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxwYXR0ZXJuIGlkPSJleWVQYXR0ZXJuIiB4PSIwIiB5PSIwIiB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8Y2lyY2xlIGN4PSIyNSIgY3k9IjI1IiByPSIxNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiIHN0cm9rZS13aWR0aD0iMiIvPgogICAgICA8Y2lyY2xlIGN4PSIyNSIgY3k9IjI1IiByPSI4IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDUpIi8+CiAgICA8L3BhdHRlcm4+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSJ1cmwoI2V5ZVBhdHRlcm4pIi8+Cjwvc3ZnPg=='); background-size: 100px 100px; background-attachment: fixed; }}
         .prescription-container {{ max-width: 800px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; }}
         .header {{ text-align: center; background: linear-gradient(135deg, #2E86AB, #1e5f8b); color: white; padding: 30px; position: relative; }}
         .header::before {{ content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="30" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="70" r="1" fill="rgba(255,255,255,0.1)"/></svg>'); }}
@@ -583,7 +583,7 @@ def main():
 <body>
     <div class="prescription-container">
         <div class="header">
-            <div class="logo"><img src="https://raw.githubusercontent.com/yourusername/maueyecare/main/MauEyeCAre_logo.png" alt="MauEyeCare Logo" style="width: 50px; height: 50px; border-radius: 50%;"></div>
+            <div class="logo"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjUiIGN5PSIyNSIgcj0iMjQiIGZpbGw9IiMyRTg2QUIiLz4KPHN2ZyB4PSIxNSIgeT0iMTUiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiA0LjVDNyA0LjUgMi43MyA3Ljg0IDEgMTJjMS43MyA0LjE2IDYgNy41IDExIDcuNXM5LjI3LTMuMzQgMTEtNy41Yy0xLjczLTQuMTYtNi03LjUtMTEtNy41ek0xMiAxN2MtMi43NiAwLTUtMi4yNC01LTVzMi4yNC01IDUtNSA1IDIuMjQgNSA1LTIuMjQgNS01IDV6bTAtOGMtMS42NiAwLTMgMS4zNC0zIDNzMS4zNCAzIDMgMyAzLTEuMzQgMy0zLTEuMzQtMy0zLTN6Ii8+Cjwvc3ZnPgo8L3N2Zz4K" alt="MauEyeCare Logo" style="width: 50px; height: 50px;"></div>
             <div class="clinic-name">MauEyeCare Optical Center</div>
             <div class="doctor-info">Dr. Danish - Eye Care Specialist</div>
             <div class="doctor-info">Registration No: UPS 2908</div>
@@ -591,7 +591,7 @@ def main():
                 Pura Sofi Bhonu Kuraishi Dasai Kuwa Mubarakpur<br>
                 Azamgarh, Uttar Pradesh, India
             </div>
-            <div class="doctor-info">📞 +91 92356-47410 | 📧 tech@maueyecare.com</div>
+            <div class="doctor-info">📞 +91 92356-47410 | 📧 maueyecare@gmail.com</div>
         </div>
     
         <div class="patient-info">
@@ -600,7 +600,7 @@ def main():
         <p><strong>Age:</strong> {st.session_state.get('age', 'N/A')} | <strong>Gender:</strong> {st.session_state.get('gender', 'N/A')}</p>
         <p><strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')}</p>
         <p><strong>Issue:</strong> {st.session_state.get('patient_issue', 'N/A')}</p>
-        <p><strong>Date & Time:</strong> {datetime.datetime.now().strftime('%d/%m/%Y %I:%M %p')}</p>
+        <p><strong>Date & Time:</strong> {datetime.datetime.now().strftime('%d/%m/%Y %I:%M %p IST')}</p>
     </div>"""
                     
                     # Add eye prescription
@@ -684,7 +684,7 @@ def main():
             <p><strong>Dr. Danish</strong> - Eye Care Specialist</p>
             <p>MauEyeCare Optical Center</p>
             <p>Pura Sofi Bhonu Kuraishi Dasai Kuwa Mubarakpur, Azamgarh, UP</p>
-            <p>📞 +91 92356-47410 | 📧 tech@maueyecare.com</p>
+            <p>📞 +91 92356-47410 | 📧 maueyecare@gmail.com</p>
             <p style="margin-top: 15px; font-size: 12px; color: #999;">Professional Eye Care Services | Complete AI-Powered Solutions</p>
         </div>
     </div>
@@ -795,7 +795,7 @@ Prescribed Items:
                                         eye_name = "Right Eye" if eye == "OD" else "Left Eye"
                                         text_prescription += f"{eye} ({eye_name}): SPH {eye_data.get('Sphere', '')} CYL {eye_data.get('Cylinder', '')} AXIS {eye_data.get('Axis', '')}\n"
                             
-                            text_prescription += f"\n{'-'*40}\nDr. Danish\nEye Care Specialist\nMauEyeCare Optical Center\nPhone: +91 92356-47410\nEmail: tech@maueyecare.com"
+                            text_prescription += f"\n{'-'*40}\nDr. Danish\nEye Care Specialist\nMauEyeCare Optical Center\nPhone: +91 92356-47410\nEmail: maueyecare@gmail.com"
                             
                             st.download_button(
                                 label="📝 Download Text",
@@ -860,7 +860,7 @@ Your eye care prescription has been prepared by Dr. Danish.
 • Doctor: Dr. Danish (Reg: UPS 2908)
 
 📞 *For queries:* +91 92356-47410
-📧 *Email:* tech@maueyecare.com
+📧 *Email:* maueyecare@gmail.com
 
 *Thank you for choosing MauEyeCare!*
 
