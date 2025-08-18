@@ -10,7 +10,7 @@ from .inventory_utils import get_inventory_dict, add_or_update_inventory, reduce
 from .comprehensive_spectacle_database import COMPREHENSIVE_SPECTACLE_DATABASE
 from .comprehensive_medicine_database import COMPREHENSIVE_MEDICINE_DATABASE
 
-def show_inventory_management():
+def show_inventory_management_page():
     """Fast inventory management interface"""
     
     st.header("📦 Inventory Management")
@@ -180,5 +180,5 @@ def show_inventory_management():
 
 # Create instance for easy import
 inventory_manager = type('InventoryManager', (), {
-    'show_inventory_management_page': show_inventory_management
+    'show_inventory_management_page': show_inventory_management_page
 })()

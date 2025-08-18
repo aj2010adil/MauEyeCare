@@ -261,12 +261,12 @@ def main():
             elif "Luxury" in price_range:
                 filtered_specs = {k: v for k, v in filtered_specs.items() if v['price'] > 15000}
         
-        # Display gallery
-        st.markdown(f"### 🖼️ Spectacle Gallery ({len(filtered_specs)} items)")
+        # Display gallery (limited for speed)
+        st.markdown(f"### 🖼️ Spectacle Gallery ({min(len(filtered_specs), 12)} items shown)")
         
         cols = st.columns(4)
         
-        for i, (spec_name, spec_data) in enumerate(list(filtered_specs.items())[:16]):
+        for i, (spec_name, spec_data) in enumerate(list(filtered_specs.items())[:12]):
             with cols[i % 4]:
                 # Load and display image (lazy loaded)
                 try:
@@ -329,12 +329,12 @@ def main():
             filtered_medicines = {k: v for k, v in filtered_medicines.items() 
                                 if condition_filter in v.get('conditions', [])}
         
-        # Display medicine gallery
-        st.markdown(f"### 💊 Medicine Gallery ({len(filtered_medicines)} items)")
+        # Display medicine gallery (limited for speed)
+        st.markdown(f"### 💊 Medicine Gallery ({min(len(filtered_medicines), 9)} items shown)")
         
         cols = st.columns(3)
         
-        for i, (med_name, med_data) in enumerate(list(filtered_medicines.items())[:12]):
+        for i, (med_name, med_data) in enumerate(list(filtered_medicines.items())[:9]):
             with cols[i % 3]:
                 st.markdown(f"**{med_name}**")
                 st.markdown(f"Category: {med_data['category']}")
@@ -812,7 +812,8 @@ Your eye care prescription has been prepared by Dr. Danish.
                                                 mobile = "91" + mobile
                                             
                                             # Send WhatsApp message
-                                            whatsapp_result = send_text_message(mobile, whatsapp_message)
+                                            from modules.whatsapp_utils import send_text_message
+                            whatsapp_result = send_text_message(mobile, whatsapp_message)
                                             
                                             if whatsapp_result.get('success'):
                                                 if whatsapp_result.get('demo'):
@@ -1036,8 +1037,43 @@ Prescribed Items:
 
     # --- Inventory Management Tab ---
     with tab7:
-        from modules.fast_inventory_manager import inventory_manager
-        inventory_manager.show_inventory_management_page()
+        st.header("📦 Inventory Management")
+        
+        try:
+            from modules.inventory_utils import get_inventory_dict, add_or_update_inventory
+            inventory = get_inventory_dict()
+            
+            # Stats
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Items", len(inventory))
+            with col2:
+                total_stock = sum(inventory.values()) if inventory else 0
+                st.metric("Total Stock", total_stock)
+            with col3:
+                low_stock = len([k for k, v in inventory.items() if v < 5]) if inventory else 0
+                st.metric("Low Stock", low_stock)
+            
+            # Current Stock
+            if inventory:
+                st.subheader("📋 Current Stock")
+                for item, stock in list(inventory.items())[:20]:
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        st.write(item)
+                    with col2:
+                        if stock == 0:
+                            st.error(f"OUT: {stock}")
+                        elif stock < 5:
+                            st.warning(f"LOW: {stock}")
+                        else:
+                            st.success(f"OK: {stock}")
+            else:
+                st.info("📦 No inventory items. Click 'Load Complete Database' in sidebar.")
+                
+        except Exception as e:
+            st.error("😱 Inventory system not available")
+            st.info("Please load the database first using the sidebar button.")
     
     # --- Integration Setup Tab ---
     with tab8:
