@@ -11,6 +11,7 @@ import datetime
 import numpy as np
 from PIL import Image
 import json
+from datetime import timezone, timedelta
 
 # Add current directory to path
 sys.path.append(os.path.dirname(__file__))
@@ -145,7 +146,7 @@ def main():
         "📋 Patient History",
         "📤 Prescription & Sharing",
         "📦 Inventory Management",
-        "🔧 Integration Setup",
+        "🔧 Clinic Settings",
         "📊 Analytics"
     ])
 
@@ -212,14 +213,14 @@ def main():
                 # Track visit data for analytics
                 visit_data = {
                     'patient_id': patient_id,
-                    'visit_date': datetime.datetime.now().isoformat(),
+                    'visit_date': datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat(),
                     'issue': patient_issue,
                     'advice': advice,
                     'rx_data': rx_table,
                     'age_group': 'Child' if age < 18 else 'Adult' if age < 60 else 'Senior',
                     'visit_type': 'Return' if found else 'New',
                     'referral_source': 'Direct',  # Can be enhanced later
-                    'season': datetime.datetime.now().strftime('%B')
+                    'season': datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%B')
                 }
                 
                 # Store visit data in session for analytics
@@ -563,7 +564,8 @@ def main():
 <head>
     <title>MauEyeCare Prescription - {patient_name}</title>
     <style>
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, rgba(46, 134, 171, 0.95) 0%, rgba(30, 95, 139, 0.95) 100%), url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxwYXR0ZXJuIGlkPSJleWVQYXR0ZXJuIiB4PSIwIiB5PSIwIiB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8Y2lyY2xlIGN4PSIyNSIgY3k9IjI1IiByPSIxNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiIHN0cm9rZS13aWR0aD0iMiIvPgogICAgICA8Y2lyY2xlIGN4PSIyNSIgY3k9IjI1IiByPSI4IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDUpIi8+CiAgICA8L3BhdHRlcm4+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSJ1cmwoI2V5ZVBhdHRlcm4pIi8+Cjwvc3ZnPg=='); background-size: 100px 100px; background-attachment: fixed; }}
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, rgba(46, 134, 171, 0.95) 0%, rgba(30, 95, 139, 0.95) 100%); }}
+        @media print {{ body {{ background: white !important; }} .prescription-container {{ box-shadow: none !important; }} }}
         .prescription-container {{ max-width: 800px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; }}
         .header {{ text-align: center; background: linear-gradient(135deg, #2E86AB, #1e5f8b); color: white; padding: 30px; position: relative; }}
         .header::before {{ content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="30" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="70" r="1" fill="rgba(255,255,255,0.1)"/></svg>'); }}
@@ -592,6 +594,7 @@ def main():
                 Azamgarh, Uttar Pradesh, India
             </div>
             <div class="doctor-info">📞 +91 92356-47410 | 📧 maueyecare@gmail.com</div>
+            <div class="doctor-info">🕘 Mon-Sat: {st.session_state.get('clinic_timing', '9:00 AM - 8:00 PM')} | Sunday: Closed</div>
         </div>
     
         <div class="patient-info">
@@ -600,7 +603,7 @@ def main():
         <p><strong>Age:</strong> {st.session_state.get('age', 'N/A')} | <strong>Gender:</strong> {st.session_state.get('gender', 'N/A')}</p>
         <p><strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')}</p>
         <p><strong>Issue:</strong> {st.session_state.get('patient_issue', 'N/A')}</p>
-        <p><strong>Date & Time:</strong> {datetime.datetime.now().strftime('%d/%m/%Y %I:%M %p IST')}</p>
+        <p><strong>Date & Time:</strong> {(datetime.datetime.now(timezone(timedelta(hours=5, minutes=30)))).strftime('%d/%m/%Y %I:%M %p IST')}</p>
     </div>"""
                     
                     # Add eye prescription
@@ -685,6 +688,7 @@ def main():
             <p>MauEyeCare Optical Center</p>
             <p>Pura Sofi Bhonu Kuraishi Dasai Kuwa Mubarakpur, Azamgarh, UP</p>
             <p>📞 +91 92356-47410 | 📧 maueyecare@gmail.com</p>
+            <p>🕘 Mon-Sat: {st.session_state.get('clinic_timing', '9:00 AM - 8:00 PM')} | Sunday: Closed</p>
             <p style="margin-top: 15px; font-size: 12px; color: #999;">Professional Eye Care Services | Complete AI-Powered Solutions</p>
         </div>
     </div>
@@ -715,7 +719,7 @@ def main():
                             st.markdown("**📄 File Information**")
                             st.info(f"**Filename:** {result['filename']}")
                             st.info(f"**File ID:** {result.get('file_id', 'N/A')}")
-                            st.info(f"**Upload Time:** {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}")
+                            st.info(f"**Upload Time:** {datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%d/%m/%Y %H:%M IST')}")
                         
                         with col2:
                             st.markdown("**📂 Storage Location**")
@@ -744,6 +748,7 @@ def main():
                         with col_dl1:
                             # HTML Download
                             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+                            timestamp = datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime("%Y%m%d_%H%M")
                             html_filename = f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html"
                             
                             st.download_button(
@@ -763,7 +768,7 @@ Patient: {patient_name}
 Age: {st.session_state.get('age', 'N/A')}
 Gender: {st.session_state.get('gender', 'N/A')}
 Mobile: {st.session_state.get('patient_mobile', 'N/A')}
-Date: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}
+Date: {datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%d/%m/%Y %H:%M IST')}
 
 Prescribed Items:
 {'-'*40}
@@ -813,7 +818,7 @@ Prescribed Items:
                                 'patient_age': st.session_state.get('age'),
                                 'patient_gender': st.session_state.get('gender'),
                                 'patient_mobile': st.session_state.get('patient_mobile'),
-                                'prescription_date': datetime.datetime.now().isoformat(),
+                                'prescription_date': datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat(),
                                 'doctor': 'Dr. Danish',
                                 'clinic': 'MauEyeCare Optical Center',
                                 'selected_spectacles': selected_spectacles,
@@ -856,7 +861,7 @@ Your eye care prescription has been prepared by Dr. Danish.
 
 📋 *Prescription Details:*
 • Patient: {patient_name}
-• Date: {datetime.datetime.now().strftime('%d/%m/%Y')}
+• Date: {datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%d/%m/%Y')}
 • Doctor: Dr. Danish (Reg: UPS 2908)
 
 📞 *For queries:* +91 92356-47410
@@ -1063,7 +1068,7 @@ Your eye care prescription has been prepared by Dr. Danish.
 
 Patient: {patient_name}
 Age: {st.session_state.get('age', 'N/A')}
-Date: {datetime.datetime.now().strftime('%d/%m/%Y')}
+Date: {datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%d/%m/%Y')}
 
 Prescribed Items:
 {'-'*30}
@@ -1147,11 +1152,50 @@ Prescribed Items:
     
     # --- Integration Setup Tab ---
     with tab8:
+        st.header("🔧 Clinic Settings")
+        
+        # Clinic Timing Settings
+        st.subheader("🕘 Clinic Timing")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            current_timing = st.session_state.get('clinic_timing', '9:00 AM - 8:00 PM')
+            new_timing = st.text_input("Clinic Hours (Mon-Sat)", value=current_timing, 
+                                     placeholder="e.g., 9:00 AM - 8:00 PM")
+            
+            if st.button("💾 Update Timing"):
+                st.session_state['clinic_timing'] = new_timing
+                st.success(f"✅ Clinic timing updated to: {new_timing}")
+                st.info("📝 This will appear on all prescriptions")
+        
+        with col2:
+            st.markdown("**Current Schedule:**")
+            st.info(f"Mon-Sat: {st.session_state.get('clinic_timing', '9:00 AM - 8:00 PM')}")
+            st.info("Sunday: Closed")
+            
+            # Quick timing presets
+            st.markdown("**Quick Presets:**")
+            if st.button("Morning Clinic (9 AM - 1 PM)"):
+                st.session_state['clinic_timing'] = '9:00 AM - 1:00 PM'
+                st.success("✅ Updated to morning hours")
+            
+            if st.button("Full Day (9 AM - 8 PM)"):
+                st.session_state['clinic_timing'] = '9:00 AM - 8:00 PM'
+                st.success("✅ Updated to full day hours")
+            
+            if st.button("Evening Clinic (5 PM - 9 PM)"):
+                st.session_state['clinic_timing'] = '5:00 PM - 9:00 PM'
+                st.success("✅ Updated to evening hours")
+        
+        st.markdown("---")
+        
+        # Integration Settings
         try:
             from integration_config import show_integration_setup
             show_integration_setup()
         except ImportError:
-            st.header("🔧 Integration Setup")
+            st.subheader("🔗 Integration Setup")
             st.info("Integration setup module not available. App works in demo mode.")
             st.markdown("### Available Features:")
             st.markdown("- ✅ Patient management")
