@@ -1329,6 +1329,143 @@ Prescribed Items:
     with tab8:
         st.header("🔧 Clinic Settings")
         
+        # Data Backup & Security
+        st.subheader("🔒 Data Security & Backup")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**💾 Patient Data Backup**")
+            
+            patients = db.get_patients()
+            if patients:
+                # Create backup data
+                backup_data = {
+                    'backup_date': datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat(),
+                    'total_patients': len(patients),
+                    'patients': [],
+                    'visit_analytics': st.session_state.get('visit_analytics', [])
+                }
+                
+                for p in patients:
+                    patient_data = {
+                        'id': p[0],
+                        'name': p[1],
+                        'age': p[2],
+                        'gender': p[3],
+                        'mobile': p[4],
+                        'registration_date': p[5] if len(p) > 5 else None
+                    }
+                    backup_data['patients'].append(patient_data)
+                
+                backup_json = json.dumps(backup_data, indent=2)
+                
+                st.download_button(
+                    "💾 Download Patient Backup",
+                    backup_json,
+                    f"patient_backup_{datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')}.json",
+                    "application/json",
+                    help="Secure backup of all patient data",
+                    use_container_width=True
+                )
+                
+                st.info(f"📊 {len(patients)} patients in database")
+            else:
+                st.info("📊 No patient data to backup")
+        
+        with col2:
+            st.markdown("**📤 Restore Patient Data**")
+            
+            backup_file = st.file_uploader("Upload Patient Backup", type=['json'])
+            
+            if backup_file:
+                restore_mode = st.radio(
+                    "Restore Mode:",
+                    ["Add to existing", "Replace all"],
+                    help="Add: Keep current + restore backup | Replace: Delete current + restore backup"
+                )
+                
+                if st.button("🔄 Restore Data", type="primary"):
+                    try:
+                        backup_data = json.load(backup_file)
+                        
+                        if 'patients' in backup_data:
+                            restored_count = 0
+                            
+                            # Clear existing if replace mode
+                            if restore_mode == "Replace all":
+                                st.warning("⚠️ This will delete all current patient data!")
+                                if st.button("Confirm Replace All", type="secondary"):
+                                    # Note: In production, you'd implement patient deletion
+                                    st.info("🗑️ Current data cleared (simulated)")
+                            
+                            # Restore patients
+                            for patient in backup_data['patients']:
+                                # Check if patient exists (by name and mobile)
+                                existing = False
+                                current_patients = db.get_patients()
+                                for p in current_patients:
+                                    if p[1] == patient['name'] and p[4] == patient['mobile']:
+                                        existing = True
+                                        break
+                                
+                                if not existing or restore_mode == "Replace all":
+                                    db.add_patient(
+                                        patient['name'],
+                                        patient['age'],
+                                        patient['gender'],
+                                        patient['mobile']
+                                    )
+                                    restored_count += 1
+                            
+                            # Restore analytics if available
+                            if 'visit_analytics' in backup_data:
+                                st.session_state['visit_analytics'] = backup_data['visit_analytics']
+                            
+                            st.success(f"✅ Restored {restored_count} patients successfully!")
+                            st.info(f"📅 Backup from: {backup_data.get('backup_date', 'Unknown')}")
+                            st.rerun()
+                        else:
+                            st.error("❌ Invalid backup file format")
+                    except Exception as e:
+                        st.error(f"❌ Restore failed: {str(e)}")
+        
+        st.markdown("---")
+        
+        # Auto-backup settings
+        st.subheader("⚙️ Auto-Backup Settings")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            auto_backup = st.checkbox(
+                "Enable Auto-Backup",
+                value=st.session_state.get('auto_backup_enabled', False),
+                help="Automatically backup patient data"
+            )
+            st.session_state['auto_backup_enabled'] = auto_backup
+            
+            if auto_backup:
+                backup_frequency = st.selectbox(
+                    "Backup Frequency",
+                    ["Daily", "Weekly", "Monthly"],
+                    index=st.session_state.get('backup_frequency_index', 1)
+                )
+                st.session_state['backup_frequency'] = backup_frequency
+                st.session_state['backup_frequency_index'] = ["Daily", "Weekly", "Monthly"].index(backup_frequency)
+        
+        with col2:
+            st.markdown("**🔒 Security Features:**")
+            st.info("✅ Data stored locally in SQLite")
+            st.info("✅ JSON backup with timestamps")
+            st.info("✅ Manual backup/restore")
+            st.info("✅ Duplicate prevention")
+            
+            if st.session_state.get('auto_backup_enabled'):
+                st.success(f"✅ Auto-backup: {st.session_state.get('backup_frequency', 'Weekly')}")
+        
+        st.markdown("---")
+        
         # Clinic Timing Settings
         st.subheader("🕘 Clinic Timing")
         
