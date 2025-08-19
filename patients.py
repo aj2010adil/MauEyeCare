@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from dependencies import get_db, get_current_user_id
 from patient import Patient
+from schemas import PatientCreate
 
 
 router = APIRouter()
@@ -41,19 +42,16 @@ async def list_patients(
 
 @router.post("", response_model=dict)
 async def create_patient(
-    payload: dict,
+    payload: PatientCreate,
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ):
-    first_name = (payload.get("first_name") or "").strip()
-    if not first_name:
-        raise HTTPException(status_code=422, detail="first_name is required")
     patient = Patient(
-        first_name=first_name,
-        last_name=(payload.get("last_name") or "").strip() or None,
-        phone=(payload.get("phone") or "").strip() or None,
-        age=payload.get("age"),
-        gender=(payload.get("gender") or None),
+        first_name=payload.first_name,
+        last_name=payload.last_name,
+        phone=payload.phone,
+        age=payload.age,
+        gender=payload.gender,
     )
     db.add(patient)
     await db.commit()

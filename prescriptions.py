@@ -13,6 +13,7 @@ from dependencies import get_db, get_current_user_id
 from patient import Patient
 from visit import Visit
 from prescription import Prescription
+from schemas import PrescriptionCreate
 
 
 router = APIRouter()
@@ -50,15 +51,12 @@ async def list_patient_prescriptions(
 
 @router.post("", response_model=dict)
 async def create_prescription(
-    payload: dict,
+    payload: PrescriptionCreate,
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ):
-    patient_id = payload.get("patient_id")
-    visit_id = payload.get("visit_id")
-    if not patient_id:
-        raise HTTPException(status_code=422, detail="patient_id is required")
-
+    patient_id = payload.patient_id
+    visit_id = payload.visit_id
     # Validate patient/visit existence
     if visit_id:
         v = await db.get(Visit, visit_id)
@@ -76,10 +74,10 @@ async def create_prescription(
     pdf_bytes = await render_prescription_pdf(
         patient_id=patient_id,
         visit_id=visit_id,
-        rx_values=payload.get("rx_values"),
-        spectacles=payload.get("spectacles"),
-        medicines=payload.get("medicines"),
-        totals=payload.get("totals"),
+        rx_values=payload.rx_values,
+        spectacles=payload.spectacles,
+        medicines=payload.medicines,
+        totals=payload.totals,
     )
     with open(file_path, "wb") as f:
         f.write(pdf_bytes)
@@ -88,10 +86,10 @@ async def create_prescription(
         patient_id=patient_id,
         visit_id=visit_id,
         pdf_path=file_path,
-        rx_values=payload.get("rx_values"),
-        spectacles=payload.get("spectacles"),
-        medicines=payload.get("medicines"),
-        totals=payload.get("totals"),
+        rx_values=payload.rx_values,
+        spectacles=payload.spectacles,
+        medicines=payload.medicines,
+        totals=payload.totals,
     )
     db.add(pres)
     await db.commit()

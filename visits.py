@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from dependencies import get_db, get_current_user_id
 from visit import Visit
+from schemas import VisitCreate
 
 
 router = APIRouter()
@@ -36,18 +37,15 @@ async def list_patient_visits(
 
 @router.post("", response_model=dict)
 async def create_visit(
-    payload: dict,
+    payload: VisitCreate,
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ):
-    patient_id = payload.get("patient_id")
-    if not patient_id:
-        raise HTTPException(status_code=422, detail="patient_id is required")
     visit = Visit(
-        patient_id=patient_id,
-        issue=(payload.get("issue") or None),
-        advice=(payload.get("advice") or None),
-        metrics=payload.get("metrics"),
+        patient_id=payload.patient_id,
+        issue=payload.issue,
+        advice=payload.advice,
+        metrics=payload.metrics,
     )
     db.add(visit)
     await db.commit()
