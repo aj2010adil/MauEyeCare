@@ -9,6 +9,9 @@ from visits import router as visits_router
 from prescriptions import router as prescriptions_router
 from dashboard import router as dashboard_router
 from insights import router as insights_router
+from pos_router import router as pos_router
+from lab_router import router as lab_router
+from consent_router import router as consent_router
 
 
 app = FastAPI(title="MauEyeCare API", description="Local clinic management system", version="1.0.0")
@@ -30,6 +33,9 @@ app.include_router(visits_router, prefix="/api/visits", tags=["visits"])
 app.include_router(prescriptions_router, prefix="/api/prescriptions", tags=["prescriptions"])
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
 app.include_router(insights_router, prefix="/api/insights", tags=["insights"])
+app.include_router(pos_router, prefix="/api/pos", tags=["pos"])
+app.include_router(lab_router, prefix="/api/lab", tags=["lab"])
+app.include_router(consent_router, prefix="/api/consents", tags=["consents"])
 
 
 @app.get("/api/health")

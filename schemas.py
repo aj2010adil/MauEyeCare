@@ -28,3 +28,36 @@ class PrescriptionCreate(BaseModel):
     totals: Optional[Dict] = None
 
 
+class PosCartLine(BaseModel):
+    product_id: int
+    batch_id: Optional[int] = None
+    quantity: int
+    price: float
+    gst_rate: float = 0
+    discount_rate: float = 0
+
+
+class PosCheckout(BaseModel):
+    patient_id: Optional[int] = None
+    lines: list[PosCartLine]
+    payments: list[Dict]  # {method, amount, reference?}
+    discount_amount: float = 0
+
+
+class LabJobCreate(BaseModel):
+    order_id: Optional[int] = None
+    patient_id: Optional[int] = None
+    frame_measurements: Optional[Dict] = None
+    seg_heights: Optional[Dict] = None
+    supplier: Optional[str] = None
+    technician: Optional[str] = None
+
+
+class ConsentCreate(BaseModel):
+    patient_id: int
+    visit_id: Optional[int] = None
+    type: str
+    content: Dict
+    signed_by: str
+
+

@@ -11,6 +11,7 @@ export default function AppLayout() {
           <Link to="/">Dashboard</Link>
           <Link to="/patients">Patients</Link>
           <Link to="/visits/new">New Visit</Link>
+          <Link to="/pos">POS</Link>
           <Link to="/prescriptions">Prescriptions</Link>
           <Link to="/marketing">Marketing</Link>
           <Link to="/operations">Operations</Link>

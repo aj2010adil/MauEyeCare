@@ -10,6 +10,7 @@ import MarketingDashboard from './MarketingDashboard'
 import OperationsDashboard from './OperationsDashboard'
 import InsightsPage from './InsightsPage'
 import PrescriptionsPage from './PrescriptionsPage'
+import POSPage from './POSPage'
 import { AuthProvider } from './AuthContext'
 import AuthGuard from './AuthGuard'
 
@@ -22,6 +23,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="patients" element={<PatientsPage />} />
           <Route path="visits/new" element={<NewVisitPage />} />
+          <Route path="pos" element={<POSPage />} />
           <Route path="prescriptions" element={<PrescriptionsPage />} />
           <Route path="marketing" element={<MarketingDashboard />} />
           <Route path="operations" element={<OperationsDashboard />} />

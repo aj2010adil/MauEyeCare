@@ -47,6 +47,9 @@ New-NetFirewallRule -DisplayName "MauEyeCare Backend" -Direction Inbound -Protoc
 Write-Host "Creating documents directories..." -ForegroundColor Yellow
 $docRoot = Join-Path $env:USERPROFILE "Documents\MauEyeCare\prescriptions"
 New-Item -ItemType Directory -Force -Path $docRoot | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $env:USERPROFILE "Documents\MauEyeCare\invoices") | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $env:USERPROFILE "Documents\MauEyeCare\lab_jobs") | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $env:USERPROFILE "Documents\MauEyeCare\uploads") | Out-Null
 
 Write-Host "Running Alembic migrations..." -ForegroundColor Yellow
 & .\.venv\Scripts\python -m alembic upgrade head
