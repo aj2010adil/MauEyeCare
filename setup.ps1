@@ -34,11 +34,39 @@ Write-Host "Installing frontend dependencies..." -ForegroundColor Yellow
 if (Test-Path package.json) { npm install }
 
 Write-Host "Configuring PostgreSQL..." -ForegroundColor Yellow
-$env:PGPASSWORD = 'maueyecare'
-$psql = "C:\\Program Files\\PostgreSQL\\*\\bin\\psql.exe"
-$psqlExe = (Get-ChildItem $psql | Sort-Object FullName -Descending | Select-Object -First 1).FullName
-& "$psqlExe" -U postgres -h 127.0.0.1 -c "CREATE USER maueyecare WITH PASSWORD 'maueyecare' CREATEDB;" 2>$null | Out-Null
-& "$psqlExe" -U postgres -h 127.0.0.1 -c "CREATE DATABASE maueyecare OWNER maueyecare;" 2>$null | Out-Null
+
+function Get-PsqlPath {
+  $candidates = @(
+    Join-Path $env:ProgramFiles "PostgreSQL\**\bin\psql.exe" ,
+    Join-Path ${env:ProgramFiles(x86)} "PostgreSQL\**\bin\psql.exe"
+  )
+  foreach ($glob in $candidates) {
+    try {
+      $files = Get-ChildItem -Path $glob -ErrorAction SilentlyContinue
+      if ($files) { return ($files | Sort-Object FullName -Descending | Select-Object -First 1).FullName }
+    } catch {}
+  }
+  $cmd = Get-Command psql -ErrorAction SilentlyContinue
+  if ($cmd) { return $cmd.Source }
+  return $null
+}
+
+$pgHost = $env:MAU_DB_HOST; if (-not $pgHost) { $pgHost = '127.0.0.1' }
+$pgPort = $env:MAU_DB_PORT; if (-not $pgPort) { $pgPort = '5432' }
+$pgSuperUser = $env:MAU_PG_SUPERUSER; if (-not $pgSuperUser) { $pgSuperUser = 'postgres' }
+if ($env:MAU_PG_SUPERPASS) { $env:PGPASSWORD = $env:MAU_PG_SUPERPASS }
+
+$psqlExe = Get-PsqlPath
+if ($psqlExe) {
+  try {
+    & $psqlExe -U $pgSuperUser -h $pgHost -p $pgPort -c "CREATE USER maueyecare WITH PASSWORD 'maueyecare' CREATEDB;" 2>$null | Out-Null
+  } catch { Write-Host "Skip: user create (may already exist)" -ForegroundColor DarkYellow }
+  try {
+    & $psqlExe -U $pgSuperUser -h $pgHost -p $pgPort -c "CREATE DATABASE maueyecare OWNER maueyecare;" 2>$null | Out-Null
+  } catch { Write-Host "Skip: database create (may already exist)" -ForegroundColor DarkYellow }
+} else {
+  Write-Warning "psql.exe not found in common locations or PATH. Skipping DB provisioning. Ensure database exists and update MAU_DB_* in environment if needed."
+}
 
 Write-Host "Opening Windows Firewall for ports 5173 (frontend) and 8000 (backend)..." -ForegroundColor Yellow
 New-NetFirewallRule -DisplayName "MauEyeCare Frontend" -Direction Inbound -Protocol TCP -LocalPort 5173 -Action Allow -Profile Private -ErrorAction SilentlyContinue | Out-Null
