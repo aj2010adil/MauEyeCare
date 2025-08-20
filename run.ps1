@@ -1,6 +1,6 @@
 param(
-  [string]$BindHost = '0.0.0.0',
-  [int]$BindPort = 8000
+  [string]$BindHost = '127.0.0.1',
+  [int]$BindPort = 8001
 )
 
 Write-Host "[MauEyeCare] Starting backend (${BindHost}:${BindPort}) and frontend..." -ForegroundColor Cyan
