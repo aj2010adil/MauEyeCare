@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db_session
 from dependencies import get_current_user_id
 from visit import Visit
-from schemas import VisitCreate, VisitRead
+from schemas import VisitCreate, VisitRead, CreateResponse
 
 
 router = APIRouter()
@@ -25,7 +25,7 @@ async def list_patient_visits(
     return rows
 
 
-@router.post("", response_model=dict)
+@router.post("", response_model=CreateResponse)
 async def create_visit(
     payload: VisitCreate,
     db: AsyncSession = Depends(get_db_session),

@@ -3,7 +3,12 @@ param(
 )
 
 Write-Host "[MauEyeCare] Starting setup..." -ForegroundColor Cyan
-$ErrorActionPreference = 'Stop'
+
+$LogPath = Join-Path $PSScriptRoot "setup.log"
+Start-Transcript -Path $LogPath -Append
+
+try {
+    $ErrorActionPreference = 'Stop'
 
 function Install-ChocoIfMissing {
   if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
@@ -42,7 +47,7 @@ try {
 function Find-PostgresService {
     param($MaxRetries = 10, $RetryDelaySeconds = 3)
     for ($i = 1; $i -le $MaxRetries; $i++) {
-        $foundService = Get-Service -Name "postgres*" -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'postgresql-x64-*' -or $_.DisplayName -like 'PostgreSQL Server*' -or $_.Name -like 'postgresql-*' } | Select-Object -First 1
+        $foundService = Get-Service -Name "postgres*" -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'postgresql*' -or $_.DisplayName -like '*PostgreSQL*' } | Select-Object -First 1
         if ($foundService) {
             Write-Host "PostgreSQL service found." -ForegroundColor Green
             return $foundService
@@ -198,3 +203,7 @@ try {
 } finally { Get-Job | Stop-Job | Remove-Job -ErrorAction SilentlyContinue }
 
 Write-Host "Setup complete." -ForegroundColor Green
+}
+finally {
+    Stop-Transcript
+}

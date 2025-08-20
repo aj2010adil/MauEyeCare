@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db_session
 from dependencies import get_current_user_id
-from schemas import ConsentCreate
+from schemas import ConsentCreate, CreateResponse
 from consent import Consent
 
 
@@ -13,6 +13,7 @@ router = APIRouter()
 
 
 @router.post("", response_model=dict)
+@router.post("", response_model=CreateResponse)
 async def create_consent(payload: ConsentCreate, db: AsyncSession = Depends(get_db_session), user_id: str = Depends(get_current_user_id)):
     c = Consent(patient_id=payload.patient_id, visit_id=payload.visit_id, type=payload.type, content=payload.content, signed_by=payload.signed_by)
     db.add(c)
