@@ -243,6 +243,12 @@ if ($LASTEXITCODE -ne 0) {
     }
 }
 
+Write-Host "Seeding inventory data..." -ForegroundColor Yellow
+if (Test-Path "seed.py") {
+    # Assuming seed.py is updated to handle medicines and spectacles
+    & .\.venv\Scripts\python.exe seed.py
+}
+
 Write-Host "Bootstrapping default doctor account..." -ForegroundColor Yellow
 Start-Job { & .\.venv\Scripts\python -c "import uvicorn,main; uvicorn.run(main.app, host='127.0.0.1', port=8001)" } | Out-Null
 Start-Sleep -Seconds 5 # Give the server a moment to start
