@@ -179,6 +179,43 @@ if ($psqlExe) {
   Write-Warning "psql.exe not found in common locations or PATH. Skipping DB provisioning. Ensure database exists and update MAU_DB_* in environment if needed."
 }
 
+Write-Host "Configuring .env file for application..." -ForegroundColor Yellow
+function Update-EnvFile {
+    param(
+        [string]$Key,
+        [string]$Value
+    )
+    $envFilePath = Join-Path $PSScriptRoot ".env"
+    if (-not (Test-Path $envFilePath)) {
+        $examplePath = Join-Path $PSScriptRoot ".env.example"
+        if (Test-Path $examplePath) {
+            Copy-Item -Path $examplePath -Destination $envFilePath
+            Write-Host "  Created .env from .env.example" -ForegroundColor DarkGray
+        } else {
+            # Create a blank file if no example exists
+            New-Item -Path $envFilePath -ItemType File | Out-Null
+        }
+    }
+
+    $content = Get-Content $envFilePath -Raw
+    # Use regex to replace or append the key. Handles commented out keys.
+    if ($content -match "(?m)^#?\s*$($Key)=.*") {
+        $content = $content -replace "(?m)^#?\s*$($Key)=.*", "$Key=$Value"
+    } else {
+        $content = $content + "`n$Key=$Value"
+    }
+    Set-Content -Path $envFilePath -Value $content.Trim()
+}
+
+# Set the database credentials for the application to use
+Update-EnvFile -Key "MAU_DB_USER" -Value "maueyecare"
+Update-EnvFile -Key "MAU_DB_PASSWORD" -Value "maueyecare"
+Update-EnvFile -Key "MAU_DB_HOST" -Value "127.0.0.1"
+Update-EnvFile -Key "MAU_DB_PORT" -Value "5432"
+Update-EnvFile -Key "MAU_DB_NAME" -Value "maueyecare"
+# Ensure a secure, unique JWT secret is set
+Update-EnvFile -Key "MAU_JWT_SECRET" -Value (-join ((48..57) + (65..90) + (97..122) | Get-Random -Count 64 | ForEach-Object { [char]$_ }))
+
 Write-Host "Opening Windows Firewall for ports 5173 (frontend) and 8000 (backend)..." -ForegroundColor Yellow
 New-NetFirewallRule -DisplayName "MauEyeCare Frontend" -Direction Inbound -Protocol TCP -LocalPort 5173 -Action Allow -Profile Private -ErrorAction SilentlyContinue | Out-Null
 New-NetFirewallRule -DisplayName "MauEyeCare Backend" -Direction Inbound -Protocol TCP -LocalPort 8000 -Action Allow -Profile Private -ErrorAction SilentlyContinue | Out-Null
@@ -190,7 +227,21 @@ $baseDocRoot = Join-Path $env:USERPROFILE "Documents\MauEyeCare"
 }
 
 Write-Host "Running Alembic migrations..." -ForegroundColor Yellow
-& .\.venv\Scripts\python -m alembic upgrade head
+# Temporarily allow non-terminating errors so we can inspect the output and exit code.
+$originalErrorAction = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+
+$migrationOutput = & .\.venv\Scripts\python -m alembic upgrade head 2>&1
+
+$ErrorActionPreference = $originalErrorAction # Restore error preference immediately
+
+if ($LASTEXITCODE -ne 0) {
+    if ($migrationOutput -like "*already exists*") {
+        Write-Host "  Migrations already applied, skipping. (Handled expected error)" -ForegroundColor DarkYellow
+    } else {
+        throw "Alembic migration failed with an unexpected error:`n$migrationOutput"
+    }
+}
 
 Write-Host "Bootstrapping default doctor account..." -ForegroundColor Yellow
 Start-Job { & .\.venv\Scripts\python -c "import uvicorn,main; uvicorn.run(main.app, host='127.0.0.1', port=8001)" } | Out-Null
