@@ -39,6 +39,17 @@ try {
     choco install postgresql -y "--params '/Password:maueyecare'"
 }
 
+Write-Host "Updating environment to find PostgreSQL..." -ForegroundColor Yellow
+$pgBinPath = (Get-ChildItem -Path "$($env:ProgramFiles)\PostgreSQL\*\bin" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+if (-not $pgBinPath) {
+    $pgBinPath = (Get-ChildItem -Path "${env:ProgramFiles(x86)}\PostgreSQL\*\bin" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+}
+if ($pgBinPath -and !($env:Path -like "*$pgBinPath*")) {
+    Write-Host "Adding PostgreSQL bin to PATH for this session: $pgBinPath"
+    # Prepend to path to ensure it's found first
+    $env:Path = "$pgBinPath;$($env:Path)"
+}
+
 Write-Host "Creating Python venv and installing requirements..." -ForegroundColor Yellow
 if (!(Test-Path .venv)) { py -3 -m venv .venv }
 & .\.venv\Scripts\pip install --upgrade pip
@@ -114,19 +125,28 @@ New-NetFirewallRule -DisplayName "MauEyeCare Frontend" -Direction Inbound -Proto
 New-NetFirewallRule -DisplayName "MauEyeCare Backend" -Direction Inbound -Protocol TCP -LocalPort 8000 -Action Allow -Profile Private -ErrorAction SilentlyContinue | Out-Null
 
 Write-Host "Creating documents directories..." -ForegroundColor Yellow
-$docRoot = Join-Path $env:USERPROFILE "Documents\MauEyeCare\prescriptions"
-New-Item -ItemType Directory -Force -Path $docRoot | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $env:USERPROFILE "Documents\MauEyeCare\invoices") | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $env:USERPROFILE "Documents\MauEyeCare\lab_jobs") | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $env:USERPROFILE "Documents\MauEyeCare\uploads") | Out-Null
+$baseDocRoot = Join-Path $env:USERPROFILE "Documents\MauEyeCare"
+"prescriptions", "invoices", "lab_jobs", "uploads" | ForEach-Object {
+    New-Item -ItemType Directory -Force -Path (Join-Path $baseDocRoot $_) | Out-Null
+}
 
 Write-Host "Running Alembic migrations..." -ForegroundColor Yellow
 & .\.venv\Scripts\python -m alembic upgrade head
 
 Write-Host "Bootstrapping default doctor account..." -ForegroundColor Yellow
 Start-Job { & .\.venv\Scripts\python -c "import uvicorn,main; uvicorn.run(main.app, host='127.0.0.1', port=8001)" } | Out-Null
-Start-Sleep -Seconds 3
-try { Invoke-RestMethod -Method POST -Uri http://127.0.0.1:8001/api/auth/bootstrap } catch {}
-Get-Job | Stop-Job | Remove-Job
+Start-Sleep -Seconds 5 # Give the server a moment to start
+try {
+    $bootstrapResult = Invoke-RestMethod -Method POST -Uri http://127.0.0.1:8001/api/auth/bootstrap -ErrorAction Stop
+    if ($bootstrapResult.created) {
+        Write-Host "Successfully created default admin user." -ForegroundColor Green
+    } else {
+        Write-Host "Default admin user already exists, skipping creation." -ForegroundColor DarkYellow
+    }
+} catch {
+    Write-Warning "Failed to bootstrap the default admin user. The backend server might have failed to start."
+    Write-Warning "Error details: $($_.Exception.Message)"
+    Write-Warning "You can try to create the user manually by running: .\.venv\Scripts\python.exe seed.py"
+} finally { Get-Job | Stop-Job | Remove-Job -ErrorAction SilentlyContinue }
 
 Write-Host "Setup complete." -ForegroundColor Green

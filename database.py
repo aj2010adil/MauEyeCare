@@ -21,9 +21,8 @@ AsyncSessionLocal: sessionmaker[AsyncSession] | None = None
 def get_engine() -> AsyncEngine:
     global engine
     if engine is None:
-        # Use async driver for SQLAlchemy 2.0
-        async_url = settings.database_url.replace("postgresql+psycopg://", "postgresql+asyncpg://")
-        engine = create_async_engine(async_url, pool_pre_ping=True, pool_size=10, max_overflow=20)
+        # The database_url from settings is already configured for asyncpg
+        engine = create_async_engine(settings.database_url, pool_pre_ping=True, pool_size=10, max_overflow=20)
     return engine
 
 
@@ -58,5 +57,3 @@ def create_stop_app_handler(app):
             await engine.dispose()
             engine = None
     return stop_app
-
-
