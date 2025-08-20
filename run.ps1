@@ -1,4 +1,9 @@
-Write-Host "[MauEyeCare] Starting backend and frontend..." -ForegroundColor Cyan
+param(
+  [string]$BindHost = '0.0.0.0',
+  [int]$BindPort = 8000
+)
+
+Write-Host "[MauEyeCare] Starting backend (${BindHost}:${BindPort}) and frontend..." -ForegroundColor Cyan
 $ErrorActionPreference = 'Stop'
 
 if (!(Test-Path .venv)) { Write-Error ".venv not found. Run scripts/setup.ps1 first."; exit 1 }
@@ -10,11 +15,14 @@ function Get-LocalIPv4 {
 }
 
 $ip = Get-LocalIPv4
-Write-Host "LAN IP: http://$ip:5173" -ForegroundColor Yellow
+Write-Host "LAN IP (frontend): http://$ip:5173" -ForegroundColor Yellow
+Write-Host "Backend health: http://127.0.0.1:${BindPort}/api/health" -ForegroundColor Yellow
 
-Start-Job -Name "backend" -ScriptBlock { & .\.venv\Scripts\uvicorn main:app --host 0.0.0.0 --port 8000 } | Out-Null
+if (Get-Job -Name backend -ErrorAction SilentlyContinue) { Get-Job -Name backend | Stop-Job -Force | Remove-Job -Force }
+Start-Job -Name "backend" -ScriptBlock { & .\.venv\Scripts\uvicorn main:app --host $using:BindHost --port $using:BindPort } | Out-Null
 Start-Sleep -Seconds 2
 npm run dev
 
-Get-Job | Stop-Job | Remove-Job
+Get-Job -Name backend | Stop-Job -Force -ErrorAction SilentlyContinue | Out-Null
+Get-Job -Name backend | Remove-Job -Force -ErrorAction SilentlyContinue | Out-Null
 

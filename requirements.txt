@@ -15,6 +15,7 @@ psycopg[binary] # Sync driver for Alembic migrations
 # Security
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+bcrypt==3.2.2
 
 # Reporting & Templates
 reportlab==4.2.2

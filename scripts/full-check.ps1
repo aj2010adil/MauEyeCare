@@ -1,6 +1,6 @@
 param(
   [string]$ApiHost = '127.0.0.1',
-  [int]$ApiPort = 8001,
+  [int]$ApiPort = 8000,
   [string]$Email = $env:MAU_ADMIN_EMAIL,
   [string]$Password = $env:MAU_ADMIN_PASSWORD
 )
@@ -12,7 +12,8 @@ if (-not $Email) { $Email = 'doctor@maueyecare.com' }
 if (-not $Password) { $Password = 'MauEyeCareAdmin@2024' }
 
 # Create logs folder and start transcript
-$logDir = Join-Path $PSScriptRoot '..' | Resolve-Path | ForEach-Object { Join-Path $_ 'logs' }
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$logDir = Join-Path $repoRoot 'logs'
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 $ts = Get-Date -Format 'yyyyMMdd-HHmmss'
 $logFile = Join-Path $logDir "full-check-$ts.log"
@@ -39,7 +40,21 @@ function Invoke-Step($Name, [ScriptBlock]$Action) {
     return $false
   }
 }
-
+# 0) Ensure port is free
+Invoke-Step "Free port ${ApiPort} if occupied" {
+  try {
+    $conns = Get-NetTCPConnection -LocalPort $ApiPort -ErrorAction SilentlyContinue
+    if ($conns) {
+      $pids = $conns | Select-Object -ExpandProperty OwningProcess -Unique
+      foreach ($pid in $pids) {
+        try { Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue } catch {}
+      }
+      Start-Sleep -Seconds 1
+    }
+    $still = Get-NetTCPConnection -LocalPort $ApiPort -ErrorAction SilentlyContinue
+    if ($still) { throw "Port $ApiPort still in use by PID(s): $($still | Select-Object -ExpandProperty OwningProcess -Unique -Join ',')" }
+  } catch {}
+}
 # 1) Apply Alembic migrations
 $results.DbMigrations = Invoke-Step 'Apply migrations (alembic upgrade head)' {
   & .\.venv\Scripts\python -m alembic upgrade head
@@ -60,11 +75,41 @@ $results.DbConnectivity = Invoke-Step 'DB connectivity and users table check' {
 
 # 4) Start backend on given port and wait for health
 $backendJob = $null
+${null} = New-Item -ItemType Directory -Force -Path $logDir
+$backendLog = Join-Path $logDir "backend-$ts.log"
+$backendProc = $null
 $results.BackendReady = Invoke-Step "Start backend on ${ApiHost}:${ApiPort} and wait for health" {
-  if (Get-Job -Name fullcheck-backend -ErrorAction SilentlyContinue) {
-    Get-Job -Name fullcheck-backend | Stop-Job -Force | Remove-Job -Force
-  }
-  $backendJob = Start-Job -Name fullcheck-backend -ScriptBlock { & .\.venv\Scripts\uvicorn main:app --host 127.0.0.1 --port $using:ApiPort --log-level debug }
+  try {
+    if ($backendProc -and !$backendProc.HasExited) { $backendProc.Kill() }
+  } catch {}
+  # Start backend as a process with stdout/stderr redirected to a log file
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
+  $psi.FileName = (Resolve-Path .\.venv\Scripts\python.exe).Path
+  $psi.Arguments = "-m uvicorn main:app --host 127.0.0.1 --port $ApiPort --log-level debug"
+  $psi.WorkingDirectory = $repoRoot
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError = $true
+  $psi.UseShellExecute = $false
+  $psi.CreateNoWindow = $true
+  $backendProc = New-Object System.Diagnostics.Process
+  $backendProc.StartInfo = $psi
+  $null = $backendProc.Start()
+  # Async write of output to file
+  $stdOut = $backendProc.StandardOutput
+  $stdErr = $backendProc.StandardError
+  Start-Job -Name fullcheck-backendlog -ScriptBlock {
+    param($outReader, $errReader, $logPath)
+    try {
+      $sw = New-Object System.IO.StreamWriter($logPath, $true)
+      while ($true) {
+        if ($outReader.EndOfStream -and $errReader.EndOfStream) { Start-Sleep -Milliseconds 200 }
+        while (-not $outReader.EndOfStream) { $sw.WriteLine($outReader.ReadLine()) }
+        while (-not $errReader.EndOfStream) { $sw.WriteLine($errReader.ReadLine()) }
+        $sw.Flush()
+        Start-Sleep -Milliseconds 200
+      }
+    } catch {}
+  } -ArgumentList $stdOut, $stdErr, $backendLog | Out-Null
   Start-Sleep -Seconds 2
 
   $healthOk = $false
@@ -79,7 +124,9 @@ $results.BackendReady = Invoke-Step "Start backend on ${ApiHost}:${ApiPort} and 
   }
   if (-not $healthOk) {
     Write-Host "[Backend] Recent logs:" -ForegroundColor Yellow
-    Receive-Job -Id $backendJob.Id -Keep -ErrorAction SilentlyContinue | Select-Object -Last 200 | Write-Output
+    if (Test-Path $backendLog) { Get-Content -Path $backendLog -Tail 200 }
+    Write-Host "[Backend] Netstat:" -ForegroundColor Yellow
+    netstat -ano | Select-String ":${ApiPort}\s" | Write-Output
     throw "Backend did not become healthy on port $ApiPort"
   }
 }
@@ -91,10 +138,8 @@ $results.ApiLogin = Invoke-Step 'API smoke test (login + refresh)' {
 }
 
 # Stop backend job
-if ($backendJob) {
-  Get-Job -Id $backendJob.Id | Stop-Job -Force -ErrorAction SilentlyContinue | Out-Null
-  Get-Job -Id $backendJob.Id | Remove-Job -Force -ErrorAction SilentlyContinue | Out-Null
-}
+try { if ($backendProc -and !$backendProc.HasExited) { $backendProc.Kill() } } catch {}
+if (Get-Job -Name fullcheck-backendlog -ErrorAction SilentlyContinue) { Get-Job -Name fullcheck-backendlog | Stop-Job -Force | Remove-Job -Force }
 
 Write-Host "`n=== Summary ===" -ForegroundColor Cyan
 $failCount = 0
