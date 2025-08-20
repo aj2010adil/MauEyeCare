@@ -6,12 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db_session
 from dependencies import get_current_user_id
 from visit import Visit
+from schemas import SuggestionsResponse
 
 
 router = APIRouter()
 
 
-@router.get("/suggestions", response_model=dict)
+@router.get("/suggestions", response_model=SuggestionsResponse)
 async def suggest(db: AsyncSession = Depends(get_db_session), user_id: str = Depends(get_current_user_id)):
     # Simple heuristic insights based on issue frequency
     rows = (await db.execute(select(Visit.issue, func.count().label("c")).group_by(Visit.issue))).all()

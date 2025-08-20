@@ -141,29 +141,32 @@ $psqlExe = Get-PsqlPath
 if ($psqlExe) {
   # Test connection to PostgreSQL
   try {
-    $output = & $psqlExe -U $pgSuperUser -h $pgHost -p $pgPort -c "\q" 2>&1
+    # Connect to the default 'postgres' db for the test
+    $output = & $psqlExe -U $pgSuperUser -h $pgHost -p $pgPort -d postgres -c "\q" 2>&1
     if ($LASTEXITCODE -ne 0) {
+        if ($output -like "*password authentication failed*") {
+            throw "FATAL: Password authentication failed for PostgreSQL user '$pgSuperUser'. The script defaults to 'maueyecare'. If your password is different, re-run setup after setting the MAU_PG_SUPERPASS environment variable.`n`nExample:`n`$env:MAU_PG_SUPERPASS = 'your_actual_postgres_password'`n.\setup.ps1"
+        }
         # Throw a custom error message that includes the psql output
         throw "psql connection test failed. Output: $output"
     }
     Write-Host "Successfully connected to PostgreSQL." -ForegroundColor Green
   } catch {
       Write-Error "Failed to connect to PostgreSQL. Please ensure the service is running and accessible."
-      Write-Error "Underlying error: $($_.Exception.Message)"
+      Write-Error "Error Details: $($_.Exception.Message)"
       Write-Error "Connection details: Host=$pgHost, Port=$pgPort, User=$pgSuperUser"
-      Write-Error "If the password for '$pgSuperUser' is not 'maueyecare', you can set it via the MAU_PG_SUPERPASS environment variable before running setup."
       exit 1
   }
 
   try {
-    & $psqlExe -U $pgSuperUser -h $pgHost -p $pgPort -c "CREATE USER maueyecare WITH PASSWORD 'maueyecare' CREATEDB;" | Out-Null
+    & $psqlExe -U $pgSuperUser -h $pgHost -p $pgPort -d postgres -c "CREATE USER maueyecare WITH PASSWORD 'maueyecare' CREATEDB;" | Out-Null
     Write-Host "Successfully created PostgreSQL user 'maueyecare'." -ForegroundColor Green
   } catch {
       if ($_.Exception.Message -like "*already exists*") { Write-Host "Skip: user 'maueyecare' already exists." -ForegroundColor DarkYellow }
       else { Write-Warning "Failed to create user 'maueyecare'. Error: $($_.Exception.Message)" }
   }
   try {
-    & $psqlExe -U $pgSuperUser -h $pgHost -p $pgPort -c "CREATE DATABASE maueyecare OWNER maueyecare;" | Out-Null
+    & $psqlExe -U $pgSuperUser -h $pgHost -p $pgPort -d postgres -c "CREATE DATABASE maueyecare OWNER maueyecare;" | Out-Null
     Write-Host "Successfully created PostgreSQL database 'maueyecare'." -ForegroundColor Green
   } catch {
       if ($_.Exception.Message -like "*already exists*") { Write-Host "Skip: database 'maueyecare' already exists." -ForegroundColor DarkYellow }

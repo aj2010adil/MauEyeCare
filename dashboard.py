@@ -10,12 +10,13 @@ from dependencies import get_current_user_id
 from patient import Patient
 from visit import Visit
 from prescription import Prescription
+from schemas import StatsResponse, MarketingResponse, OperationsResponse
 
 
 router = APIRouter()
 
 
-@router.get("/stats", response_model=dict)
+@router.get("/stats", response_model=StatsResponse)
 async def stats(db: AsyncSession = Depends(get_db_session), user_id: str = Depends(get_current_user_id)):
     today = datetime.utcnow().date()
     start = datetime.combine(today, datetime.min.time())
@@ -35,14 +36,14 @@ async def stats(db: AsyncSession = Depends(get_db_session), user_id: str = Depen
     }
 
 
-@router.get("/marketing", response_model=dict)
+@router.get("/marketing", response_model=MarketingResponse)
 async def marketing(db: AsyncSession = Depends(get_db_session), user_id: str = Depends(get_current_user_id)):
     rows = (await db.execute(select(Visit.issue, func.count().label("count")).group_by(Visit.issue))).all()
     issues = [{"issue": i or "", "count": int(c)} for i, c in rows if i]
     return {"top_issues": sorted(issues, key=lambda x: x["count"], reverse=True)[:10]}
 
 
-@router.get("/operations", response_model=dict)
+@router.get("/operations", response_model=OperationsResponse)
 async def operations(db: AsyncSession = Depends(get_db_session), user_id: str = Depends(get_current_user_id)):
     today = datetime.utcnow().date()
     start = datetime.combine(today, datetime.min.time())
@@ -57,7 +58,7 @@ async def operations(db: AsyncSession = Depends(get_db_session), user_id: str = 
             {
                 "id": v.id,
                 "patient_id": v.patient_id,
-                "time": v.visit_date.isoformat(),
+                "time": v.visit_date,
                 "issue": v.issue,
                 "advice": v.advice,
             }

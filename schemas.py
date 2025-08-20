@@ -124,3 +124,43 @@ class ConsentRead(BaseModel):
     signed_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# Dashboard Schemas
+class StatsResponse(BaseModel):
+    total_patients: int
+    today_visits: int
+    total_prescriptions: int
+
+
+class TopIssue(BaseModel):
+    issue: str
+    count: int
+
+
+class MarketingResponse(BaseModel):
+    top_issues: list[TopIssue]
+
+
+class TodayVisit(BaseModel):
+    id: int
+    patient_id: int
+    time: datetime
+    issue: Optional[str] = None
+    advice: Optional[str] = None
+
+
+class OperationsResponse(BaseModel):
+    today: list[TodayVisit]
+
+
+# POS Schemas
+class CheckoutResponse(BaseModel):
+    order_id: int
+    total: float
+    paid: float
+
+
+# Insights Schemas
+class SuggestionsResponse(BaseModel):
+    suggestions: list[str]

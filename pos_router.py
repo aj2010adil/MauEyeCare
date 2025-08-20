@@ -5,7 +5,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db_session
 from dependencies import get_current_user_id
-from schemas import PosCheckout
+from schemas import PosCheckout, CheckoutResponse
 from pos import PosOrder, PosOrderLine, Payment, LoyaltyAccount
 from product import Product
 from stock import StockBatch
@@ -14,7 +14,7 @@ from stock import StockBatch
 router = APIRouter()
 
 
-@router.post("/checkout", response_model=dict)
+@router.post("/checkout", response_model=CheckoutResponse)
 async def checkout(payload: PosCheckout, db: AsyncSession = Depends(get_db_session), user_id: str = Depends(get_current_user_id)):
     if not payload.lines:
         raise HTTPException(status_code=400, detail="Cart is empty")
