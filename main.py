@@ -13,6 +13,7 @@ from pos_router import router as pos_router
 from lab_router import router as lab_router
 from consent_router import router as consent_router
 from system import router as system_router
+from inventory import router as inventory_router
 from ai_router import router as ai_router
 
 
@@ -39,6 +40,7 @@ app.include_router(pos_router, prefix="/api/pos", tags=["pos"])
 app.include_router(lab_router, prefix="/api/lab", tags=["lab"])
 app.include_router(consent_router, prefix="/api/consents", tags=["consents"])
 app.include_router(system_router, prefix="/api/system", tags=["system"])
+app.include_router(inventory_router, prefix="/api/inventory", tags=["inventory"])
 app.include_router(ai_router, prefix="/api/ai", tags=["ai"])
 
 

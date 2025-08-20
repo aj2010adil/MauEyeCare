@@ -17,5 +17,12 @@ Start-Job -Name "backend" -ScriptBlock {
 Start-Sleep -Seconds 3 # Give the backend a moment to start
 
 # Start the Streamlit app in the foreground
-Write-Host "Starting Streamlit Prescription Writer... Access it in your browser."
-& .\.venv\Scripts\streamlit run prescription_app.py
+try {
+    Write-Host "Starting Streamlit Prescription Writer... Access it in your browser."
+    & .\.venv\Scripts\streamlit run prescription_app.py
+} finally {
+    Write-Host "Shutting down background API job..." -ForegroundColor Yellow
+    Get-Job -Name "backend" | Stop-Job -ErrorAction SilentlyContinue | Out-Null
+    Get-Job -Name "backend" | Remove-Job -ErrorAction SilentlyContinue | Out-Null
+    Write-Host "Cleanup complete."
+}
