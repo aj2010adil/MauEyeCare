@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Optional, List, Dict
 from pydantic import BaseModel, Field, constr
 
@@ -17,6 +18,17 @@ class VisitCreate(BaseModel):
     issue: Optional[str] = None
     advice: Optional[str] = None
     metrics: Optional[Dict] = None
+
+
+class VisitRead(BaseModel):
+    id: int
+    patient_id: int
+    visit_date: datetime
+    issue: Optional[str] = None
+    advice: Optional[str] = None
+    metrics: Optional[Dict] = None
+
+    model_config = {"from_attributes": True}
 
 
 class PrescriptionCreate(BaseModel):
@@ -59,5 +71,3 @@ class ConsentCreate(BaseModel):
     type: str
     content: Dict
     signed_by: str
-
-

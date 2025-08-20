@@ -10,7 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.responses import FileResponse
 
 from config import settings
-from dependencies import get_db, get_current_user_id
+from database import get_db_session
+from dependencies import get_current_user_id
 from patient import Patient
 from visit import Visit
 from prescription import Prescription
@@ -30,7 +31,7 @@ def _ensure_prescription_dir(now: datetime) -> str:
 @router.get("/patient/{patient_id}", response_model=list[dict])
 async def list_patient_prescriptions(
     patient_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db_session),
     user_id: str = Depends(get_current_user_id),
 ):
     stmt = select(Prescription).where(Prescription.patient_id == patient_id).order_by(Prescription.created_at.desc())
@@ -53,7 +54,7 @@ async def list_patient_prescriptions(
 @router.post("", response_model=dict)
 async def create_prescription(
     payload: PrescriptionCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db_session),
     user_id: str = Depends(get_current_user_id),
 ):
     patient_id = payload.patient_id
@@ -99,9 +100,8 @@ async def create_prescription(
 
 
 @router.get("/{prescription_id}/pdf")
-async def get_prescription_pdf(prescription_id: int, db: AsyncSession = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+async def get_prescription_pdf(prescription_id: int, db: AsyncSession = Depends(get_db_session), user_id: str = Depends(get_current_user_id)):
     pres = await db.get(Prescription, prescription_id)
     if not pres or not pres.pdf_path:
         raise HTTPException(status_code=404, detail="Not found")
     return FileResponse(path=pres.pdf_path, media_type="application/pdf", filename=os.path.basename(pres.pdf_path))
-

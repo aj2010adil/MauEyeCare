@@ -3,8 +3,8 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from dependencies import get_db, get_current_user_id
+from database import get_db_session
+from dependencies import get_current_user_id
 from schemas import PosCheckout
 from pos import PosOrder, PosOrderLine, Payment, LoyaltyAccount
 from product import Product
@@ -15,7 +15,7 @@ router = APIRouter()
 
 
 @router.post("/checkout", response_model=dict)
-async def checkout(payload: PosCheckout, db: AsyncSession = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+async def checkout(payload: PosCheckout, db: AsyncSession = Depends(get_db_session), user_id: str = Depends(get_current_user_id)):
     if not payload.lines:
         raise HTTPException(status_code=400, detail="Cart is empty")
 
@@ -64,5 +64,3 @@ async def checkout(payload: PosCheckout, db: AsyncSession = Depends(get_db), use
 
     await db.commit()
     return {"order_id": order.id, "total": float(total), "paid": float(paid)}
-
-

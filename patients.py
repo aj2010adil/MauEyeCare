@@ -5,8 +5,8 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from dependencies import get_db, get_current_user_id
+from database import get_db_session
+from dependencies import get_current_user_id
 from patient import Patient
 from schemas import PatientCreate
 
@@ -19,7 +19,7 @@ async def list_patients(
     q: Optional[str] = Query(None, description="Search by name or phone"),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db_session),
     user_id: str = Depends(get_current_user_id),
 ):
     stmt = select(Patient)
@@ -45,7 +45,7 @@ async def list_patients(
 @router.post("", response_model=dict)
 async def create_patient(
     payload: PatientCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db_session),
     user_id: str = Depends(get_current_user_id),
 ):
     patient = Patient(
@@ -59,5 +59,3 @@ async def create_patient(
     await db.commit()
     await db.refresh(patient)
     return {"id": patient.id}
-
-

@@ -60,7 +60,7 @@ if ($envFileExists) {
 
 # --- PostgreSQL Checks ---
 Write-Host "3. Checking PostgreSQL..."
-$pgService = Get-Service -Name "postgres*" | Where-Object { $_.Name -like 'postgresql-x64-*' -or $_.DisplayName -like 'PostgreSQL Server*' } | Select-Object -First 1
+$pgService = Get-Service -Name "postgres*" | Where-Object { $_.Name -like 'postgresql-x64-*' -or $_.DisplayName -like 'PostgreSQL Server*' -or $_.Name -like 'postgresql-*' } | Select-Object -First 1
 Test-Result ($pgService) "PostgreSQL service is installed."
 if ($pgService) {
     Test-Result ($pgService.Status -eq 'Running') "PostgreSQL service is running."

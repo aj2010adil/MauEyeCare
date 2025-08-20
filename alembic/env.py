@@ -1,17 +1,30 @@
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
 
+# Add project root to the path to ensure modules are found
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
 from config import settings
 from database import Base
+# Import all models here so that Alembic's 'autogenerate'
+# feature can detect them.
 import user  # noqa: F401
 import patient  # noqa: F401
 import visit  # noqa: F401
 import prescription  # noqa: F401
+import consent  # noqa: F401
+import lab  # noqa: F401
+import product  # noqa: F401
+import stock  # noqa: F401
+import pos  # noqa: F401
+import audit  # noqa: F401
 
 
 config = context.config
@@ -23,7 +36,7 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    url = settings.database_url
+    url = settings.sync_database_url
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -37,7 +50,7 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     configuration = config.get_section(config.config_ini_section)
-    configuration["sqlalchemy.url"] = settings.database_url
+    configuration["sqlalchemy.url"] = settings.sync_database_url
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",
@@ -55,5 +68,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-
-

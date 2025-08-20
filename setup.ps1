@@ -39,6 +39,43 @@ try {
     choco install postgresql -y "--params '/Password:maueyecare'"
 }
 
+Write-Host "Verifying PostgreSQL service status..." -ForegroundColor Yellow
+$maxRetries = 10
+$retryDelaySeconds = 3
+$pgService = $null
+
+for ($i = 1; $i -le $maxRetries; $i++) {
+    $pgService = Get-Service -Name "postgres*" -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'postgresql-x64-*' -or $_.DisplayName -like 'PostgreSQL Server*' -or $_.Name -like 'postgresql-*' } | Select-Object -First 1
+    if ($pgService) {
+        Write-Host "PostgreSQL service found." -ForegroundColor Green
+        break
+    }
+    Write-Host "Waiting for PostgreSQL service to appear... (attempt $i of $maxRetries)" -ForegroundColor DarkGray
+    Start-Sleep -Seconds $retryDelaySeconds
+}
+
+if (-not $pgService) {
+    Write-Error "PostgreSQL service was not found after installation. Setup cannot continue."
+    Write-Host "---" -ForegroundColor Yellow
+    Write-Host "TROUBLESHOOTING:" -ForegroundColor Yellow
+    Write-Host "1. Run 'choco list --local-only' to see if 'postgresql' is listed." -ForegroundColor Yellow
+    Write-Host "2. Check Windows 'Services' to see if a PostgreSQL service exists with a different name." -ForegroundColor Yellow
+    Write-Host "3. You may need to install PostgreSQL manually from https://www.postgresql.org/download/windows/" -ForegroundColor Yellow
+    exit 1
+}
+
+if ($pgService.Status -ne 'Running') {
+    Write-Warning "PostgreSQL service is not running. Attempting to start it..."
+    Start-Service -InputObject $pgService
+    Start-Sleep -Seconds 5 # Give it a moment to start
+    $pgService.Refresh()
+    if ($pgService.Status -ne 'Running') {
+        Write-Error "Failed to start the PostgreSQL service. Please check the Windows Event Viewer for details."
+        exit 1
+    }
+}
+Write-Host "PostgreSQL service is running." -ForegroundColor Green
+
 Write-Host "Updating environment to find PostgreSQL..." -ForegroundColor Yellow
 $pgBinPath = (Get-ChildItem -Path "$($env:ProgramFiles)\PostgreSQL\*\bin" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
 if (-not $pgBinPath) {

@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from dependencies import get_db, get_current_user_id
+from database import get_db_session
+from dependencies import get_current_user_id
 from patient import Patient
 from visit import Visit
 from prescription import Prescription
@@ -16,7 +16,7 @@ router = APIRouter()
 
 
 @router.get("/stats", response_model=dict)
-async def stats(db: AsyncSession = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+async def stats(db: AsyncSession = Depends(get_db_session), user_id: str = Depends(get_current_user_id)):
     today = datetime.utcnow().date()
     start = datetime.combine(today, datetime.min.time())
     end = datetime.combine(today, datetime.max.time())
@@ -36,14 +36,14 @@ async def stats(db: AsyncSession = Depends(get_db), user_id: str = Depends(get_c
 
 
 @router.get("/marketing", response_model=dict)
-async def marketing(db: AsyncSession = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+async def marketing(db: AsyncSession = Depends(get_db_session), user_id: str = Depends(get_current_user_id)):
     rows = (await db.execute(select(Visit.issue, func.count().label("count")).group_by(Visit.issue))).all()
     issues = [{"issue": i or "", "count": int(c)} for i, c in rows if i]
     return {"top_issues": sorted(issues, key=lambda x: x["count"], reverse=True)[:10]}
 
 
 @router.get("/operations", response_model=dict)
-async def operations(db: AsyncSession = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+async def operations(db: AsyncSession = Depends(get_db_session), user_id: str = Depends(get_current_user_id)):
     today = datetime.utcnow().date()
     start = datetime.combine(today, datetime.min.time())
     end = datetime.combine(today, datetime.max.time())
@@ -64,5 +64,3 @@ async def operations(db: AsyncSession = Depends(get_db), user_id: str = Depends(
             for v in rows
         ]
     }
-
-
