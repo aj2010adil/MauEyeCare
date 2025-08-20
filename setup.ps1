@@ -24,6 +24,9 @@ Install-ChocoIfMissing
 Install-OrUpgradePackage python ""
 Install-OrUpgradePackage nodejs-lts ""
 
+Write-Host "Ensuring C++ Build Tools are installed (for Python packages)..." -ForegroundColor Yellow
+Install-OrUpgradePackage visualstudio2022-workload-vctools ""
+
 # Install PostgreSQL with retry logic
 try {
     Write-Host "Attempting to install or upgrade PostgreSQL..." -ForegroundColor Yellow

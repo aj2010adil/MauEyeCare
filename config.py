@@ -1,5 +1,8 @@
 import os
 from dataclasses import dataclass
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def _expand_path(path: str) -> str:
@@ -38,6 +41,15 @@ class Settings:
 
     @property
     def database_url(self) -> str:
+        return (
+            f"postgresql+asyncpg://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+        )
+
+    @property
+    def sync_database_url(self) -> str:
+        """
+        A synchronous database URL for tools like Alembic that do not run in an async event loop.
+        """
         return (
             f"postgresql+psycopg://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
         )
