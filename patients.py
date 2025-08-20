@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -8,13 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db_session
 from dependencies import get_current_user_id
 from patient import Patient
-from schemas import PatientCreate
+from schemas import PatientCreate, CreateResponse, PatientRead
 
 
 router = APIRouter()
 
 
-@router.get("", response_model=list[dict])
+@router.get("", response_model=list[PatientRead])
 async def list_patients(
     q: Optional[str] = Query(None, description="Search by name or phone"),
     page: int = Query(1, ge=1),
@@ -27,22 +27,10 @@ async def list_patients(
         like = f"%{q}%"
         stmt = stmt.where((Patient.first_name.ilike(like)) | (Patient.last_name.ilike(like)) | (Patient.phone.ilike(like)))
     stmt = stmt.order_by(Patient.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
-    res = (await db.execute(stmt)).scalars().all()
-    return [
-        {
-            "id": p.id,
-            "first_name": p.first_name,
-            "last_name": p.last_name,
-            "phone": p.phone,
-            "age": p.age,
-            "gender": p.gender,
-            "created_at": p.created_at.isoformat() if p.created_at else None,
-        }
-        for p in res
-    ]
+    return (await db.execute(stmt)).scalars().all()
 
 
-@router.post("", response_model=dict)
+@router.post("", response_model=CreateResponse)
 async def create_patient(
     payload: PatientCreate,
     db: AsyncSession = Depends(get_db_session),

@@ -39,23 +39,34 @@ try {
     choco install postgresql -y "--params '/Password:maueyecare'"
 }
 
-Write-Host "Verifying PostgreSQL service status..." -ForegroundColor Yellow
-$maxRetries = 10
-$retryDelaySeconds = 3
-$pgService = $null
-
-for ($i = 1; $i -le $maxRetries; $i++) {
-    $pgService = Get-Service -Name "postgres*" -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'postgresql-x64-*' -or $_.DisplayName -like 'PostgreSQL Server*' -or $_.Name -like 'postgresql-*' } | Select-Object -First 1
-    if ($pgService) {
-        Write-Host "PostgreSQL service found." -ForegroundColor Green
-        break
+function Find-PostgresService {
+    param($MaxRetries = 10, $RetryDelaySeconds = 3)
+    for ($i = 1; $i -le $MaxRetries; $i++) {
+        $foundService = Get-Service -Name "postgres*" -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'postgresql-x64-*' -or $_.DisplayName -like 'PostgreSQL Server*' -or $_.Name -like 'postgresql-*' } | Select-Object -First 1
+        if ($foundService) {
+            Write-Host "PostgreSQL service found." -ForegroundColor Green
+            return $foundService
+        }
+        Write-Host "Waiting for PostgreSQL service to appear... (attempt $i of $MaxRetries)" -ForegroundColor DarkGray
+        Start-Sleep -Seconds $RetryDelaySeconds
     }
-    Write-Host "Waiting for PostgreSQL service to appear... (attempt $i of $maxRetries)" -ForegroundColor DarkGray
-    Start-Sleep -Seconds $retryDelaySeconds
+    return $null
+}
+
+Write-Host "Verifying PostgreSQL service status..." -ForegroundColor Yellow
+$pgService = Find-PostgresService
+
+if (-not $pgService -and (choco list --local-only | Select-String -Pattern "^postgresql ")) {
+    Write-Warning "Chocolatey reports PostgreSQL is installed, but the service is missing. This indicates a broken installation."
+    Write-Warning "Attempting to forcefully reinstall PostgreSQL. This may affect other databases on your system."
+    choco install postgresql -fy --params '/Password:maueyecare'
+    
+    Write-Host "Re-verifying PostgreSQL service status after force reinstall..." -ForegroundColor Yellow
+    $pgService = Find-PostgresService
 }
 
 if (-not $pgService) {
-    Write-Error "PostgreSQL service was not found after installation. Setup cannot continue."
+    Write-Error "PostgreSQL service was not found after installation and repair attempts. Setup cannot continue."
     Write-Host "---" -ForegroundColor Yellow
     Write-Host "TROUBLESHOOTING:" -ForegroundColor Yellow
     Write-Host "1. Run 'choco list --local-only' to see if 'postgresql' is listed." -ForegroundColor Yellow

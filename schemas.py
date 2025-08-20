@@ -13,6 +13,22 @@ class PatientCreate(BaseModel):
     gender: Optional[str] = Field(default=None, max_length=20)
 
 
+class CreateResponse(BaseModel):
+    id: int
+
+
+class PatientRead(BaseModel):
+    id: int
+    first_name: str
+    last_name: Optional[str] = None
+    phone: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class VisitCreate(BaseModel):
     patient_id: int
     issue: Optional[str] = None
