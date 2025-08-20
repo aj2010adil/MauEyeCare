@@ -4,7 +4,7 @@ import { useAuth } from './AuthContext'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('doctor@maueyecare.com')
-  const [password, setPassword] = useState('changeme')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const { login } = useAuth()
   const nav = useNavigate()

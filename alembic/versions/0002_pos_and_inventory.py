@@ -13,7 +13,7 @@ def upgrade() -> None:
         'products',
         sa.Column('id', sa.Integer(), primary_key=True),
         sa.Column('name', sa.String(255), nullable=False),
-        sa.Column('category', sa.String(32), nullable=False, index=True),
+        sa.Column('category', sa.String(32), nullable=False),
         sa.Column('hsn_sac', sa.String(16)),
         sa.Column('brand', sa.String(100)),
         sa.Column('color', sa.String(50)),
@@ -26,7 +26,6 @@ def upgrade() -> None:
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP')),
     )
     op.create_index('ix_products_name', 'products', ['name'])
-    op.create_index('ix_products_category', 'products', ['category'])
     op.create_index('ix_products_brand', 'products', ['brand'])
     op.create_index('ix_products_cat_brand', 'products', ['category', 'brand'])
 

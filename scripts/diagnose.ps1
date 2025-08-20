@@ -101,6 +101,7 @@ if ($psqlExe) {
     $pgUser = $env:MAU_DB_USER; if (-not $pgUser) { $pgUser = 'maueyecare' }
     $pgDb = $env:MAU_DB_NAME; if (-not $pgDb) { $pgDb = 'maueyecare' }
     $env:PGPASSWORD = $env:MAU_DB_PASSWORD; if (-not $env:PGPASSWORD) { $env:PGPASSWORD = 'maueyecare' }
+    Write-Host "Testing PostgreSQL connection: user=$pgUser db=$pgDb host=$pgHost port=$pgPort" -ForegroundColor Yellow
 
     $connTest = & $psqlExe -U $pgUser -h $pgHost -p $pgPort -d $pgDb -c "\q"
     Test-Result ($LASTEXITCODE -eq 0) "Can connect to the '$pgDb' database."
@@ -109,7 +110,7 @@ if ($psqlExe) {
         $userCount = (& $psqlExe -U $pgUser -h $pgHost -p $pgPort -d $pgDb -t -c "SELECT COUNT(*) FROM users;").Trim()
         Test-Result ($userCount -gt 0) "The 'users' table contains data (found $userCount users)."
     }
-    Remove-Item Env:\PGPASSWORD
+    Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue
 }
 
 # --- Backend API Check ---

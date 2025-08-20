@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "backend": ".\\.venv\\Scripts\\uvicorn main:app --host 0.0.0.0 --port 8000",
+    "db:test": "powershell -ExecutionPolicy Bypass -File .\\scripts\\db-test.ps1",
+    "api:smoke": "powershell -ExecutionPolicy Bypass -File .\\scripts\\api-smoke.ps1",
+    "full:check": "powershell -ExecutionPolicy Bypass -File .\\scripts\\full-check.ps1",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
