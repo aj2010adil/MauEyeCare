@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database import get_session_maker
+from config import settings
 from user import User
 from security import hash_password
 from patient import Patient
@@ -13,7 +14,12 @@ async def main():
     async with SessionLocal() as db:  # type: ignore[call-arg]
         # Ensure default user
         if not (await db.execute(select(User))).scalars().first():
-            db.add(User(email="doctor@maueyecare.com", full_name="Doctor", role="doctor", password_hash=hash_password("changeme")))
+            db.add(User(
+                email=settings.bootstrap_admin_email,
+                full_name="Doctor",
+                role="doctor",
+                password_hash=hash_password(settings.bootstrap_admin_password)
+            ))
         # Sample patients
         if not (await db.execute(select(Patient))).scalars().first():
             db.add_all([
@@ -25,4 +31,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-

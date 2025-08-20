@@ -22,6 +22,10 @@ class Settings:
     access_token_expires_minutes: int = int(os.getenv("MAU_ACCESS_TOKEN_MIN", "30"))
     refresh_token_expires_days: int = int(os.getenv("MAU_REFRESH_TOKEN_DAYS", "7"))
 
+    # Admin
+    bootstrap_admin_email: str = os.getenv("MAU_ADMIN_EMAIL", "doctor@maueyecare.com")
+    bootstrap_admin_password: str = os.getenv("MAU_ADMIN_PASSWORD", "MauEyeCareAdmin@2024")
+
     # Filesystem
     documents_root: str = _expand_path(os.getenv(
         "MAU_DOCUMENTS_ROOT",
@@ -40,5 +44,3 @@ class Settings:
 
 
 settings = Settings()
-
-

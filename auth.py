@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db_session
+from config import settings
 from security import verify_password, hash_password, create_access_token, create_refresh_token, decode_refresh_token
 from user import User
 
@@ -41,14 +42,18 @@ async def refresh_token(payload: dict):
 @router.post("/bootstrap", response_model=dict)
 async def bootstrap_admin(db: AsyncSession = Depends(get_db_session)):
     """Idempotent: ensure a default doctor account exists."""
-    email = "doctor@maueyecare.com"
+    email = settings.bootstrap_admin_email
     stmt = select(User).where(User.email == email)
     user = (await db.execute(stmt)).scalar_one_or_none()
     if user:
-        return {"created": False}
-    user = User(email=email, full_name="Default Doctor", role="doctor", password_hash=hash_password("changeme"))
+        return {"created": False, "message": "Default user already exists."}
+    
+    user = User(
+        email=email,
+        full_name="Default Doctor",
+        role="doctor",
+        password_hash=hash_password(settings.bootstrap_admin_password),
+    )
     db.add(user)
     await db.commit()
-    return {"created": True}
-
-
+    return {"created": True, "message": f"Default user '{email}' created."}

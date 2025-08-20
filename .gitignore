@@ -35,3 +35,6 @@ Thumbs.db
 *secret*.json
 credentials.json
 node_modules/
+
+# Environment variables
+.env
