@@ -23,7 +23,18 @@ function Install-OrUpgradePackage($name, $pkgArgs) {
 Install-ChocoIfMissing
 Install-OrUpgradePackage python ""
 Install-OrUpgradePackage nodejs-lts ""
-Install-OrUpgradePackage postgresql "--params '/Password:maueyecare'"
+
+# Install PostgreSQL with retry logic
+try {
+    Write-Host "Attempting to install or upgrade PostgreSQL..." -ForegroundColor Yellow
+    Install-OrUpgradePackage postgresql "--params '/Password:maueyecare'"
+} catch {
+    Write-Warning "PostgreSQL installation/upgrade failed. This can happen if a previous installation is corrupt."
+    Write-Warning "Attempting to forcefully uninstall and reinstall PostgreSQL. This may affect other databases on your system."
+    choco uninstall postgresql -fy
+    Write-Host "Re-installing PostgreSQL..." -ForegroundColor Yellow
+    choco install postgresql -y "--params '/Password:maueyecare'"
+}
 
 Write-Host "Creating Python venv and installing requirements..." -ForegroundColor Yellow
 if (!(Test-Path .venv)) { py -3 -m venv .venv }
@@ -37,8 +48,8 @@ Write-Host "Configuring PostgreSQL..." -ForegroundColor Yellow
 
 function Get-PsqlPath {
   $candidates = @(
-    Join-Path $env:ProgramFiles "PostgreSQL\**\bin\psql.exe" ,
-    Join-Path ${env:ProgramFiles(x86)} "PostgreSQL\**\bin\psql.exe"
+    (Join-Path $env:ProgramFiles "PostgreSQL\**\bin\psql.exe"),
+    (Join-Path ${env:ProgramFiles(x86)} "PostgreSQL\**\bin\psql.exe")
   )
   foreach ($glob in $candidates) {
     try {
@@ -61,13 +72,33 @@ if ($env:MAU_PG_SUPERPASS) { $env:PGPASSWORD = $env:MAU_PG_SUPERPASS } else { $e
 
 $psqlExe = Get-PsqlPath
 if ($psqlExe) {
+  # Test connection to PostgreSQL
   try {
-    # Removed `2>$null` so that errors are not suppressed and can be caught.
+    & $psqlExe -U $pgSuperUser -h $pgHost -p $pgPort -c "\q" 2>$null
+    Write-Host "Successfully connected to PostgreSQL." -ForegroundColor Green
+  } catch {
+      Write-Error "Failed to connect to PostgreSQL. Please ensure the service is running and accessible."
+      Write-Error "Connection details: Host=$pgHost, Port=$pgPort, User=$pgSuperUser"
+      Write-Error "If password is not 'maueyecare', set it via the MAU_PG_SUPERPASS environment variable."
+      # Clean up the password from the environment for security
+      Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue
+      exit 1
+  }
+
+  try {
     & $psqlExe -U $pgSuperUser -h $pgHost -p $pgPort -c "CREATE USER maueyecare WITH PASSWORD 'maueyecare' CREATEDB;" | Out-Null
-  } catch { Write-Host "Skip: user 'maueyecare' creation (user may already exist)." -ForegroundColor DarkYellow }
+    Write-Host "Successfully created PostgreSQL user 'maueyecare'." -ForegroundColor Green
+  } catch {
+      if ($_.Exception.Message -like "*already exists*") { Write-Host "Skip: user 'maueyecare' already exists." -ForegroundColor DarkYellow }
+      else { Write-Warning "Failed to create user 'maueyecare'. Error: $($_.Exception.Message)" }
+  }
   try {
     & $psqlExe -U $pgSuperUser -h $pgHost -p $pgPort -c "CREATE DATABASE maueyecare OWNER maueyecare;" | Out-Null
-  } catch { Write-Host "Skip: database 'maueyecare' creation (database may already exist)." -ForegroundColor DarkYellow }
+    Write-Host "Successfully created PostgreSQL database 'maueyecare'." -ForegroundColor Green
+  } catch {
+      if ($_.Exception.Message -like "*already exists*") { Write-Host "Skip: database 'maueyecare' already exists." -ForegroundColor DarkYellow }
+      else { Write-Warning "Failed to create database 'maueyecare'. Error: $($_.Exception.Message)" }
+  }
 
   # Clean up the password from the environment for security
   Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue

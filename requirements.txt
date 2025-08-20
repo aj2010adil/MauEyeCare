@@ -1,25 +1,24 @@
+# Core application
 fastapi==0.112.0
 uvicorn[standard]==0.30.6
-SQLAlchemy==2.0.32
-asyncpg==0.29.0
-alembic==1.13.2
-psycopg[binary]==3.2.1
-python-jose==3.3.0
-passlib[bcrypt]==1.7.4
-reportlab==4.2.2
-Jinja2==3.1.4
 pydantic==2.8.2
 pydantic-settings==2.4.0
-fastapi
-uvicorn[standard]
-sqlalchemy[asyncio]
-alembic
-psycopg2-binary
-pydantic
-pydantic-settings
 python-dotenv
-python-jose[cryptography]
-bcrypt
-reportlab
+
+# Database
+SQLAlchemy==2.0.32
+asyncpg==0.29.0  # Primary async driver for FastAPI
+alembic==1.13.2
+# psycopg[binary]==3.2.1 # Sync driver, uncomment if Alembic is configured to use it
+
+# Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Reporting & Templates
+reportlab==4.2.2
+Jinja2==3.1.4
+
+# Testing
 pytest
 httpx
