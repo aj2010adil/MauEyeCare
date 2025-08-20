@@ -12,6 +12,7 @@ from insights import router as insights_router
 from pos_router import router as pos_router
 from lab_router import router as lab_router
 from consent_router import router as consent_router
+from system import router as system_router
 
 
 app = FastAPI(title="MauEyeCare API", description="Local clinic management system", version="1.0.0")
@@ -36,6 +37,7 @@ app.include_router(insights_router, prefix="/api/insights", tags=["insights"])
 app.include_router(pos_router, prefix="/api/pos", tags=["pos"])
 app.include_router(lab_router, prefix="/api/lab", tags=["lab"])
 app.include_router(consent_router, prefix="/api/consents", tags=["consents"])
+app.include_router(system_router, prefix="/api/system", tags=["system"])
 
 
 @app.get("/api/health")

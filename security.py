@@ -19,7 +19,7 @@ def verify_password(password: str, hashed_password: str) -> bool:
 
 
 def create_access_token(subject: str, expires_minutes: Optional[int] = None) -> str:
-    expire_minutes = expires_minutes or settings.access_token_expires_minutes
+    expire_minutes = expires_minutes or min(settings.access_token_expires_minutes, 20)
     to_encode = {"sub": subject, "type": "access", "iat": datetime.now(timezone.utc).timestamp()}
     expire = datetime.now(timezone.utc) + timedelta(minutes=expire_minutes)
     to_encode.update({"exp": expire})
@@ -27,7 +27,7 @@ def create_access_token(subject: str, expires_minutes: Optional[int] = None) -> 
 
 
 def create_refresh_token(subject: str, expires_days: Optional[int] = None) -> str:
-    expire_days = expires_days or settings.refresh_token_expires_days
+    expire_days = expires_days or min(settings.refresh_token_expires_days, 14)
     to_encode = {"sub": subject, "type": "refresh", "iat": datetime.now(timezone.utc).timestamp()}
     expire = datetime.now(timezone.utc) + timedelta(days=expire_days)
     to_encode.update({"exp": expire})

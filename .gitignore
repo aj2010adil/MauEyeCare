@@ -34,3 +34,4 @@ Thumbs.db
 *tokens*.json
 *secret*.json
 credentials.json
+node_modules/

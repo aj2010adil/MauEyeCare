@@ -54,16 +54,23 @@ function Get-PsqlPath {
 $pgHost = $env:MAU_DB_HOST; if (-not $pgHost) { $pgHost = '127.0.0.1' }
 $pgPort = $env:MAU_DB_PORT; if (-not $pgPort) { $pgPort = '5432' }
 $pgSuperUser = $env:MAU_PG_SUPERUSER; if (-not $pgSuperUser) { $pgSuperUser = 'postgres' }
-if ($env:MAU_PG_SUPERPASS) { $env:PGPASSWORD = $env:MAU_PG_SUPERPASS }
+
+# The choco installer sets the postgres user password to 'maueyecare'.
+# We need to set PGPASSWORD so psql can authenticate non-interactively.
+if ($env:MAU_PG_SUPERPASS) { $env:PGPASSWORD = $env:MAU_PG_SUPERPASS } else { $env:PGPASSWORD = 'maueyecare' }
 
 $psqlExe = Get-PsqlPath
 if ($psqlExe) {
   try {
-    & $psqlExe -U $pgSuperUser -h $pgHost -p $pgPort -c "CREATE USER maueyecare WITH PASSWORD 'maueyecare' CREATEDB;" 2>$null | Out-Null
-  } catch { Write-Host "Skip: user create (may already exist)" -ForegroundColor DarkYellow }
+    # Removed `2>$null` so that errors are not suppressed and can be caught.
+    & $psqlExe -U $pgSuperUser -h $pgHost -p $pgPort -c "CREATE USER maueyecare WITH PASSWORD 'maueyecare' CREATEDB;" | Out-Null
+  } catch { Write-Host "Skip: user 'maueyecare' creation (user may already exist)." -ForegroundColor DarkYellow }
   try {
-    & $psqlExe -U $pgSuperUser -h $pgHost -p $pgPort -c "CREATE DATABASE maueyecare OWNER maueyecare;" 2>$null | Out-Null
-  } catch { Write-Host "Skip: database create (may already exist)" -ForegroundColor DarkYellow }
+    & $psqlExe -U $pgSuperUser -h $pgHost -p $pgPort -c "CREATE DATABASE maueyecare OWNER maueyecare;" | Out-Null
+  } catch { Write-Host "Skip: database 'maueyecare' creation (database may already exist)." -ForegroundColor DarkYellow }
+
+  # Clean up the password from the environment for security
+  Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue
 } else {
   Write-Warning "psql.exe not found in common locations or PATH. Skipping DB provisioning. Ensure database exists and update MAU_DB_* in environment if needed."
 }
@@ -89,4 +96,3 @@ try { Invoke-RestMethod -Method POST -Uri http://127.0.0.1:8001/api/auth/bootstr
 Get-Job | Stop-Job | Remove-Job
 
 Write-Host "Setup complete." -ForegroundColor Green
-

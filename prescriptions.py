@@ -7,6 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.responses import FileResponse
 
 from config import settings
 from dependencies import get_db, get_current_user_id
@@ -96,4 +97,11 @@ async def create_prescription(
     await db.refresh(pres)
     return {"id": pres.id, "pdf_path": pres.pdf_path}
 
+
+@router.get("/{prescription_id}/pdf")
+async def get_prescription_pdf(prescription_id: int, db: AsyncSession = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+    pres = await db.get(Prescription, prescription_id)
+    if not pres or not pres.pdf_path:
+        raise HTTPException(status_code=404, detail="Not found")
+    return FileResponse(path=pres.pdf_path, media_type="application/pdf", filename=os.path.basename(pres.pdf_path))
 

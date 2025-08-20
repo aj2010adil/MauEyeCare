@@ -17,6 +17,8 @@ router = APIRouter()
 @router.get("", response_model=list[dict])
 async def list_patients(
     q: Optional[str] = Query(None, description="Search by name or phone"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ):
@@ -24,7 +26,7 @@ async def list_patients(
     if q:
         like = f"%{q}%"
         stmt = stmt.where((Patient.first_name.ilike(like)) | (Patient.last_name.ilike(like)) | (Patient.phone.ilike(like)))
-    stmt = stmt.order_by(Patient.created_at.desc()).limit(100)
+    stmt = stmt.order_by(Patient.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
     res = (await db.execute(stmt)).scalars().all()
     return [
         {

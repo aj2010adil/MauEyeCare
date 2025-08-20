@@ -11,8 +11,8 @@ export default function PatientsPage() {
   const [age, setAge] = useState<number | ''>('')
   const [gender, setGender] = useState('')
 
-  const load = async () => {
-    const res = await fetch('/api/patients?q=' + encodeURIComponent(q), { headers: { Authorization: `Bearer ${accessToken}` } })
+  const load = async (page: number = 1) => {
+    const res = await fetch(`/api/patients?q=${encodeURIComponent(q)}&page=${page}&page_size=50`, { headers: { Authorization: `Bearer ${accessToken}` } })
     setRows(await res.json())
   }
   useEffect(() => { load() }, [])
