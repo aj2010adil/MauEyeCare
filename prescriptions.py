@@ -10,12 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.responses import FileResponse
 
 from config import settings
+from pdf_generator import render_prescription_pdf
 from database import get_db_session
 from dependencies import get_current_user_id
 from patient import Patient
 from visit import Visit
 from prescription import Prescription
-from schemas import PrescriptionCreate
+from schemas import PrescriptionCreate, PrescriptionRead, PrescriptionCreateResponse
 
 
 router = APIRouter()
@@ -28,30 +29,17 @@ def _ensure_prescription_dir(now: datetime) -> str:
     return day_dir
 
 
-@router.get("/patient/{patient_id}", response_model=list[dict])
+@router.get("/patient/{patient_id}", response_model=list[PrescriptionRead])
 async def list_patient_prescriptions(
     patient_id: int,
     db: AsyncSession = Depends(get_db_session),
     user_id: str = Depends(get_current_user_id),
 ):
     stmt = select(Prescription).where(Prescription.patient_id == patient_id).order_by(Prescription.created_at.desc())
-    rows = (await db.execute(stmt)).scalars().all()
-    return [
-        {
-            "id": p.id,
-            "created_at": p.created_at.isoformat() if p.created_at else None,
-            "pdf_path": p.pdf_path,
-            "rx_values": p.rx_values,
-            "spectacles": p.spectacles,
-            "medicines": p.medicines,
-            "totals": p.totals,
-            "visit_id": p.visit_id,
-        }
-        for p in rows
-    ]
+    return (await db.execute(stmt)).scalars().all()
 
 
-@router.post("", response_model=dict)
+@router.post("", response_model=PrescriptionCreateResponse)
 async def create_prescription(
     payload: PrescriptionCreate,
     db: AsyncSession = Depends(get_db_session),
@@ -70,8 +58,6 @@ async def create_prescription(
     file_dir = _ensure_prescription_dir(now)
     file_name = f"RX_{now.strftime('%Y%m%d_%H%M%S')}_{patient_id}.pdf"
     file_path = os.path.join(file_dir, file_name)
-
-    from pdf_generator import render_prescription_pdf
 
     pdf_bytes = await render_prescription_pdf(
         patient_id=patient_id,
@@ -96,7 +82,7 @@ async def create_prescription(
     db.add(pres)
     await db.commit()
     await db.refresh(pres)
-    return {"id": pres.id, "pdf_path": pres.pdf_path}
+    return pres
 
 
 @router.get("/{prescription_id}/pdf")

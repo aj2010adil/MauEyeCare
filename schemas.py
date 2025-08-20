@@ -56,6 +56,24 @@ class PrescriptionCreate(BaseModel):
     totals: Optional[Dict] = None
 
 
+class PrescriptionRead(BaseModel):
+    id: int
+    created_at: Optional[datetime] = None
+    pdf_path: Optional[str] = None
+    rx_values: Optional[Dict] = None
+    spectacles: Optional[List] = None
+    medicines: Optional[Dict] = None
+    totals: Optional[Dict] = None
+    visit_id: Optional[int] = None
+
+    model_config = {"from_attributes": True}
+
+
+class PrescriptionCreateResponse(BaseModel):
+    id: int
+    pdf_path: Optional[str] = None
+
+
 class PosCartLine(BaseModel):
     product_id: int
     batch_id: Optional[int] = None
@@ -81,9 +99,28 @@ class LabJobCreate(BaseModel):
     technician: Optional[str] = None
 
 
+class LabJobRead(BaseModel):
+    id: int
+    status: str
+    patient_id: Optional[int] = None
+    order_id: Optional[int] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class ConsentCreate(BaseModel):
     patient_id: int
     visit_id: Optional[int] = None
     type: str
     content: Dict
     signed_by: str
+
+
+class ConsentRead(BaseModel):
+    id: int
+    type: str
+    signed_by: str
+    signed_at: datetime
+
+    model_config = {"from_attributes": True}

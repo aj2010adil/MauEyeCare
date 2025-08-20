@@ -141,14 +141,17 @@ $psqlExe = Get-PsqlPath
 if ($psqlExe) {
   # Test connection to PostgreSQL
   try {
-    & $psqlExe -U $pgSuperUser -h $pgHost -p $pgPort -c "\q" 2>$null
+    $output = & $psqlExe -U $pgSuperUser -h $pgHost -p $pgPort -c "\q" 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        # Throw a custom error message that includes the psql output
+        throw "psql connection test failed. Output: $output"
+    }
     Write-Host "Successfully connected to PostgreSQL." -ForegroundColor Green
   } catch {
       Write-Error "Failed to connect to PostgreSQL. Please ensure the service is running and accessible."
+      Write-Error "Underlying error: $($_.Exception.Message)"
       Write-Error "Connection details: Host=$pgHost, Port=$pgPort, User=$pgSuperUser"
-      Write-Error "If password is not 'maueyecare', set it via the MAU_PG_SUPERPASS environment variable."
-      # Clean up the password from the environment for security
-      Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue
+      Write-Error "If the password for '$pgSuperUser' is not 'maueyecare', you can set it via the MAU_PG_SUPERPASS environment variable before running setup."
       exit 1
   }
 
