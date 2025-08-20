@@ -9,6 +9,7 @@ python-dotenv
 SQLAlchemy==2.0.32
 asyncpg  # Primary async driver for FastAPI
 alembic==1.13.2
+greenlet # Required for using async drivers in sync contexts (like Alembic)
 psycopg[binary] # Sync driver for Alembic migrations
 
 # Security
