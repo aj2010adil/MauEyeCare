@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react'
 import { useAuth } from './AuthContext'
 import { Plus, Search } from 'lucide-react'
 import PrescriptionTable from './components/prescriptions/PrescriptionTable'
+import Pagination from './components/ui/Pagination'
+import { useDebounce } from './hooks/useDebounce'
+import PrescriptionModal from './components/prescriptions/PrescriptionModal'
+import { Toaster } from 'react-hot-toast'
 
 interface Patient {
   id: number
@@ -24,12 +28,14 @@ export default function PrescriptionsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const debouncedSearchQuery = useDebounce(searchQuery, 500)
 
   const load = async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const params = new URLSearchParams({ page: page.toString(), q: searchQuery })
+      const params = new URLSearchParams({ page: page.toString(), q: debouncedSearchQuery })
       const res = await fetch(`/api/prescriptions?${params.toString()}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
@@ -46,19 +52,30 @@ export default function PrescriptionsPage() {
 
   useEffect(() => {
     load()
-  }, [page]) // Reload when page changes
+    // We want to reset to page 1 whenever a new search is performed.
+    if (page !== 1) {
+      setPage(1)
+    }
+  }, [debouncedSearchQuery]) // Reload when debounced search query changes
+
+  useEffect(() => { load() }, [page]) // Reload when page changes
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    setPage(1) // Reset to first page on new search
     load()
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
+    <>
+      <Toaster position="top-center" reverseOrder={false} />
+      <PrescriptionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={() => {
+        setIsModalOpen(false)
+        load()
+      }} />
+      <div className="p-4 md:p-6 space-y-4">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 className="text-2xl font-bold text-gray-800">Prescriptions</h1>
-        <button className="bg-sky-600 text-white font-semibold rounded-lg px-4 py-2 flex items-center gap-2 hover:bg-sky-700 transition-colors">
+        <button onClick={() => setIsModalOpen(true)} className="bg-sky-600 text-white font-semibold rounded-lg px-4 py-2 flex items-center gap-2 hover:bg-sky-700 transition-colors">
           <Plus size={18} /> New Prescription
         </button>
       </div>
@@ -81,8 +98,14 @@ export default function PrescriptionsPage() {
         {isLoading && <div className="text-center p-8">Loading...</div>}
         {error && <div className="text-center p-8 text-red-500">{error}</div>}
         {!isLoading && !error && prescriptions.length === 0 && <div className="text-center p-8 text-gray-500">No prescriptions found.</div>}
-        {!isLoading && !error && prescriptions.length > 0 && <PrescriptionTable prescriptions={prescriptions} />}
+        {!isLoading && !error && prescriptions.length > 0 && (
+          <>
+            <PrescriptionTable prescriptions={prescriptions} />
+            <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+          </>
+        )}
       </div>
-    </div>
+      </div>
+    </>
   )
 }
