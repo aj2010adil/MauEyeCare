@@ -164,3 +164,9 @@ class CheckoutResponse(BaseModel):
 # Insights Schemas
 class SuggestionsResponse(BaseModel):
     suggestions: list[str]
+
+
+# POS Summary for dashboard
+class PosSummaryResponse(BaseModel):
+    total_today: float
+    orders_today: int

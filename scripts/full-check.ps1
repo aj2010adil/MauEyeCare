@@ -139,7 +139,10 @@ $results.ApiLogin = Invoke-Step 'API smoke test (login + refresh)' {
 
 # Stop backend job
 try { if ($backendProc -and !$backendProc.HasExited) { $backendProc.Kill() } } catch {}
-if (Get-Job -Name fullcheck-backendlog -ErrorAction SilentlyContinue) { Get-Job -Name fullcheck-backendlog | Stop-Job -Force | Remove-Job -Force }
+if (Get-Job -Name fullcheck-backendlog -ErrorAction SilentlyContinue) {
+  try { Get-Job -Name fullcheck-backendlog | Stop-Job -ErrorAction SilentlyContinue } catch {}
+  try { Get-Job -Name fullcheck-backendlog | Remove-Job -ErrorAction SilentlyContinue } catch {}
+}
 
 Write-Host "`n=== Summary ===" -ForegroundColor Cyan
 $failCount = 0

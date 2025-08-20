@@ -10,7 +10,8 @@ from dependencies import get_current_user_id
 from patient import Patient
 from visit import Visit
 from prescription import Prescription
-from schemas import StatsResponse, MarketingResponse, OperationsResponse
+from schemas import StatsResponse, MarketingResponse, OperationsResponse, PosSummaryResponse
+from pos import PosOrder
 
 
 router = APIRouter()
@@ -65,3 +66,13 @@ async def operations(db: AsyncSession = Depends(get_db_session), user_id: str = 
             for v in rows
         ]
     }
+
+
+@router.get("/pos-summary", response_model=PosSummaryResponse)
+async def pos_summary(db: AsyncSession = Depends(get_db_session), user_id: str = Depends(get_current_user_id)):
+    today = datetime.utcnow().date()
+    start = datetime.combine(today, datetime.min.time())
+    end = datetime.combine(today, datetime.max.time())
+    rows = (await db.execute(select(PosOrder).where(PosOrder.created_at >= start, PosOrder.created_at <= end))).scalars().all()
+    total = float(sum([float(getattr(x, "total", 0) or 0) for x in rows]))
+    return {"total_today": total, "orders_today": len(rows)}

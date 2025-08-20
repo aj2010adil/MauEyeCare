@@ -10,7 +10,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState<any | null>(null)
   const [ops, setOps] = useState<{ today: { id: number, patient_id: number, time: string, issue?: string }[] } | null>(null)
   const [lab, setLab] = useState<any[] | null>(null)
-  const [posToday, setPosToday] = useState<{ total: number } | null>(null)
+  const [posToday, setPosToday] = useState<{ total: number, orders: number } | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -18,17 +18,17 @@ export default function Dashboard() {
     async function load() {
       setLoading(true)
       try {
-        const [s, o, l] = await Promise.all([
+        const [s, o, l, p] = await Promise.all([
           fetch('/api/dashboard/stats', { headers: authHeader }).then(r => r.json()),
           fetch('/api/dashboard/operations', { headers: authHeader }).then(r => r.json()),
           fetch('/api/lab/jobs', { headers: authHeader }).then(r => r.json()),
+          fetch('/api/dashboard/pos-summary', { headers: authHeader }).then(r => r.json()).catch(() => ({ total_today: 0, orders_today: 0 })),
         ])
         if (!alive) return
         setStats(s)
         setOps(o)
         setLab(l)
-        // POS summary (best-effort): sum of today's orders if an endpoint exists later; keep placeholder zero for now
-        setPosToday({ total: 0 })
+        setPosToday({ total: p.total_today ?? 0, orders: p.orders_today ?? 0 })
       } catch {
         if (!alive) return
         setStats(null); setOps(null); setLab(null)
@@ -58,7 +58,7 @@ export default function Dashboard() {
           <KPICard title="Patients Today" value={stats?.today_visits ?? 0} accent="blue" />
           <KPICard title="Total Patients" value={stats?.total_patients ?? 0} accent="indigo" />
           <KPICard title="Prescriptions" value={stats?.total_prescriptions ?? 0} accent="green" />
-          <KPICard title="Revenue Today" value={(posToday?.total ?? 0).toLocaleString()} accent="amber" />
+          <KPICard title="Revenue Today" value={(posToday?.total ?? 0).toLocaleString()} subtitle={`${posToday?.orders ?? 0} orders`} accent="amber" />
         </div>
       )}
 
