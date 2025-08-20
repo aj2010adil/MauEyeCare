@@ -17,7 +17,7 @@ def search_medicines(search_term: str) -> list[str]:
         res = requests.get(f"{API_BASE_URL}/api/inventory/medicines", params={"q": search_term})
         res.raise_for_status()
         data = res.json()
-        return [f"{item['name']} ({item['strength']})" for item in data]
+        return [item['name'] for item in data]
     except requests.RequestException as e:
         st.error(f"API Error: {e}")
         return []
@@ -30,7 +30,7 @@ def search_spectacles(search_term: str) -> list[str]:
         res = requests.get(f"{API_BASE_URL}/api/inventory/spectacles", params={"q": search_term})
         res.raise_for_status()
         data = res.json()
-        return [f"{item['brand']} {item['model_name']}" for item in data]
+        return [f"{item['brand']} {item['name']}" for item in data]
     except requests.RequestException as e:
         st.error(f"API Error: {e}")
         return []

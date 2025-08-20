@@ -5,9 +5,10 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.responses import FileResponse
+from sqlalchemy.orm import selectinload
 
 from config import settings
 from pdf_generator import render_prescription_pdf
@@ -16,7 +17,7 @@ from dependencies import get_current_user_id
 from patient import Patient
 from visit import Visit
 from prescription import Prescription
-from schemas import PrescriptionCreate, PrescriptionRead, PrescriptionCreateResponse
+from schemas import PrescriptionCreate, PrescriptionRead, PrescriptionCreateResponse, PaginatedPrescriptions, PrescriptionReadWithPatient
 
 
 router = APIRouter()
@@ -27,6 +28,29 @@ def _ensure_prescription_dir(now: datetime) -> str:
     day_dir = os.path.join(year_dir, now.strftime("%m-%d"))
     os.makedirs(day_dir, exist_ok=True)
     return day_dir
+
+@router.get("", response_model=PaginatedPrescriptions)
+async def list_prescriptions(
+    q: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 20,
+    db: AsyncSession = Depends(get_db_session),
+    user_id: str = Depends(get_current_user_id),
+):
+    """List all prescriptions with search and pagination."""
+    stmt = select(Prescription).options(selectinload(Prescription.patient)).order_by(Prescription.created_at.desc())
+    count_stmt = select(func.count()).select_from(Prescription)
+
+    if q:
+        like_query = f"%{q}%"
+        stmt = stmt.join(Patient).where(Patient.first_name.ilike(like_query) | Patient.last_name.ilike(like_query) | Patient.phone.ilike(like_query))
+        count_stmt = count_stmt.join(Patient).where(Patient.first_name.ilike(like_query) | Patient.last_name.ilike(like_query) | Patient.phone.ilike(like_query))
+
+    total = (await db.execute(count_stmt)).scalar_one()
+    
+    results = (await db.execute(stmt.offset((page - 1) * page_size).limit(page_size))).scalars().all()
+
+    return {"items": results, "total": total, "page": page, "page_size": page_size}
 
 
 @router.get("/patient/{patient_id}", response_model=list[PrescriptionRead])

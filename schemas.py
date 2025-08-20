@@ -68,6 +68,16 @@ class PrescriptionRead(BaseModel):
 
     model_config = {"from_attributes": True}
 
+class PrescriptionReadWithPatient(PrescriptionRead):
+    patient: PatientRead
+
+    model_config = {"from_attributes": True}
+
+class PaginatedPrescriptions(BaseModel):
+    items: list[PrescriptionReadWithPatient]
+    total: int
+    page: int
+    page_size: int
 
 class PrescriptionCreateResponse(BaseModel):
     id: int
@@ -170,3 +180,14 @@ class SuggestionsResponse(BaseModel):
 class PosSummaryResponse(BaseModel):
     total_today: float
     orders_today: int
+
+
+class ProductRead(BaseModel):
+    id: int
+    name: str
+    category: str
+    brand: Optional[str] = None
+    price: float
+
+    class Config:
+        from_attributes = True
