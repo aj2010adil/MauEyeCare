@@ -29,7 +29,7 @@ export default function PatientsPage() {
     <div className="grid gap-4">
       <div className="flex gap-2">
         <input className="border rounded p-2" placeholder="Search name/phone" value={q} onChange={e => setQ(e.target.value)} />
-        <button className="border rounded px-3" onClick={load}>Search</button>
+        <button className="border rounded px-3" onClick={() => load()}>Search</button>
       </div>
       <div className="grid md:grid-cols-2 gap-3">
         <div className="border rounded p-3 grid gap-2">

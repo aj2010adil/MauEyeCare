@@ -34,17 +34,40 @@ async def list_prescriptions(
     q: Optional[str] = None,
     page: int = 1,
     page_size: int = 20,
+    sort_by: Optional[str] = "date",
+    sort_order: Optional[str] = "desc",
     db: AsyncSession = Depends(get_db_session),
     user_id: str = Depends(get_current_user_id),
 ):
-    """List all prescriptions with search and pagination."""
-    stmt = select(Prescription).options(selectinload(Prescription.patient)).order_by(Prescription.created_at.desc())
+    """List all prescriptions with search, pagination, and sorting."""
+    stmt = select(Prescription).options(selectinload(Prescription.patient))
     count_stmt = select(func.count()).select_from(Prescription)
 
     if q:
         like_query = f"%{q}%"
         stmt = stmt.join(Patient).where(Patient.first_name.ilike(like_query) | Patient.last_name.ilike(like_query) | Patient.phone.ilike(like_query))
         count_stmt = count_stmt.join(Patient).where(Patient.first_name.ilike(like_query) | Patient.last_name.ilike(like_query) | Patient.phone.ilike(like_query))
+
+    # Apply sorting
+    if sort_by == "date":
+        if sort_order == "asc":
+            stmt = stmt.order_by(Prescription.created_at.asc())
+        else:
+            stmt = stmt.order_by(Prescription.created_at.desc())
+    elif sort_by == "patient":
+        if sort_order == "asc":
+            stmt = stmt.join(Patient).order_by(Patient.first_name.asc(), Patient.last_name.asc())
+        else:
+            stmt = stmt.join(Patient).order_by(Patient.first_name.desc(), Patient.last_name.desc())
+    elif sort_by == "type":
+        # Sort by prescription type (medicine, spectacles, etc.)
+        if sort_order == "asc":
+            stmt = stmt.order_by(Prescription.medicines.asc(), Prescription.spectacles.asc())
+        else:
+            stmt = stmt.order_by(Prescription.medicines.desc(), Prescription.spectacles.desc())
+    else:
+        # Default sorting by date desc
+        stmt = stmt.order_by(Prescription.created_at.desc())
 
     total = (await db.execute(count_stmt)).scalar_one()
     
