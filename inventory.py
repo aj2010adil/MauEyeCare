@@ -11,6 +11,7 @@ from io import BytesIO
 import base64
 from datetime import datetime
 import uuid
+import logging
 
 from database import get_db_session
 from dependencies import get_current_user_id
@@ -19,6 +20,10 @@ from medicine import Medicine
 from prescription import Prescription
 from patient import Patient
 from visit import Visit
+from product import Product
+from stock import StockBatch
+
+logger = logging.getLogger("inventory")
 
 router = APIRouter()
 
@@ -145,6 +150,7 @@ async def upload_image(
 ):
     """Upload product image and return URL"""
     if not file.content_type.startswith('image/'):
+        logger.warning("Upload rejected: non-image content", extra={"content_type": file.content_type})
         raise HTTPException(status_code=400, detail="File must be an image")
     
     # Create uploads directory if it doesn't exist
@@ -519,6 +525,87 @@ async def get_prescription_qr_image(
 
     from fastapi.responses import StreamingResponse
     return StreamingResponse(buffer, media_type="image/png")
+
+@router.get("/lenses")
+async def get_lenses(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    search: Optional[str] = None,
+    brand: Optional[str] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    active: Optional[bool] = None,
+    db: AsyncSession = Depends(get_db_session),
+    user_id: str = Depends(get_current_user_id)
+):
+    """List lens products with filters and pagination using Product/StockBatch"""
+    q = select(Product).where(Product.category == "lens")
+    if search:
+        q = q.where(Product.name.ilike(f"%{search}%"))
+    if brand:
+        q = q.where(Product.brand == brand)
+    if min_price is not None:
+        q = q.where(Product.price >= min_price)
+    if max_price is not None:
+        q = q.where(Product.price <= max_price)
+    if active is not None:
+        q = q.where(Product.is_active == active)
+    total = (await db.execute(select(func.count()).select_from(q.subquery()))).scalar_one()
+    rows = (await db.execute(q.offset(skip).limit(limit))).scalars().all()
+    items: list[dict[str, Any]] = []
+    for p in rows:
+        qty = (await db.execute(select(func.coalesce(func.sum(StockBatch.quantity), 0)).where(StockBatch.product_id == p.id))).scalar() or 0
+        items.append({
+            "id": p.id,
+            "name": p.name,
+            "brand": p.brand,
+            "price": float(p.price or 0),
+            "gst_rate": float(p.gst_rate or 0),
+            "is_active": bool(p.is_active),
+            "quantity": int(qty),
+        })
+    return {"items": items, "total": total, "page": skip // limit + 1, "page_size": limit}
+
+
+@router.get("/accessories")
+async def get_accessories(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    search: Optional[str] = None,
+    brand: Optional[str] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    active: Optional[bool] = None,
+    db: AsyncSession = Depends(get_db_session),
+    user_id: str = Depends(get_current_user_id)
+):
+    """List accessories (category == 'accessory') with filters and pagination"""
+    q = select(Product).where(Product.category == "accessory")
+    if search:
+        q = q.where(Product.name.ilike(f"%{search}%"))
+    if brand:
+        q = q.where(Product.brand == brand)
+    if min_price is not None:
+        q = q.where(Product.price >= min_price)
+    if max_price is not None:
+        q = q.where(Product.price <= max_price)
+    if active is not None:
+        q = q.where(Product.is_active == active)
+    total = (await db.execute(select(func.count()).select_from(q.subquery()))).scalar_one()
+    rows = (await db.execute(q.offset(skip).limit(limit))).scalars().all()
+    items: list[dict[str, Any]] = []
+    for p in rows:
+        qty = (await db.execute(select(func.coalesce(func.sum(StockBatch.quantity), 0)).where(StockBatch.product_id == p.id))).scalar() or 0
+        items.append({
+            "id": p.id,
+            "name": p.name,
+            "brand": p.brand,
+            "price": float(p.price or 0),
+            "gst_rate": float(p.gst_rate or 0),
+            "is_active": bool(p.is_active),
+            "quantity": int(qty),
+        })
+    return {"items": items, "total": total, "page": skip // limit + 1, "page_size": limit}
 
 # Helper functions
 def generate_prescription_html(prescription, patient, visit, branding, include_qr):
