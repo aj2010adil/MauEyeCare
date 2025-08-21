@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
 
 from config import settings
 from database import create_start_app_handler, create_stop_app_handler
@@ -42,6 +44,10 @@ app.include_router(consent_router, prefix="/api/consents", tags=["consents"])
 app.include_router(system_router, prefix="/api/system", tags=["system"])
 app.include_router(inventory_router, prefix="/api/inventory", tags=["inventory"])
 app.include_router(ai_router, prefix="/api/ai", tags=["ai"])
+
+# Mount static files for uploads
+if os.path.exists("uploads"):
+    app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 @app.get("/api/health")
