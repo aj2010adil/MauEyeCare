@@ -2,6 +2,7 @@ import asyncio
 import csv
 from pathlib import Path
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_session_maker
 from config import settings

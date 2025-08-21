@@ -221,7 +221,8 @@ export default function ImageEntryForm({ onClose, onSave, productType }: ImageEn
     try {
       // Upload image
       const imageFormData = new FormData()
-      imageFormData.append('image', selectedImage)
+      imageFormData.append('file', selectedImage)
+      imageFormData.append('product_type', productType)
 
       const uploadResponse = await fetch('/api/inventory/upload-image', {
         method: 'POST',

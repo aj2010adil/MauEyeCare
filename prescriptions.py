@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import os
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import selectinload
+from pydantic import BaseModel
 
 from config import settings
 from pdf_generator import render_prescription_pdf
@@ -140,17 +141,29 @@ async def get_prescription_pdf(prescription_id: int, db: AsyncSession = Depends(
     return FileResponse(path=pres.pdf_path, media_type="application/pdf", filename=os.path.basename(pres.pdf_path))
 
 
+class ExportRequest(BaseModel):
+    format: str = "html"  # html, pdf, docx
+    include_qr: bool = True
+    branding: Optional[Dict[str, Any]] = None
+
+
 @router.post("/{prescription_id}/export")
 async def export_prescription(
     prescription_id: int,
-    format: str = "html",  # html, pdf, docx
-    include_qr: bool = True,
+    payload: ExportRequest,
     db: AsyncSession = Depends(get_db_session),
     user_id: str = Depends(get_current_user_id)
 ):
-    """Export prescription in various formats"""
+    """Export prescription in various formats via JSON payload"""
     from inventory import export_prescription as inventory_export
-    return await inventory_export(prescription_id, format, include_qr, None, db, user_id)
+    return await inventory_export(
+        prescription_id,
+        payload.format,
+        payload.include_qr,
+        payload.branding,
+        db,
+        user_id,
+    )
 
 
 @router.get("/{prescription_id}/qr")
