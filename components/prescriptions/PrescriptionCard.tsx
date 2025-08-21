@@ -23,9 +23,11 @@ interface PrescriptionCardProps {
   prescription: Prescription
   onDownload: (prescriptionId: number, patientName: string) => void
   onClick?: () => void
+  onExport?: (p: Prescription) => void
+  onShowQR?: (id: number, patientName: string) => void
 }
 
-export default function PrescriptionCard({ prescription, onDownload, onClick }: PrescriptionCardProps) {
+export default function PrescriptionCard({ prescription, onDownload, onClick, onExport, onShowQR }: PrescriptionCardProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -148,6 +150,22 @@ export default function PrescriptionCard({ prescription, onDownload, onClick }: 
                 View
               </button>
             </>
+          )}
+          {onExport && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onExport(prescription) }}
+              className="inline-flex items-center px-2 py-1 text-xs font-medium rounded text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
+            >
+              Export
+            </button>
+          )}
+          {onShowQR && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onShowQR(prescription.id, patientName) }}
+              className="inline-flex items-center px-2 py-1 text-xs font-medium rounded text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
+            >
+              QR
+            </button>
           )}
         </div>
         <ChevronRight size={16} className="text-gray-400" />

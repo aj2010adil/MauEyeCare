@@ -6,6 +6,8 @@ import PrescriptionCard from './components/prescriptions/PrescriptionCard'
 import Pagination from './components/ui/Pagination'
 import { useDebounce } from './useDebounce'
 import PrescriptionModal from './components/prescriptions/PrescriptionModal'
+import PrescriptionExporter from './components/prescriptions/PrescriptionExporter'
+import QRCodeStamp from './components/prescriptions/QRCodeStamp'
 import { Toaster } from 'react-hot-toast'
 
 interface Patient {
@@ -38,6 +40,8 @@ export default function PrescriptionsPage() {
   const [sortBy, setSortBy] = useState<'date' | 'patient' | 'type'>('date')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table')
+  const [exportingPrescription, setExportingPrescription] = useState<Prescription | null>(null)
+  const [qrInfo, setQrInfo] = useState<{ id: number; patientName: string } | null>(null)
   const debouncedSearchQuery = useDebounce(searchQuery, 500)
 
   const load = async () => {
@@ -119,6 +123,20 @@ export default function PrescriptionsPage() {
           load()
         }} 
       />
+
+      {exportingPrescription && (
+        <PrescriptionExporter
+          prescription={exportingPrescription as any}
+          onClose={() => setExportingPrescription(null)}
+        />
+      )}
+      {qrInfo && (
+        <QRCodeStamp
+          prescriptionId={qrInfo.id}
+          patientName={qrInfo.patientName}
+          onClose={() => setQrInfo(null)}
+        />
+      )}
       
       <div className="min-h-screen bg-gray-50">
         {/* Header Section */}
@@ -282,6 +300,8 @@ export default function PrescriptionsPage() {
                     onDownload={downloadPDF}
                     sortBy={sortBy}
                     sortOrder={sortOrder}
+                    onExport={(p) => setExportingPrescription(p)}
+                    onShowQR={(id, name) => setQrInfo({ id, patientName: name })}
                   />
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
@@ -290,6 +310,8 @@ export default function PrescriptionsPage() {
                         key={prescription.id}
                         prescription={prescription}
                         onDownload={downloadPDF}
+                        onExport={(p) => setExportingPrescription(p as any)}
+                        onShowQR={(id, name) => setQrInfo({ id, patientName: name })}
                       />
                     ))}
                   </div>

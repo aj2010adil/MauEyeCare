@@ -5,6 +5,7 @@ from sqlalchemy import select, func
 from typing import List, Optional, Dict, Any
 import os
 import json
+import csv
 import qrcode
 from io import BytesIO
 import base64
@@ -227,6 +228,164 @@ async def analyze_image(
         "suggestions": suggestions,
         "analysis_confidence": 0.85
     }
+
+# Bulk file upload endpoint for inventory
+@router.post("/upload")
+async def upload_inventory_files(
+    files: list[UploadFile] = File(...),
+    category: str = Form(...),
+    db: AsyncSession = Depends(get_db_session),
+    user_id: str = Depends(get_current_user_id)
+):
+    if category not in ("spectacles", "medicines"):
+        raise HTTPException(status_code=400, detail="Invalid category")
+
+    upload_dir = "uploads"
+    os.makedirs(upload_dir, exist_ok=True)
+
+    items = []
+    errors = []
+
+    for f in files:
+        try:
+            if not f.content_type or not f.content_type.startswith("image/"):
+                errors.append(f"{f.filename}: unsupported file type {f.content_type}")
+                continue
+
+            ext = (f.filename or "bin").split(".")[-1]
+            filename = f"{uuid.uuid4()}.{ext}"
+            path = os.path.join(upload_dir, filename)
+
+            content = await f.read()
+            with open(path, "wb") as out:
+                out.write(content)
+
+            image_url = f"/uploads/{filename}"
+            base_name = (f.filename or "Untitled").rsplit(".", 1)[0]
+
+            if category == "spectacles":
+                obj = Spectacle(
+                    name=base_name,
+                    brand="Unknown",
+                    price=0.0,
+                    image_url=image_url,
+                    quantity=1,
+                    in_stock=True
+                )
+            else:
+                obj = Medicine(
+                    name=base_name,
+                    brand=None,
+                    price=0.0,
+                    image_url=image_url,
+                    quantity=1,
+                    in_stock=True
+                )
+
+            db.add(obj)
+            await db.flush()
+            items.append({
+                "id": obj.id,
+                "name": obj.name,
+                "brand": getattr(obj, "brand", None),
+                "price": float(getattr(obj, "price", 0) or 0),
+                "quantity": getattr(obj, "quantity", 0)
+            })
+        except Exception as e:
+            errors.append(f"{f.filename}: {str(e)}")
+
+    await db.commit()
+    return {"items": items, "errors": errors}
+
+
+# CSV upload endpoint for inventory
+@router.post("/upload-csv")
+async def upload_inventory_csv(
+    file: UploadFile = File(...),
+    category: str = Form(...),
+    db: AsyncSession = Depends(get_db_session),
+    user_id: str = Depends(get_current_user_id)
+):
+    if category not in ("spectacles", "medicines"):
+        raise HTTPException(status_code=400, detail="Invalid category")
+
+    try:
+        raw = await file.read()
+        text = raw.decode("utf-8", errors="ignore")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read CSV: {str(e)}")
+
+    reader = csv.DictReader(text.splitlines())
+    items = []
+    errors = []
+    count = 0
+
+    for i, row in enumerate(reader, start=1):
+        try:
+            # Normalize common fields
+            name = row.get("name") or row.get("model_name") or row.get("model") or f"Item {i}"
+            brand = row.get("brand")
+            price = row.get("price") or "0"
+            quantity = row.get("quantity") or "0"
+
+            try:
+                price_val = float(price)
+            except Exception:
+                price_val = 0.0
+            try:
+                qty_val = int(float(quantity))
+            except Exception:
+                qty_val = 0
+
+            if category == "spectacles":
+                obj = Spectacle(
+                    name=name,
+                    brand=brand or "Unknown",
+                    price=price_val,
+                    frame_material=row.get("frame_material"),
+                    frame_shape=row.get("frame_shape"),
+                    lens_type=row.get("lens_type"),
+                    gender=row.get("gender"),
+                    age_group=row.get("age_group"),
+                    description=row.get("description"),
+                    quantity=qty_val,
+                    in_stock=qty_val > 0,
+                )
+            else:
+                # Map common medicine fields
+                dosage = row.get("dosage") or row.get("dosage_form")
+                specs = {}
+                for k, v in row.items():
+                    if k.lower() not in {"name", "brand", "category", "price", "quantity", "dosage", "dosage_form"} and v:
+                        specs[k] = v
+
+                obj = Medicine(
+                    name=name,
+                    brand=brand,
+                    category=row.get("category"),
+                    dosage=dosage,
+                    price=price_val,
+                    description=row.get("description"),
+                    specifications=specs if specs else None,
+                    quantity=qty_val,
+                    in_stock=qty_val > 0,
+                )
+
+            db.add(obj)
+            await db.flush()
+            items.append({
+                "id": obj.id,
+                "name": obj.name,
+                "brand": getattr(obj, "brand", None),
+                "price": float(getattr(obj, "price", 0) or 0),
+                "quantity": getattr(obj, "quantity", 0)
+            })
+            count += 1
+        except Exception as e:
+            errors.append(f"Row {i}: {str(e)}")
+
+    await db.commit()
+    return {"items": items, "errors": errors}
 
 # Prescription export endpoints
 @router.post("/prescriptions/{prescription_id}/export")

@@ -24,13 +24,17 @@ interface PrescriptionTableProps {
   onDownload: (prescriptionId: number, patientName: string) => void
   sortBy: 'date' | 'patient' | 'type'
   sortOrder: 'asc' | 'desc'
+  onExport?: (p: Prescription) => void
+  onShowQR?: (id: number, patientName: string) => void
 }
 
 export default function PrescriptionTable({ 
   prescriptions, 
   onDownload, 
   sortBy, 
-  sortOrder 
+  sortOrder,
+  onExport,
+  onShowQR,
 }: PrescriptionTableProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -201,12 +205,22 @@ export default function PrescriptionTable({
                         </button>
                       </>
                     )}
-                    <button
-                      onClick={() => {/* TODO: Edit prescription */}}
-                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                    >
-                      Edit
-                    </button>
+                    {onExport && (
+                      <button
+                        onClick={() => onExport(prescription)}
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                      >
+                        Export
+                      </button>
+                    )}
+                    {onShowQR && (
+                      <button
+                        onClick={() => onShowQR(prescription.id, patientName)}
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                      >
+                        QR
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
