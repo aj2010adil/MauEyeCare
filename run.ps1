@@ -18,7 +18,7 @@ $ErrorActionPreference = 'Stop'
 Write-Host "[MauEyeCare] Launching..." -ForegroundColor Cyan
 
 # Ensure venv exists
-if (!(Test-Path .\.venv\Scripts\uvicorn.exe)) {
+if (!(Test-Path .\.venv\Scripts\python.exe)) {
   Write-Error ".venv not found or incomplete. Run setup.ps1 first."; exit 1
 }
 
@@ -29,7 +29,7 @@ $healthUrl = "$apiUrl/api/health"
 Write-Host "Starting backend API on $apiUrl ..." -ForegroundColor Yellow
 try {
   $backendJob = Start-Job -Name "mau-backend" -ScriptBlock {
-    & .\.venv\Scripts\uvicorn main:app --host 127.0.0.1 --port $using:ApiPort
+    & .\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port $using:ApiPort
   }
 } catch {
   Write-Error "Failed to start backend: $($_.Exception.Message)"; exit 1

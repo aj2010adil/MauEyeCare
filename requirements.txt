@@ -25,4 +25,5 @@ qrcode[pil]==7.4.2
 
 # Testing
 pytest
+pytest-asyncio==0.23.7
 httpx

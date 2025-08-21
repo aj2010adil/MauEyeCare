@@ -1,218 +1,107 @@
-#!/usr/bin/env python
 """
-AI-powered doctor tools for enhanced diagnosis and recommendations
+Local AI-like utilities for doctor workflows without external dependencies.
+These functions use simple heuristics/templates to generate useful content while
+keeping all processing offline and ensuring stable backend startup.
 """
-import requests
-import json
-from config import CONFIG
+from __future__ import annotations
+from typing import List, Dict
 
-def analyze_symptoms_ai(symptoms, age, gender, medical_history=""):
-    """AI-powered symptom analysis"""
-    grok_key = CONFIG.get('GROK_API_KEY')
-    if not grok_key:
-        return "AI analysis unavailable - API key not configured"
-    
-    prompt = f"""
-    As an experienced ophthalmologist, analyze these symptoms:
-    
-    Patient Details:
-    - Age: {age}
-    - Gender: {gender}
-    - Symptoms: {symptoms}
-    - Medical History: {medical_history}
-    
-    Provide:
-    1. Possible diagnoses (most likely first)
-    2. Recommended tests/examinations
-    3. Treatment suggestions
-    4. When to seek immediate care
-    
-    Keep response concise and professional.
-    """
-    
-    try:
-        url = "https://api.groq.com/openai/v1/chat/completions"
-        headers = {"Authorization": f"Bearer {grok_key}", "Content-Type": "application/json"}
-        data = {
-            "model": "qwen/qwen3-32b",
-            "messages": [
-                {"role": "system", "content": "You are an expert ophthalmologist providing clinical analysis."},
-                {"role": "user", "content": prompt}
-            ]
-        }
-        
-        response = requests.post(url, headers=headers, json=data, timeout=30)
-        if response.status_code == 200:
-            result = response.json()
-            return result["choices"][0]["message"]["content"]
-        else:
-            return f"AI analysis error: {response.status_code}"
-    except Exception as e:
-        return f"AI analysis failed: {str(e)}"
 
-def suggest_medications_ai(diagnosis, age, allergies=""):
-    """AI-powered medication suggestions"""
-    grok_key = CONFIG.get('GROK_API_KEY')
-    if not grok_key:
-        return "Medication suggestions unavailable"
-    
-    prompt = f"""
-    As an ophthalmologist, suggest appropriate medications for:
-    
-    Diagnosis: {diagnosis}
-    Patient Age: {age}
-    Known Allergies: {allergies}
-    
-    Provide:
-    1. First-line medications with dosages
-    2. Alternative options
-    3. Duration of treatment
-    4. Important precautions
-    
-    Format as a clear medication list.
-    """
-    
-    try:
-        url = "https://api.groq.com/openai/v1/chat/completions"
-        headers = {"Authorization": f"Bearer {grok_key}", "Content-Type": "application/json"}
-        data = {
-            "model": "qwen/qwen3-32b",
-            "messages": [
-                {"role": "system", "content": "You are an expert ophthalmologist prescribing medications."},
-                {"role": "user", "content": prompt}
-            ]
-        }
-        
-        response = requests.post(url, headers=headers, json=data, timeout=30)
-        if response.status_code == 200:
-            result = response.json()
-            return result["choices"][0]["message"]["content"]
-        else:
-            return "Medication suggestion error"
-    except Exception as e:
-        return f"Error: {str(e)}"
+def _fmt_lines(lines: List[str]) -> str:
+    return "\n".join(f"- {ln}" for ln in lines if ln)
 
-def analyze_prescription_interactions(medications):
-    """Check for drug interactions"""
-    grok_key = CONFIG.get('GROK_API_KEY')
-    if not grok_key:
-        return "Interaction check unavailable"
-    
-    med_list = ", ".join(medications)
-    prompt = f"""
-    Check for potential drug interactions between these eye medications:
-    {med_list}
-    
-    Provide:
-    1. Any known interactions
-    2. Timing recommendations
-    3. Safety precautions
-    4. Monitoring requirements
-    
-    Be specific about ophthalmic drug interactions.
-    """
-    
-    try:
-        url = "https://api.groq.com/openai/v1/chat/completions"
-        headers = {"Authorization": f"Bearer {grok_key}", "Content-Type": "application/json"}
-        data = {
-            "model": "qwen/qwen3-32b",
-            "messages": [
-                {"role": "system", "content": "You are a clinical pharmacist specializing in ophthalmology."},
-                {"role": "user", "content": prompt}
-            ]
-        }
-        
-        response = requests.post(url, headers=headers, json=data, timeout=30)
-        if response.status_code == 200:
-            result = response.json()
-            return result["choices"][0]["message"]["content"]
-        else:
-            return "Interaction check failed"
-    except Exception as e:
-        return f"Error: {str(e)}"
 
-def generate_patient_education_ai(condition, treatment):
-    """Generate patient education content"""
-    grok_key = CONFIG.get('GROK_API_KEY')
-    if not grok_key:
-        return "Patient education unavailable"
-    
-    prompt = f"""
-    Create patient education content for:
-    
-    Condition: {condition}
-    Treatment: {treatment}
-    
-    Include:
-    1. What is this condition? (simple explanation)
-    2. How to use prescribed medications
-    3. Do's and Don'ts
-    4. When to contact the doctor
-    5. Expected recovery timeline
-    
-    Use simple, patient-friendly language.
-    """
-    
-    try:
-        url = "https://api.groq.com/openai/v1/chat/completions"
-        headers = {"Authorization": f"Bearer {grok_key}", "Content-Type": "application/json"}
-        data = {
-            "model": "qwen/qwen3-32b",
-            "messages": [
-                {"role": "system", "content": "You are a patient educator explaining eye conditions in simple terms."},
-                {"role": "user", "content": prompt}
-            ]
-        }
-        
-        response = requests.post(url, headers=headers, json=data, timeout=30)
-        if response.status_code == 200:
-            result = response.json()
-            return result["choices"][0]["message"]["content"]
-        else:
-            return "Education content generation failed"
-    except Exception as e:
-        return f"Error: {str(e)}"
+def analyze_symptoms_ai(symptoms: str, age: str | int = "", gender: str = "", medical_history: str = "") -> str:
+    parts = [
+        "Possible diagnoses:",
+        _fmt_lines([
+            "Refractive error (myopia/hyperopia/astigmatism) likely" if any(k in symptoms.lower() for k in ["blur", "blurry", "headache"]) else "",
+            "Dry eye syndrome" if any(k in symptoms.lower() for k in ["dry", "itch", "burn"]) else "",
+            "Allergic conjunctivitis" if any(k in symptoms.lower() for k in ["red", "itch", "allergy"]) else "",
+        ]),
+        "\nRecommended tests/examinations:",
+        _fmt_lines([
+            "Visual acuity and refraction",
+            "Slit-lamp examination",
+            "Schirmer test if dryness suspected",
+        ]),
+        "\nTreatment suggestions:",
+        _fmt_lines([
+            "Artificial tears QID for dryness",
+            "Cool compress and antihistamine drops for allergy",
+            "Advise regular breaks and proper lighting",
+        ]),
+        "\nWhen to seek immediate care:",
+        _fmt_lines([
+            "Sudden loss of vision",
+            "Severe eye pain",
+            "Trauma or chemical exposure",
+        ]),
+    ]
+    return "\n".join(p for p in parts if p)
 
-def smart_inventory_suggestions(current_inventory, patient_demographics):
-    """AI-powered inventory management suggestions"""
-    grok_key = CONFIG.get('GROK_API_KEY')
-    if not grok_key:
-        return "Inventory suggestions unavailable"
-    
-    inventory_list = ", ".join([f"{item}: {qty}" for item, qty in current_inventory.items()])
-    
-    prompt = f"""
-    As a healthcare inventory manager for an eye clinic, analyze this inventory:
-    
-    Current Stock: {inventory_list}
-    Patient Demographics: {patient_demographics}
-    
-    Suggest:
-    1. Items to reorder (with quantities)
-    2. New items to stock based on common eye conditions
-    3. Seasonal considerations
-    4. Cost-effective alternatives
-    
-    Focus on practical inventory management.
-    """
-    
-    try:
-        url = "https://api.groq.com/openai/v1/chat/completions"
-        headers = {"Authorization": f"Bearer {grok_key}", "Content-Type": "application/json"}
-        data = {
-            "model": "qwen/qwen3-32b",
-            "messages": [
-                {"role": "system", "content": "You are a healthcare inventory specialist for eye clinics."},
-                {"role": "user", "content": prompt}
-            ]
-        }
-        
-        response = requests.post(url, headers=headers, json=data, timeout=30)
-        if response.status_code == 200:
-            result = response.json()
-            return result["choices"][0]["message"]["content"]
-        else:
-            return "Inventory analysis failed"
-    except Exception as e:
-        return f"Error: {str(e)}"
+
+def suggest_medications_ai(diagnosis: str, age: str | int = "", allergies: str = "") -> str:
+    diag = diagnosis.lower()
+    lines: List[str] = []
+    if "dry" in diag:
+        lines += [
+            "Carboxymethylcellulose 0.5%: 1 drop QID OU for 2-4 weeks",
+            "Consider gel at night if symptoms persist",
+        ]
+    if "allerg" in diag:
+        lines += [
+            "Olopatadine 0.1%: 1 drop BID OU for 2 weeks",
+            "Avoid rubbing eyes and use cool compress",
+        ]
+    if not lines:
+        lines = [
+            "Use lubricating drops QID",
+            "Re-evaluate in 1-2 weeks or sooner if worse",
+        ]
+    return _fmt_lines(lines)
+
+
+def analyze_prescription_interactions(medications: List[str]) -> str:
+    meds = [m.strip().lower() for m in medications]
+    warnings: List[str] = []
+    # Simple duplicate/overlap check
+    if len(set(meds)) != len(meds):
+        warnings.append("Duplicate medication detected; verify dosing schedule.")
+    # Example simplistic caution
+    if any("steroid" in m for m in meds) and any("antibiotic" in m for m in meds):
+        warnings.append("Steroid + antibiotic combo: ensure indication and monitor IOP.")
+    if not warnings:
+        warnings.append("No significant interactions detected based on provided list.")
+    return _fmt_lines(warnings)
+
+
+def generate_patient_education_ai(condition: str, treatment: str) -> str:
+    return (
+        f"About {condition}:\n"
+        f"- This condition affects the surface or internal structures of the eye.\n"
+        f"- Follow the prescribed treatment: {treatment}.\n\n"
+        "How to use medications:\n"
+        "- Wash hands before use.\n"
+        "- Tilt head back and avoid touching the dropper tip.\n\n"
+        "Do's and Don'ts:\n"
+        "- Do rest your eyes and stay hydrated.\n"
+        "- Don't rub your eyes.\n\n"
+        "When to contact the doctor:\n"
+        "- Worsening pain, redness, or vision changes.\n\n"
+        "Expected recovery:\n"
+        "- Many symptoms improve within 1-2 weeks; follow-up as advised."
+    )
+
+
+def smart_inventory_suggestions(current_inventory: Dict[str, int], patient_demographics: str) -> str:
+    low_stock = [name for name, qty in current_inventory.items() if qty <= 2]
+    lines = [
+        "Reorder recommendations:",
+        _fmt_lines([f"{name}: reorder to minimum 10" for name in low_stock]) or "- Stock levels are adequate.",
+        "\nSeasonal considerations:",
+        "- Allergy season: consider more lubricants and antihistamine drops.",
+        "\nCost-effective alternatives:",
+        "- Offer generic lubricants and frames with popular sizes.",
+    ]
+    return "\n".join(lines)

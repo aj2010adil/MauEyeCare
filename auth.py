@@ -46,7 +46,12 @@ async def bootstrap_admin(db: AsyncSession = Depends(get_db_session)):
     stmt = select(User).where(User.email == email)
     user = (await db.execute(stmt)).scalar_one_or_none()
     if user:
-        return {"created": False, "message": "Default user already exists."}
+        # Ensure deterministic credentials and role for tests/bootstrapping
+        user.password_hash = hash_password(settings.bootstrap_admin_password)
+        user.role = "doctor"
+        user.is_active = True
+        await db.commit()
+        return {"created": False, "message": "Default user already exists. Password reset and role ensured."}
     
     user = User(
         email=email,

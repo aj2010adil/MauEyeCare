@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
+import logging
 
 from config import settings
 from database import create_start_app_handler, create_stop_app_handler
@@ -19,6 +20,13 @@ from inventory import router as inventory_router
 from ai_router import router as ai_router
 
 
+# Configure basic structured-like logging
+logging.basicConfig(
+    level=os.getenv("MAU_LOG_LEVEL", "INFO"),
+    format='%(asctime)s %(levelname)s %(name)s %(message)s'
+)
+logger = logging.getLogger("mau.app")
+
 app = FastAPI(title="MauEyeCare API", description="Local clinic management system", version="1.0.0")
 
 app.add_middleware(
@@ -31,6 +39,7 @@ app.add_middleware(
 
 app.add_event_handler("startup", create_start_app_handler(app))
 app.add_event_handler("shutdown", create_stop_app_handler(app))
+logger.info("MauEyeCare API initializing")
 
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(patients_router, prefix="/api/patients", tags=["patients"])

@@ -250,20 +250,13 @@ if (Test-Path "seed.py") {
 }
 
 Write-Host "Bootstrapping default doctor account..." -ForegroundColor Yellow
-Start-Job { & .\.venv\Scripts\python -c "import uvicorn,main; uvicorn.run(main.app, host='127.0.0.1', port=8001)" } | Out-Null
-Start-Sleep -Seconds 5 # Give the server a moment to start
 try {
-    $bootstrapResult = Invoke-RestMethod -Method POST -Uri http://127.0.0.1:8001/api/auth/bootstrap -ErrorAction Stop
-    if ($bootstrapResult.created) {
-        Write-Host "Successfully created default admin user." -ForegroundColor Green
-    } else {
-        Write-Host "Default admin user already exists, skipping creation." -ForegroundColor DarkYellow
-    }
+    & .\.venv\Scripts\python.exe ensure_admin.py
+    Write-Host "Bootstrap complete." -ForegroundColor Green
 } catch {
-    Write-Warning "Failed to bootstrap the default admin user. The backend server might have failed to start."
-    Write-Warning "Error details: $($_.Exception.Message)"
-    Write-Warning "You can try to create the user manually by running: .\.venv\Scripts\python.exe seed.py"
-} finally { Get-Job | Stop-Job | Remove-Job -ErrorAction SilentlyContinue }
+    Write-Warning "Failed to ensure default admin user: $($_.Exception.Message)"
+    Write-Warning "You can try to create the user manually by running: .\\.venv\\Scripts\\python.exe ensure_admin.py"
+}
 
 Write-Host "Setup complete." -ForegroundColor Green
 }
