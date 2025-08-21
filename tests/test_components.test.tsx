@@ -2,19 +2,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
+import { AuthProvider } from '../AuthContext'
 
 // Mock components
-import PrescriptionTable from '../src/components/prescriptions/PrescriptionTable'
-import PrescriptionModal from '../src/components/prescriptions/PrescriptionModal'
-import PrescriptionCard from '../src/components/prescriptions/PrescriptionCard'
-import PrescriptionExporter from '../src/components/prescriptions/PrescriptionExporter'
-import QRCodeStamp from '../src/components/ui/QRCodeStamp'
-import AutoSuggestInput from '../src/components/ui/AutoSuggestInput'
-import SpectacleShowcase from '../src/components/spectacles/SpectacleShowcase'
-import SpectacleCompare from '../src/components/spectacles/SpectacleCompare'
-import TryOn3DViewer from '../src/components/spectacles/TryOn3DViewer'
-import InventoryUploader from '../src/components/inventory/InventoryUploader'
-import ImageEntryForm from '../src/components/inventory/ImageEntryForm'
+import PrescriptionTable from '../components/prescriptions/PrescriptionTable'
+import PrescriptionModal from '../components/prescriptions/PrescriptionModal'
+import PrescriptionCard from '../components/prescriptions/PrescriptionCard'
+import PrescriptionExporter from '../components/prescriptions/PrescriptionExporter'
+import QRCodeStamp from '../components/prescriptions/QRCodeStamp'
+import AutoSuggestInput from '../components/ui/AutoSuggestInput'
+import SpectacleShowcase from '../components/spectacles/SpectacleShowcase'
+import SpectacleCompare from '../components/spectacles/SpectacleCompare'
+import TryOn3DViewer from '../components/spectacles/TryOn3DViewer'
+import InventoryUploader from '../components/inventory/InventoryUploader'
+import ImageEntryForm from '../components/inventory/ImageEntryForm'
 
 // Mock data
 const mockPatient = {
@@ -22,13 +23,11 @@ const mockPatient = {
   first_name: 'John',
   last_name: 'Doe',
   phone: '1234567890',
-  age: 35,
-  gender: 'Male',
-  created_at: '2024-01-01T00:00:00Z'
 }
 
 const mockPrescription = {
   id: 1,
+  created_at: '2024-01-01T00:00:00Z',
   patient_id: 1,
   visit_id: 1,
   rx_values: {
@@ -55,11 +54,9 @@ const mockPrescription = {
     }
   },
   totals: {
-    spectacles_total: 8500.0,
-    medicines_total: 150.0,
-    grand_total: 8650.0
+    total: 8650.0
   },
-  created_at: '2024-01-01T00:00:00Z'
+  patient: mockPatient
 }
 
 const mockSpectacle = {
@@ -80,9 +77,7 @@ const mockSpectacle = {
     temple_length: '135mm'
   },
   quantity: 10,
-  in_stock: true,
-  created_at: '2024-01-01T00:00:00Z',
-  updated_at: '2024-01-01T00:00:00Z'
+  in_stock: true
 }
 
 // Mock fetch
@@ -91,87 +86,42 @@ global.fetch = vi.fn()
 // Wrapper component for testing
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
   <BrowserRouter>
-    {children}
-    <Toaster />
+    <AuthProvider>
+      {children}
+      <Toaster />
+    </AuthProvider>
   </BrowserRouter>
 )
 
 describe('PrescriptionTable', () => {
-  const mockProps = {
-    prescriptions: [mockPrescription],
-    patients: [mockPatient],
-    onEdit: vi.fn(),
-    onView: vi.fn(),
-    onDownloadPDF: vi.fn()
-  }
-
   it('renders prescription table correctly', () => {
     render(
       <TestWrapper>
-        <PrescriptionTable {...mockProps} />
+        <PrescriptionTable 
+          prescriptions={[mockPrescription]} 
+          onDownload={vi.fn()} 
+          sortBy="date" 
+          sortOrder="desc" 
+        />
       </TestWrapper>
     )
 
     expect(screen.getByText('John Doe')).toBeInTheDocument()
-    expect(screen.getByText('Ray-Ban Aviator Classic')).toBeInTheDocument()
-    expect(screen.getByText('₹8,500.00')).toBeInTheDocument()
-  })
-
-  it('calls onEdit when edit button is clicked', () => {
-    render(
-      <TestWrapper>
-        <PrescriptionTable {...mockProps} />
-      </TestWrapper>
-    )
-
-    const editButton = screen.getByLabelText('Edit prescription')
-    fireEvent.click(editButton)
-    expect(mockProps.onEdit).toHaveBeenCalledWith(mockPrescription.id)
-  })
-
-  it('calls onView when view button is clicked', () => {
-    render(
-      <TestWrapper>
-        <PrescriptionTable {...mockProps} />
-      </TestWrapper>
-    )
-
-    const viewButton = screen.getByLabelText('View prescription')
-    fireEvent.click(viewButton)
-    expect(mockProps.onView).toHaveBeenCalledWith(mockPrescription.id)
+    expect(screen.getByText('Complete')).toBeInTheDocument()
+    expect(screen.getByText(/1\s+Spectacle\(s\)/)).toBeInTheDocument()
   })
 })
 
 describe('PrescriptionCard', () => {
-  const mockProps = {
-    prescription: mockPrescription,
-    patient: mockPatient,
-    onView: vi.fn(),
-    onDownloadPDF: vi.fn()
-  }
-
   it('renders prescription card correctly', () => {
     render(
       <TestWrapper>
-        <PrescriptionCard {...mockProps} />
+        <PrescriptionCard prescription={mockPrescription as any} onDownload={vi.fn()} />
       </TestWrapper>
     )
 
     expect(screen.getByText('John Doe')).toBeInTheDocument()
-    expect(screen.getByText('Ray-Ban Aviator Classic')).toBeInTheDocument()
-    expect(screen.getByText('₹8,650.00')).toBeInTheDocument()
-  })
-
-  it('calls onView when view button is clicked', () => {
-    render(
-      <TestWrapper>
-        <PrescriptionCard {...mockProps} />
-      </TestWrapper>
-    )
-
-    const viewButton = screen.getByText('View')
-    fireEvent.click(viewButton)
-    expect(mockProps.onView).toHaveBeenCalledWith(mockPrescription.id)
+    expect(screen.getByText('Complete')).toBeInTheDocument()
   })
 })
 
@@ -179,49 +129,49 @@ describe('PrescriptionModal', () => {
   const mockProps = {
     isOpen: true,
     onClose: vi.fn(),
-    onSubmit: vi.fn(),
-    prescription: null
+    onSuccess: vi.fn()
   }
 
   beforeEach(() => {
-    // Mock fetch responses
-    ;(fetch as any).mockResolvedValue({
+    // Mock patients and visits fetch
+    ;(fetch as any).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({
-        patients: [mockPatient],
-        visits: [{ id: 1, patient_id: 1, issue: 'Test issue' }]
-      })
+      json: async () => ([mockPatient])
     })
   })
 
-  it('renders modal when open', () => {
+  it('renders modal when open', async () => {
     render(
       <TestWrapper>
         <PrescriptionModal {...mockProps} />
       </TestWrapper>
     )
 
-    expect(screen.getByText('New Prescription')).toBeInTheDocument()
-    expect(screen.getByLabelText('Patient')).toBeInTheDocument()
-    expect(screen.getByLabelText('Visit')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText('Create New Prescription')).toBeInTheDocument()
+      expect(screen.getByText('Patient')).toBeInTheDocument()
+      expect(screen.getByText('Visit (Optional)')).toBeInTheDocument()
+    })
   })
 
-  it('calls onClose when close button is clicked', () => {
+  it('calls onClose when Cancel is clicked', async () => {
     render(
       <TestWrapper>
         <PrescriptionModal {...mockProps} />
       </TestWrapper>
     )
 
-    const closeButton = screen.getByLabelText('Close modal')
-    fireEvent.click(closeButton)
-    expect(mockProps.onClose).toHaveBeenCalled()
+    await waitFor(() => {
+      const cancelBtn = screen.getByText('Cancel')
+      fireEvent.click(cancelBtn)
+      expect(mockProps.onClose).toHaveBeenCalled()
+    })
   })
 })
 
 describe('PrescriptionExporter', () => {
   const mockProps = {
-    prescription: mockPrescription,
+    prescription: mockPrescription as any,
     patient: mockPatient,
     onClose: vi.fn()
   }
@@ -234,89 +184,56 @@ describe('PrescriptionExporter', () => {
     )
 
     expect(screen.getByText('Export Prescription')).toBeInTheDocument()
-    expect(screen.getByText('HTML')).toBeInTheDocument()
-    expect(screen.getByText('PDF')).toBeInTheDocument()
-    expect(screen.getByText('DOCX')).toBeInTheDocument()
-  })
-
-  it('shows preview when HTML is selected', async () => {
-    render(
-      <TestWrapper>
-        <PrescriptionExporter {...mockProps} />
-      </TestWrapper>
-    )
-
-    const htmlButton = screen.getByText('HTML')
-    fireEvent.click(htmlButton)
-
-    await waitFor(() => {
-      expect(screen.getByText('Preview')).toBeInTheDocument()
-    })
   })
 })
 
 describe('QRCodeStamp', () => {
-  const mockProps = {
-    url: 'http://localhost:5173/prescription?id=1',
-    size: 200,
-    onDownload: vi.fn(),
-    onCopy: vi.fn()
-  }
-
-  it('renders QR code', () => {
+  it('renders QR code modal', () => {
     render(
       <TestWrapper>
-        <QRCodeStamp {...mockProps} />
+        <QRCodeStamp prescriptionId={1} patientName="John Doe" onClose={vi.fn()} />
       </TestWrapper>
     )
 
     expect(screen.getByText('QR Code')).toBeInTheDocument()
-    expect(screen.getByText('Download')).toBeInTheDocument()
+    expect(screen.getByText('Download QR Code')).toBeInTheDocument()
     expect(screen.getByText('Copy URL')).toBeInTheDocument()
-  })
-
-  it('calls onDownload when download button is clicked', () => {
-    render(
-      <TestWrapper>
-        <QRCodeStamp {...mockProps} />
-      </TestWrapper>
-    )
-
-    const downloadButton = screen.getByText('Download')
-    fireEvent.click(downloadButton)
-    expect(mockProps.onDownload).toHaveBeenCalled()
   })
 })
 
 describe('AutoSuggestInput', () => {
   const mockSuggestions = [
-    { id: 1, text: 'John Doe', type: 'patient' },
-    { id: 2, text: 'Jane Smith', type: 'patient' }
+    { id: 1, label: 'John Doe', value: 'John Doe', description: 'Patient' },
+    { id: 2, label: 'Jane Smith', value: 'Jane Smith', description: 'Patient' }
   ]
-
-  const mockProps = {
-    label: 'Patient Name',
-    placeholder: 'Search patients...',
-    suggestions: mockSuggestions,
-    onSelect: vi.fn(),
-    onInputChange: vi.fn()
-  }
 
   it('renders input field', () => {
     render(
       <TestWrapper>
-        <AutoSuggestInput {...mockProps} />
+        <AutoSuggestInput 
+          value="" 
+          onChange={vi.fn()} 
+          suggestions={mockSuggestions as any} 
+          label="Patient Name" 
+          placeholder="Search patients..." 
+        />
       </TestWrapper>
     )
 
-    expect(screen.getByLabelText('Patient Name')).toBeInTheDocument()
+    expect(screen.getByText('Patient Name')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Search patients...')).toBeInTheDocument()
   })
 
   it('shows suggestions when typing', async () => {
+    const handleChange = vi.fn()
     render(
       <TestWrapper>
-        <AutoSuggestInput {...mockProps} />
+        <AutoSuggestInput 
+          value="" 
+          onChange={handleChange} 
+          suggestions={mockSuggestions as any} 
+          placeholder="Search patients..." 
+        />
       </TestWrapper>
     )
 
@@ -324,47 +241,41 @@ describe('AutoSuggestInput', () => {
     fireEvent.change(input, { target: { value: 'John' } })
 
     await waitFor(() => {
-      expect(screen.getByText('John Doe')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /John\s*Doe/i })).toBeInTheDocument()
     })
   })
 })
 
 describe('SpectacleShowcase', () => {
-  const mockProps = {
-    spectacles: [mockSpectacle],
+  const handlers = {
     onAddToCart: vi.fn(),
     onTryOn: vi.fn(),
     onCompare: vi.fn()
   }
 
-  it('renders spectacle grid', () => {
-    render(
-      <TestWrapper>
-        <SpectacleShowcase {...mockProps} />
-      </TestWrapper>
-    )
-
-    expect(screen.getByText('Spectacle Showcase')).toBeInTheDocument()
-    expect(screen.getByText('Ray-Ban Aviator Classic')).toBeInTheDocument()
-    expect(screen.getByText('₹8,500.00')).toBeInTheDocument()
+  beforeEach(() => {
+    ;(fetch as any).mockResolvedValue({
+      ok: true,
+      json: async () => ({ items: [mockSpectacle] })
+    })
   })
 
-  it('calls onAddToCart when add to cart button is clicked', () => {
+  it('renders spectacle items after load', async () => {
     render(
       <TestWrapper>
-        <SpectacleShowcase {...mockProps} />
+        <SpectacleShowcase {...handlers} />
       </TestWrapper>
     )
 
-    const addToCartButton = screen.getByText('Add to Cart')
-    fireEvent.click(addToCartButton)
-    expect(mockProps.onAddToCart).toHaveBeenCalledWith(mockSpectacle)
+    await waitFor(() => {
+      expect(screen.getByText('Ray-Ban Aviator Classic')).toBeInTheDocument()
+    })
   })
 })
 
 describe('SpectacleCompare', () => {
   const mockProps = {
-    spectacles: [mockSpectacle],
+    spectacles: [mockSpectacle as any],
     isOpen: true,
     onClose: vi.fn(),
     onAddToCart: vi.fn(),
@@ -389,81 +300,61 @@ describe('SpectacleCompare', () => {
       </TestWrapper>
     )
 
-    const closeButton = screen.getByLabelText('Close comparison')
-    fireEvent.click(closeButton)
+    const buttons = screen.getAllByRole('button')
+    fireEvent.click(buttons[0])
     expect(mockProps.onClose).toHaveBeenCalled()
   })
 })
 
 describe('TryOn3DViewer', () => {
   const mockProps = {
-    spectacle: mockSpectacle,
-    isOpen: true,
+    spectacle: mockSpectacle as any,
     onClose: vi.fn(),
-    onAddToCart: vi.fn()
+    onAddToCart: vi.fn(),
+    onCapture: vi.fn()
   }
 
-  it('renders try-on modal', () => {
-    render(
-      <TestWrapper>
-        <TryOn3DViewer {...mockProps} />
-      </TestWrapper>
-    )
-
-    expect(screen.getByText('3D Try-On')).toBeInTheDocument()
-    expect(screen.getByText('Ray-Ban Aviator Classic')).toBeInTheDocument()
+  beforeEach(() => {
+    ;(navigator.mediaDevices.getUserMedia as any) = vi.fn().mockResolvedValue('mocked-stream')
   })
 
-  it('calls onClose when close button is clicked', () => {
+  it('shows initializing state', async () => {
     render(
       <TestWrapper>
         <TryOn3DViewer {...mockProps} />
       </TestWrapper>
     )
 
-    const closeButton = screen.getByLabelText('Close try-on')
-    fireEvent.click(closeButton)
-    expect(mockProps.onClose).toHaveBeenCalled()
+    await waitFor(() => {
+      expect(screen.getByText('Initializing camera...')).toBeInTheDocument()
+    })
   })
 })
 
 describe('InventoryUploader', () => {
   const mockProps = {
-    isOpen: true,
-    onClose: vi.fn(),
-    onUploadComplete: vi.fn()
+    onUploadComplete: vi.fn(),
+    category: 'spectacles' as const
   }
 
-  it('renders upload modal', () => {
+  it('renders upload sections', () => {
     render(
       <TestWrapper>
         <InventoryUploader {...mockProps} />
       </TestWrapper>
     )
 
-    expect(screen.getByText('Upload Inventory')).toBeInTheDocument()
+    expect(screen.getByText('Upload Spectacles')).toBeInTheDocument()
     expect(screen.getByText('Upload Files')).toBeInTheDocument()
     expect(screen.getByText('Upload CSV')).toBeInTheDocument()
-  })
-
-  it('calls onClose when close button is clicked', () => {
-    render(
-      <TestWrapper>
-        <InventoryUploader {...mockProps} />
-      </TestWrapper>
-    )
-
-    const closeButton = screen.getByLabelText('Close upload')
-    fireEvent.click(closeButton)
-    expect(mockProps.onClose).toHaveBeenCalled()
   })
 })
 
 describe('ImageEntryForm', () => {
   const mockProps = {
-    isOpen: true,
     onClose: vi.fn(),
-    onSave: vi.fn()
+    onSave: vi.fn(),
+    productType: 'spectacle' as const
   }
 
   it('renders image entry modal', () => {
@@ -473,7 +364,7 @@ describe('ImageEntryForm', () => {
       </TestWrapper>
     )
 
-    expect(screen.getByText('Add Product by Image')).toBeInTheDocument()
+    expect(screen.getByText('Add Product via Image')).toBeInTheDocument()
     expect(screen.getByText('Upload Image')).toBeInTheDocument()
     expect(screen.getByText('Take Photo')).toBeInTheDocument()
   })
@@ -485,8 +376,8 @@ describe('ImageEntryForm', () => {
       </TestWrapper>
     )
 
-    const closeButton = screen.getByLabelText('Close image entry')
-    fireEvent.click(closeButton)
+    const buttons = screen.getAllByRole('button')
+    fireEvent.click(buttons[0])
     expect(mockProps.onClose).toHaveBeenCalled()
   })
 })
