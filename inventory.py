@@ -263,10 +263,19 @@ async def export_prescription(
         return HTMLResponse(content=html_content)
     
     elif format == "pdf":
-        # Generate PDF using the existing pdf_generator
-        from pdf_generator import generate_prescription_pdf
-        pdf_path = generate_prescription_pdf(prescription, patient, visit, branding, include_qr)
-        return FileResponse(pdf_path, media_type="application/pdf", filename=f"prescription_{prescription_id}.pdf")
+        # Generate PDF bytes and stream as a file download
+        from pdf_generator import render_prescription_pdf
+        pdf_bytes = await render_prescription_pdf(
+            patient_id=prescription.patient_id,
+            visit_id=prescription.visit_id,
+            rx_values=prescription.rx_values,
+            spectacles=prescription.spectacles,
+            medicines=prescription.medicines,
+            totals=prescription.totals,
+        )
+        from fastapi.responses import StreamingResponse
+        headers = {"Content-Disposition": f'attachment; filename="prescription_{prescription_id}.pdf"'}
+        return StreamingResponse(iter([pdf_bytes]), media_type="application/pdf", headers=headers)
     
     elif format == "docx":
         # Generate DOCX (would need python-docx library)
