@@ -11,7 +11,10 @@
     "full:check": "powershell -ExecutionPolicy Bypass -File .\\scripts\\full-check.ps1",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build-launcher": "pkg launcher.js --targets node18-win-x64 --output MauEyeCareLauncher.exe",
+    "build-launcher-mac": "pkg launcher.js --targets node18-macos-x64 --output MauEyeCareLauncher",
+    "build-launcher-linux": "pkg launcher.js --targets node18-linux-x64 --output MauEyeCareLauncher"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.0.2",
@@ -40,6 +43,7 @@
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.6",
+    "pkg": "^5.8.1",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
     "typescript": "^5.2.2",
