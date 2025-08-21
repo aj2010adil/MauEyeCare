@@ -5,7 +5,8 @@
     Attempts to automatically fix common issues like a missing .env file.
 #>
 param (
-    [switch]$FixCommon
+    [switch]$FixCommon,
+    [switch]$AutoFix
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
@@ -139,6 +140,69 @@ if (Test-Path $pythonExe) {
 
     Test-Result $healthCheckSuccess "Backend API is healthy and responding."
 } else { Test-Result $false "Python executable not found in .venv. Cannot test backend." }
+
+# --- Port and Migration Checks ---
+Write-Host "5. Checking ports and migrations..."
+
+function Get-PortConflicts {
+    param([int]$Port)
+    $results = @()
+    try {
+        $lines = netstat -ano -p TCP | Select-String -Pattern (":$Port\s")
+        foreach ($l in $lines) {
+            $parts = ($l -split "\s+") | Where-Object { $_ -ne '' }
+            if ($parts.Length -ge 5) {
+                $pid = $parts[-1]
+                try { $proc = Get-Process -Id $pid -ErrorAction Stop; $results += [PSCustomObject]@{ PID=$pid; Name=$proc.ProcessName } } catch {}
+            }
+        }
+    } catch {}
+    return $results | Sort-Object PID -Unique
+}
+
+# Check common ports 8000 (backend) and 5173 (frontend)
+foreach ($p in 8000,5173) {
+    $conf = Get-PortConflicts -Port $p
+    if ($conf.Count -gt 0) {
+        Write-Host "  [WARN]  Port $p is in use by:" -ForegroundColor Yellow
+        $conf | ForEach-Object { Write-Host ("          PID {0} - {1}" -f $_.PID, $_.Name) -ForegroundColor Yellow }
+        if ($AutoFix) {
+            Write-Host "  -  AutoFix enabled: attempting to stop conflicting processes on port $p" -ForegroundColor DarkYellow
+            $conf | ForEach-Object { try { Stop-Process -Id $_.PID -Force -ErrorAction SilentlyContinue } catch {} }
+        }
+    } else {
+        Write-Host "  [ OK ]  No conflicts detected on port $p" -ForegroundColor Green
+    }
+}
+
+# Alembic migration status
+$pythonExe = ".\.venv\Scripts\python.exe"
+if (Test-Path $pythonExe) {
+    try {
+        $headsOut = & $pythonExe -m alembic heads 2>&1
+        $currOut = & $pythonExe -m alembic current 2>&1
+        $revRegex = "[0-9a-f]{6,}"
+        $heads = [System.Text.RegularExpressions.Regex]::Matches($headsOut, $revRegex) | ForEach-Object { $_.Value } | Select-Object -Unique
+        $currs = [System.Text.RegularExpressions.Regex]::Matches($currOut, $revRegex) | ForEach-Object { $_.Value } | Select-Object -Unique
+        if ($currs.Count -eq 0) {
+            Write-Host "  [WARN]  Database not stamped or empty migration state." -ForegroundColor Yellow
+            if ($AutoFix) {
+                Write-Host "  -  AutoFix: applying migrations (upgrade head)" -ForegroundColor DarkYellow
+                & $pythonExe -m alembic upgrade head | Out-Null
+            }
+        } elseif ($heads -notcontains $currs[-1]) {
+            Write-Host "  [WARN]  Database not at latest migration head." -ForegroundColor Yellow
+            if ($AutoFix) {
+                Write-Host "  -  AutoFix: upgrading database to head" -ForegroundColor DarkYellow
+                & $pythonExe -m alembic upgrade head | Out-Null
+            }
+        } else {
+            Write-Host "  [ OK ]  Database is at latest migration head." -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "  [WARN]  Unable to determine Alembic status: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
 
 # --- Summary ---
 Write-Host "---"

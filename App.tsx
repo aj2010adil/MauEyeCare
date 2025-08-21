@@ -15,6 +15,7 @@ import InventoryPage from './InventoryPage'
 import ShowcasePage from './ShowcasePage'
 import { AuthProvider } from './AuthContext'
 import AuthGuard from './AuthGuard'
+import RoleGuard from './RoleGuard'
 
 function App() {
   return (
@@ -26,13 +27,13 @@ function App() {
           <Route path="patients" element={<PatientsPage />} />
           <Route path="visits/new" element={<NewVisitPage />} />
           <Route path="pos" element={<POSPage />} />
-          <Route path="inventory" element={<InventoryPage />} />
+          <Route path="inventory" element={<RoleGuard roles={["admin","doctor"]}><InventoryPage /></RoleGuard>} />
           <Route path="showcase" element={<ShowcasePage />} />
           <Route path="prescriptions" element={<PrescriptionsPage />} />
           <Route path="marketing" element={<MarketingDashboard />} />
           <Route path="operations" element={<OperationsDashboard />} />
           <Route path="insights" element={<InsightsPage />} />
-          <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings" element={<RoleGuard roles={["admin"]}><SettingsPage /></RoleGuard>} />
         </Route>
       </Routes>
     </AuthProvider>

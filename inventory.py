@@ -485,6 +485,41 @@ async def get_prescription_qr(
         "prescription_id": prescription_id
     }
 
+@router.get("/prescriptions/{prescription_id}/qr.png")
+async def get_prescription_qr_image(
+    prescription_id: int,
+    size: int = Query(200, ge=50, le=500),
+    foreground_color: str = Query("#000000"),
+    background_color: str = Query("#FFFFFF"),
+    db: AsyncSession = Depends(get_db_session),
+    user_id: str = Depends(get_current_user_id)
+):
+    """Return QR code PNG image for embedding in documents"""
+    prescription = await db.get(Prescription, prescription_id)
+    if not prescription:
+        raise HTTPException(status_code=404, detail="Prescription not found")
+
+    # Generate QR code URL
+    prescription_url = f"http://localhost:5173/prescription?id={prescription_id}"
+
+    # Create QR code image
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(prescription_url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color=foreground_color, back_color=background_color)
+
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    from fastapi.responses import StreamingResponse
+    return StreamingResponse(buffer, media_type="image/png")
+
 # Helper functions
 def generate_prescription_html(prescription, patient, visit, branding, include_qr):
     """Generate HTML content for prescription"""
@@ -845,7 +880,7 @@ def generate_prescription_html(prescription, patient, visit, branding, include_q
         html += f"""
                 <div class="qr-section">
                     <div class="qr-code">
-                        <img src="/api/inventory/prescriptions/{prescription.id}/qr" alt="QR Code" width="60" height="60">
+                        <img src="/api/inventory/prescriptions/{prescription.id}/qr.png" alt="QR Code" width="60" height="60">
                     </div>
                     <div style="font-size: 10px; color: #6b7280;">
                         Scan to view online

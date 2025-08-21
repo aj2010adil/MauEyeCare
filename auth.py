@@ -12,7 +12,7 @@ from database import get_db_session
 from config import settings
 from security import verify_password, hash_password, create_access_token, create_refresh_token, decode_refresh_token
 from user import User
-
+from dependencies import get_current_user
 
 router = APIRouter()
 
@@ -57,3 +57,14 @@ async def bootstrap_admin(db: AsyncSession = Depends(get_db_session)):
     db.add(user)
     await db.commit()
     return {"created": True, "message": f"Default user '{email}' created."}
+
+
+@router.get("/me", response_model=dict)
+async def me(user: User = Depends(get_current_user)):
+    """Return current authenticated user's profile."""
+    return {
+        "id": user.id,
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": user.role,
+    }

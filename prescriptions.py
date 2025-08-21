@@ -178,3 +178,38 @@ async def get_prescription_qr(
     """Generate QR code for prescription"""
     from inventory import get_prescription_qr as inventory_qr
     return await inventory_qr(prescription_id, size, foreground_color, background_color, db, user_id)
+
+
+@router.get("/{prescription_id}/verify", response_model=dict)
+async def verify_prescription(
+    prescription_id: int,
+    db: AsyncSession = Depends(get_db_session),
+    user_id: str = Depends(get_current_user_id),
+):
+    """Verify that a prescription exists and return minimal information for display.
+    Intended for in-clinic QR verification.
+    """
+    pres = await db.get(Prescription, prescription_id)
+    if not pres:
+        raise HTTPException(status_code=404, detail="Prescription not found")
+    patient = await db.get(Patient, pres.patient_id)
+    last_initial = (patient.last_name[0] + ".") if (patient and patient.last_name) else ""
+    # Mask phone for privacy
+    phone_masked = None
+    if patient and patient.phone:
+        ph = ''.join([c for c in patient.phone if c.isdigit()])
+        if len(ph) >= 4:
+            phone_masked = f"***-***-{ph[-4:]}"
+        else:
+            phone_masked = "***"
+    return {
+        "id": pres.id,
+        "created_at": pres.created_at.isoformat() if pres.created_at else None,
+        "patient": {
+            "first_name": patient.first_name if patient else None,
+            "last_initial": last_initial,
+            "phone_masked": phone_masked,
+        },
+        "visit_id": pres.visit_id,
+        "pdf_available": bool(pres.pdf_path),
+    }

@@ -42,6 +42,12 @@ export default function PrescriptionsPage() {
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table')
   const [exportingPrescription, setExportingPrescription] = useState<Prescription | null>(null)
   const [qrInfo, setQrInfo] = useState<{ id: number; patientName: string } | null>(null)
+  // QR Verify modal state
+  const [verifyOpen, setVerifyOpen] = useState(false)
+  const [verifyId, setVerifyId] = useState('')
+  const [verifyLoading, setVerifyLoading] = useState(false)
+  const [verifyResult, setVerifyResult] = useState<any | null>(null)
+  const [verifyError, setVerifyError] = useState<string | null>(null)
   const debouncedSearchQuery = useDebounce(searchQuery, 500)
 
   const load = async () => {
@@ -91,6 +97,26 @@ export default function PrescriptionsPage() {
     }
   }
 
+  const doVerify = async () => {
+    setVerifyLoading(true)
+    setVerifyError(null)
+    setVerifyResult(null)
+    try {
+      const idNum = Number(verifyId)
+      if (!idNum || isNaN(idNum)) throw new Error('Enter a valid prescription ID')
+      const res = await fetch(`/api/prescriptions/${idNum}/verify`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+      if (!res.ok) throw new Error(`Verification failed (${res.status})`)
+      const data = await res.json()
+      setVerifyResult(data)
+    } catch (e: any) {
+      setVerifyError(e.message || 'Verification failed')
+    } finally {
+      setVerifyLoading(false)
+    }
+  }
+
   const downloadPDF = async (prescriptionId: number, patientName: string) => {
     try {
       const res = await fetch(`/api/prescriptions/${prescriptionId}/pdf`, {
@@ -137,6 +163,72 @@ export default function PrescriptionsPage() {
           onClose={() => setQrInfo(null)}
         />
       )}
+
+      {verifyOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <Eye className="text-blue-600" size={24} />
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Verify Prescription</h2>
+                  <p className="text-sm text-gray-600">Enter the prescription ID from the QR</p>
+                </div>
+              </div>
+              <button onClick={() => setVerifyOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">×</button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Prescription ID</label>
+                <input
+                  type="text"
+                  value={verifyId}
+                  onChange={(e) => setVerifyId(e.target.value)}
+                  placeholder="e.g. 123"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <button
+                onClick={doVerify}
+                disabled={verifyLoading || !verifyId}
+                className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {verifyLoading ? 'Verifying...' : 'Verify'}
+              </button>
+
+              {verifyError && (
+                <div className="text-sm text-red-600">{verifyError}</div>
+              )}
+
+              {verifyResult && (
+                <div className="bg-gray-50 rounded-lg p-4 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Prescription ID:</span>
+                    <span className="font-medium">#{verifyResult.id}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Created:</span>
+                    <span className="font-medium">{verifyResult.created_at}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Patient:</span>
+                    <span className="font-medium">{verifyResult.patient?.first_name} {verifyResult.patient?.last_initial}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Phone:</span>
+                    <span className="font-medium">{verifyResult.patient?.phone_masked || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">PDF Available:</span>
+                    <span className="font-medium">{verifyResult.pdf_available ? 'Yes' : 'No'}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       
       <div className="min-h-screen bg-gray-50">
         {/* Header Section */}
@@ -155,6 +247,12 @@ export default function PrescriptionsPage() {
                   className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl px-6 py-3 flex items-center gap-2 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   <Plus size={20} /> New Prescription
+                </button>
+                <button
+                  onClick={() => { setVerifyOpen(true); setVerifyResult(null); setVerifyError(null); setVerifyId('') }}
+                  className="ml-3 bg-white text-gray-700 font-semibold rounded-xl px-6 py-3 flex items-center gap-2 border border-gray-300 hover:bg-gray-50 transition-all duration-200"
+                >
+                  <Eye size={18} /> Scan/Verify QR
                 </button>
               </div>
             </div>

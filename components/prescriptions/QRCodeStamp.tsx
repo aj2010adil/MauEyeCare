@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Download, Copy, QrCode, Settings, X } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useAuth } from '../../AuthContext'
 
 interface QRCodeStampProps {
   prescriptionId: number
@@ -19,6 +20,7 @@ export default function QRCodeStamp({
   includeLogo = true,
   logoUrl
 }: QRCodeStampProps) {
+  const { accessToken } = useAuth()
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(true)
   const [qrSettings, setQrSettings] = useState({
@@ -35,20 +37,21 @@ export default function QRCodeStamp({
 
   const generateQRCode = async () => {
     setIsGenerating(true)
-    
     try {
-      // Create QR code URL
-      const prescriptionUrl = `${window.location.origin}/prescription?id=${prescriptionId}`
-      
-      // Use a QR code generation service or library
-      // For this example, we'll use a simple API
-      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(prescriptionUrl)}&color=${qrSettings.foregroundColor.replace('#', '')}&bgcolor=${qrSettings.backgroundColor.replace('#', '')}&margin=${qrSettings.margin}&qzone=1&format=png`
-      
-      // Fetch the QR code image
-      const response = await fetch(qrApiUrl)
-      const blob = await response.blob()
+      const params = new URLSearchParams({
+        size: String(size),
+        foreground_color: qrSettings.foregroundColor,
+        background_color: qrSettings.backgroundColor,
+      })
+      const resp = await fetch(
+        `/api/inventory/prescriptions/${prescriptionId}/qr.png?${params.toString()}`,
+        {
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        }
+      )
+      if (!resp.ok) throw new Error('QR API failed')
+      const blob = await resp.blob()
       const dataUrl = URL.createObjectURL(blob)
-      
       setQrCodeDataUrl(dataUrl)
     } catch (error) {
       console.error('Error generating QR code:', error)

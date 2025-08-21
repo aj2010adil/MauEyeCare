@@ -34,14 +34,14 @@ Follow these steps to get MauEyeCare running on your computer. This only needs t
       ```
     - Now, run the setup script. This will install all required software like Python, Node.js, and PostgreSQL automatically.
       ```powershell
-      Set-ExecutionPolicy Bypass -Scope Process -Force; .\scripts\setup.ps1
+      Set-ExecutionPolicy Bypass -Scope Process -Force; .\setup.ps1
       ```
     - The script will show its progress and may take 10-15 minutes to complete.
 
 3.  **Setup is Complete!**
     - Once finished, the system is ready with a default **Doctor** user:
       - **Email**: `doctor@maueyecare.com`
-      - **Password**: `changeme`
+      - **Password**: `MauEyeCareAdmin@2024`
     - Please change this password after your first login via the Settings page.
 
 ---
@@ -55,7 +55,7 @@ Follow these steps to get MauEyeCare running on your computer. This only needs t
     ```
 3.  Run the start script:
     ```powershell
-    .\scripts\run.ps1
+    .\run.ps1
     ```
 4.  The backend and frontend servers will start. Keep this window open while using the application.
 

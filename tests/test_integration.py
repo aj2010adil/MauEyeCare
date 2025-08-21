@@ -18,13 +18,19 @@ class TestMauEyeCareIntegration:
     
     @pytest.fixture
     async def auth_token(self, client: httpx.AsyncClient) -> str:
-        """Get authentication token for testing"""
+        """Bootstrap default user if needed and obtain access token"""
+        # Ensure default admin/doctor account exists (idempotent)
+        try:
+            await client.post(f"{BASE_URL}/api/auth/bootstrap")
+        except Exception:
+            pass
         login_data = {
-            "username": "admin",
-            "password": "admin123"
+            "username": "doctor@maueyecare.com",
+            "password": "MauEyeCareAdmin@2024",
+            "grant_type": "password",
         }
         response = await client.post(f"{BASE_URL}/api/auth/login", data=login_data)
-        assert response.status_code == 200
+        assert response.status_code == 200, f"Login failed: {response.text}"
         data = response.json()
         return data["access_token"]
     
