@@ -20,6 +20,12 @@ async def seed_products_from_csv(db: AsyncSession, file_path: Path, category: st
         print(f"  '{category}' products already exist. Skipping.")
         return
 
+    if not file_path.exists():
+        print(f"  CSV not found at {file_path}. Skipping.")
+        return
+    if file_path.stat().st_size == 0:
+        print(f"  CSV at {file_path} is empty. Skipping.")
+        return
     print(f"  Seeding '{category}' products...")
     with open(file_path, mode='r', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
@@ -31,6 +37,7 @@ async def seed_products_from_csv(db: AsyncSession, file_path: Path, category: st
                     row[key] = float(row[key])
                 else:
                     row.pop(key, None) # Remove if empty to use model default
+            row["category"] = category
             objects_to_add.append(Product(**row))
     
     if objects_to_add:
@@ -56,9 +63,16 @@ async def main():
             print(f"Default admin user '{admin_email}' already exists. Skipping.")
 
         # Seed product data for prescription writer
-        data_dir = Path(__file__).parent / "data"
-        await seed_products_from_csv(db, data_dir / "medicines.csv", "medicine")
-        await seed_products_from_csv(db, data_dir / "spectacles.csv", "frame")
+        base_dir = Path(__file__).parent
+        med_path = base_dir / "data" / "medicines.csv"
+        spec_path = base_dir / "data" / "spectacles.csv"
+        if not med_path.exists():
+            med_path = base_dir / "medicines.csv"
+        if not spec_path.exists():
+            spec_path = base_dir / "spectacles.csv"
+
+        await seed_products_from_csv(db, med_path, "medicine")
+        await seed_products_from_csv(db, spec_path, "frame")
 
         await db.commit()
         print("Seeding complete.")
