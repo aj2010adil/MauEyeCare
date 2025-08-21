@@ -138,3 +138,30 @@ async def get_prescription_pdf(prescription_id: int, db: AsyncSession = Depends(
     if not pres or not pres.pdf_path:
         raise HTTPException(status_code=404, detail="Not found")
     return FileResponse(path=pres.pdf_path, media_type="application/pdf", filename=os.path.basename(pres.pdf_path))
+
+
+@router.post("/{prescription_id}/export")
+async def export_prescription(
+    prescription_id: int,
+    format: str = "html",  # html, pdf, docx
+    include_qr: bool = True,
+    db: AsyncSession = Depends(get_db_session),
+    user_id: str = Depends(get_current_user_id)
+):
+    """Export prescription in various formats"""
+    from inventory import export_prescription as inventory_export
+    return await inventory_export(prescription_id, format, include_qr, None, db, user_id)
+
+
+@router.get("/{prescription_id}/qr")
+async def get_prescription_qr(
+    prescription_id: int,
+    size: int = 200,
+    foreground_color: str = "#000000",
+    background_color: str = "#FFFFFF",
+    db: AsyncSession = Depends(get_db_session),
+    user_id: str = Depends(get_current_user_id)
+):
+    """Generate QR code for prescription"""
+    from inventory import get_prescription_qr as inventory_qr
+    return await inventory_qr(prescription_id, size, foreground_color, background_color, db, user_id)

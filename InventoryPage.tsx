@@ -1,0 +1,378 @@
+import React, { useState, useEffect } from 'react'
+import { Plus, Search, Filter, Upload, Image, Tag } from 'lucide-react'
+import InventoryUploader from './components/inventory/InventoryUploader'
+import ImageEntryForm from './components/inventory/ImageEntryForm'
+import AutoSuggestInput from './components/ui/AutoSuggestInput'
+import Pagination from './components/ui/Pagination'
+import { apiGet } from './api'
+import { useAuth } from './AuthContext'
+
+interface Spectacle {
+  id: number
+  name: string
+  brand: string
+  price: number
+  image_url: string
+  frame_material: string
+  frame_shape: string
+  lens_type: string
+  gender: string
+  age_group: string
+  description: string
+  specifications: any
+  in_stock: boolean
+  quantity: number
+}
+
+interface InventoryFilters {
+  search: string
+  brand: string
+  frame_shape: string
+  lens_type: string
+  gender: string
+  min_price: number | null
+  max_price: number | null
+  in_stock: boolean | null
+}
+
+const InventoryPage: React.FC = () => {
+  const { accessToken } = useAuth()
+  const [spectacles, setSpectacles] = useState<Spectacle[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [showUploader, setShowUploader] = useState(false)
+  const [showImageEntry, setShowImageEntry] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const [filters, setFilters] = useState<InventoryFilters>({
+    search: '',
+    brand: '',
+    frame_shape: '',
+    lens_type: '',
+    gender: '',
+    min_price: null,
+    max_price: null,
+    in_stock: null
+  })
+
+  const pageSize = 20
+
+  const fetchSpectacles = async () => {
+    try {
+      setLoading(true)
+      const params = new URLSearchParams({
+        skip: ((currentPage - 1) * pageSize).toString(),
+        limit: pageSize.toString()
+      })
+
+      // Add filters to params
+      if (filters.search) params.append('search', filters.search)
+      if (filters.brand) params.append('brand', filters.brand)
+      if (filters.frame_shape) params.append('frame_shape', filters.frame_shape)
+      if (filters.lens_type) params.append('lens_type', filters.lens_type)
+      if (filters.gender) params.append('gender', filters.gender)
+      if (filters.min_price !== null) params.append('min_price', filters.min_price.toString())
+      if (filters.max_price !== null) params.append('max_price', filters.max_price.toString())
+      if (filters.in_stock !== null) params.append('in_stock', filters.in_stock.toString())
+
+      const response = await apiGet<{items: Spectacle[], total: number}>(`/api/inventory/spectacles?${params}`, accessToken || undefined)
+      setSpectacles(response.items)
+      setTotalItems(response.total)
+      setTotalPages(Math.ceil(response.total / pageSize))
+      setError(null)
+    } catch (err) {
+      setError('Failed to fetch spectacles')
+      console.error('Error fetching spectacles:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchSpectacles()
+  }, [currentPage, filters])
+
+  const handleFilterChange = (key: keyof InventoryFilters, value: any) => {
+    setFilters(prev => ({ ...prev, [key]: value }))
+    setCurrentPage(1) // Reset to first page when filtering
+  }
+
+  const clearFilters = () => {
+    setFilters({
+      search: '',
+      brand: '',
+      frame_shape: '',
+      lens_type: '',
+      gender: '',
+      min_price: null,
+      max_price: null,
+      in_stock: null
+    })
+    setCurrentPage(1)
+  }
+
+  const handleUploadSuccess = () => {
+    setShowUploader(false)
+    fetchSpectacles() // Refresh the list
+  }
+
+  const handleImageEntrySuccess = () => {
+    setShowImageEntry(false)
+    fetchSpectacles() // Refresh the list
+  }
+
+  if (loading && spectacles.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
+          <p className="text-gray-600">Manage spectacles, upload images, and track inventory</p>
+        </div>
+        <div className="flex space-x-3">
+          <button
+            onClick={() => setShowImageEntry(true)}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <Image className="w-4 h-4 mr-2" />
+            Add with Image
+          </button>
+          <button
+            onClick={() => setShowUploader(true)}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Bulk Upload
+          </button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium text-gray-900">Filters</h3>
+          <button
+            onClick={clearFilters}
+            className="text-sm text-blue-600 hover:text-blue-700"
+          >
+            Clear All
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(e) => handleFilterChange('search', e.target.value)}
+                placeholder="Search spectacles..."
+                className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+            <AutoSuggestInput
+              value={filters.brand}
+              onChange={(value) => handleFilterChange('brand', value)}
+              placeholder="Select brand..."
+              suggestions={[
+                { id: 'ray-ban', label: 'Ray-Ban', value: 'Ray-Ban' },
+                { id: 'oakley', label: 'Oakley', value: 'Oakley' },
+                { id: 'prada', label: 'Prada', value: 'Prada' },
+                { id: 'gucci', label: 'Gucci', value: 'Gucci' },
+                { id: 'tom-ford', label: 'Tom Ford', value: 'Tom Ford' }
+              ]}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Frame Shape</label>
+            <select
+              value={filters.frame_shape}
+              onChange={(e) => handleFilterChange('frame_shape', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Shapes</option>
+              <option value="aviator">Aviator</option>
+              <option value="wayfarer">Wayfarer</option>
+              <option value="round">Round</option>
+              <option value="square">Square</option>
+              <option value="cat-eye">Cat Eye</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+            <select
+              value={filters.gender}
+              onChange={(e) => handleFilterChange('gender', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Genders</option>
+              <option value="men">Men</option>
+              <option value="women">Women</option>
+              <option value="unisex">Unisex</option>
+              <option value="kids">Kids</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Min Price</label>
+            <input
+              type="number"
+              value={filters.min_price || ''}
+              onChange={(e) => handleFilterChange('min_price', e.target.value ? parseFloat(e.target.value) : null)}
+              placeholder="₹0"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Max Price</label>
+            <input
+              type="number"
+              value={filters.max_price || ''}
+              onChange={(e) => handleFilterChange('max_price', e.target.value ? parseFloat(e.target.value) : null)}
+              placeholder="₹50000"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Stock Status</label>
+            <select
+              value={filters.in_stock === null ? '' : filters.in_stock.toString()}
+              onChange={(e) => handleFilterChange('in_stock', e.target.value === '' ? null : e.target.value === 'true')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Items</option>
+              <option value="true">In Stock</option>
+              <option value="false">Out of Stock</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Results */}
+      <div className="bg-white rounded-lg shadow-sm border">
+        <div className="p-6 border-b">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-medium text-gray-900">
+              Spectacles ({totalItems} items)
+            </h3>
+            <div className="text-sm text-gray-500">
+              Page {currentPage} of {totalPages}
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="p-4 bg-red-50 border-l-4 border-red-400">
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
+
+        {spectacles.length === 0 && !loading ? (
+          <div className="p-12 text-center">
+            <div className="text-gray-400 mb-4">
+              <Tag className="w-12 h-12 mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No spectacles found</h3>
+            <p className="text-gray-500 mb-4">Try adjusting your filters or add new inventory items.</p>
+            <button
+              onClick={() => setShowUploader(true)}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Spectacles
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6">
+            {spectacles.map((spectacle) => (
+              <div key={spectacle.id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                <div className="aspect-square bg-gray-100 relative">
+                  {spectacle.image_url ? (
+                    <img
+                      src={spectacle.image_url}
+                      alt={spectacle.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      <Image className="w-12 h-12" />
+                    </div>
+                  )}
+                  <div className="absolute top-2 right-2">
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      spectacle.in_stock 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {spectacle.in_stock ? 'In Stock' : 'Out of Stock'}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h4 className="font-medium text-gray-900 mb-1">{spectacle.name}</h4>
+                  <p className="text-sm text-gray-600 mb-2">{spectacle.brand}</p>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-lg font-bold text-blue-600">₹{spectacle.price.toLocaleString()}</span>
+                    <span className="text-sm text-gray-500">Qty: {spectacle.quantity}</span>
+                  </div>
+                  <div className="text-xs text-gray-500 space-y-1">
+                    <div>Shape: {spectacle.frame_shape}</div>
+                    <div>Material: {spectacle.frame_material}</div>
+                    <div>Gender: {spectacle.gender}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="p-6 border-t">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
+      {showUploader && (
+        <InventoryUploader
+          onUploadComplete={handleUploadSuccess}
+          category="spectacles"
+        />
+      )}
+
+      {showImageEntry && (
+        <ImageEntryForm
+          onClose={() => setShowImageEntry(false)}
+          onSave={handleImageEntrySuccess}
+          productType="spectacle"
+        />
+      )}
+    </div>
+  )
+}
+
+export default InventoryPage
