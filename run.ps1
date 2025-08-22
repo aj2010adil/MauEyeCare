@@ -89,7 +89,7 @@ if (-not (Test-Path $backendFolder)) {
     exit 1
 }
 Write-Host "`n[1/3] Starting backend..." -ForegroundColor Green
-Start-Process "uvicorn.exe" -ArgumentList "$($backendFolder.Replace('\','/')).main:app", "--reload", "--port", "$backendPort" -WorkingDirectory (Resolve-Path $backendFolder)
+Start-Process "uvicorn.exe" -ArgumentList "$($backendFolder.Replace('\','/'))main:app", "--reload", "--port", "$backendPort" -WorkingDirectory (Resolve-Path $backendFolder)
 
 # -----------------------------
 # START FRONTEND
