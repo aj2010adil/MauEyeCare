@@ -74,7 +74,7 @@
  [],
  False,
  False,
- 1755793282,
+ 1755797349,
  [('runw.exe',
    'D:\\MauEyeCare_windows_version\\MauEyeCare\\.venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\runw.exe',
    'EXECUTABLE')],
