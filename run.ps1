@@ -1,96 +1,109 @@
-<#!
+<#
 .SYNOPSIS
-  One-click launcher for MauEyeCare on Windows.
+    One‑click launcher for MauEyeCare on Windows 11
 .DESCRIPTION
-  Starts the backend API (Uvicorn) and optionally the frontend (Vite) if a package.json is present.
-  Performs a health check for the backend and opens the browser to the frontend URL if available.
-  Gracefully stops background jobs on exit.
+    - Checks dependencies & ports
+    - Auto‑detects frontend location
+    - Starts backend (FastAPI) + frontend (Vite/React)
+    - Opens browser automatically
 #>
-# Parameter handling removed to avoid host-injected binding errors.
-# Defaults can be edited here if needed.
-$Frontend = 'dev'
-$ApiPort = 8000
-$WebPort = 5173
 
-$ErrorActionPreference = 'Stop'
-Write-Host "[MauEyeCare] Launching..." -ForegroundColor Cyan
+Write-Host "`n=== MauEyeCare One‑Click Launcher ===" -ForegroundColor Cyan
 
-# Ensure venv exists
-$pythonPath = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
-if (!(Test-Path $pythonPath)) {
-  Write-Error ".venv not found or incomplete. Run setup.ps1 first."; exit 1
+# -----------------------------
+# CONFIG
+# -----------------------------
+$backendFolder = "backend"   # Change if backend lives elsewhere
+$frontendCandidates = @("frontend", "ui", ".")
+$backendPort = 8000
+$frontendPort = 5173
+$dbServiceName = "postgresql-x64-15"  # Change if your PG version differs
+
+# -----------------------------
+# FUNCTIONS
+# -----------------------------
+function Test-PortFree {
+    param([int]$Port)
+    $inUse = netstat -ano | Select-String ":$Port " | ForEach-Object { $_.ToString().Trim() }
+    return -not $inUse
 }
 
-# Start backend in background
-$apiUrl = "http://127.0.0.1:$ApiPort"
-$healthUrl = "$apiUrl/api/health"
-
-Write-Host "Starting backend API on $apiUrl ..." -ForegroundColor Yellow
-try {
-  $backendProc = Start-Process -FilePath "powershell" -ArgumentList @(
-    "-NoProfile","-ExecutionPolicy","Bypass","-Command",
-    "& `"$pythonPath`" -m uvicorn main:app --host 127.0.0.1 --port $ApiPort"
-  ) -PassThru -WorkingDirectory $PSScriptRoot
-} catch {
-  Write-Error "Failed to start backend: $($_.Exception.Message)"; exit 1
-}
-
-# Wait for backend health
-$healthy = $false
-for ($i = 1; $i -le 30; $i++) {
-  try {
-    $resp = Invoke-RestMethod -Uri $healthUrl -Method Get -TimeoutSec 2
-    if ($resp.status -eq 'ok') { $healthy = $true; break }
-  } catch {}
-  Start-Sleep -Milliseconds 500
-}
-if (-not $healthy) {
-  Write-Warning "Backend health check failed at $healthUrl. Terminating process."
-  try { if ($backendProc) { Stop-Process -Id $backendProc.Id -Force } } catch {}
-  Write-Error "Backend did not become healthy. Exiting."; exit 1
-}
-Write-Host "Backend is healthy at $apiUrl" -ForegroundColor Green
-
-# Optionally start frontend
-$frontendStarted = $false
-$hasPkg = [System.IO.File]::Exists((Join-Path $PSScriptRoot 'package.json'))
-$hasNpm = $false
-try { & where.exe npm *> $null; if ($LASTEXITCODE -eq 0) { $hasNpm = $true } } catch {}
-if ($hasPkg -and $Frontend -ne 'none' -and $hasNpm) {
-  switch ($Frontend) {
-    'dev' {
-      Write-Host "Starting frontend (npm run dev) on http://localhost:$WebPort ..." -ForegroundColor Yellow
-      try {
-        $frontendProc = Start-Process -FilePath "npm" -ArgumentList @("run","dev","--","--host","127.0.0.1","--port","$WebPort") -PassThru
-        $frontendStarted = $true
-      } catch {
-        Write-Warning "Failed to start frontend dev server: $($_.Exception.Message)"
-      }
+function Start-IfStopped {
+    param([string]$ServiceName)
+    $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+    if ($null -eq $svc) { return $false }
+    if ($svc.Status -ne 'Running') {
+        Write-Host "Starting service: $ServiceName" -ForegroundColor Yellow
+        Start-Service $ServiceName
     }
-    'preview' {
-      Write-Host "Building and starting frontend preview..." -ForegroundColor Yellow
-      try {
-        Start-Process -FilePath "npm" -ArgumentList @("run","build") -Wait
-        $frontendProc = Start-Process -FilePath "npm" -ArgumentList @("run","preview") -PassThru
-        $frontendStarted = $true
-      } catch {
-        Write-Warning "Failed to build/preview frontend: $($_.Exception.Message)"
-      }
+    return $true
+}
+
+# -----------------------------
+# PRECHECKS
+# -----------------------------
+if (-not (Get-Command npm.cmd -ErrorAction SilentlyContinue)) {
+    Write-Host "ERROR: Node.js not found — install from https://nodejs.org" -ForegroundColor Red
+    exit 1
+}
+if (-not (Get-Command uvicorn.exe -ErrorAction SilentlyContinue)) {
+    Write-Host "ERROR: uvicorn not found — run 'pip install uvicorn[standard]'" -ForegroundColor Red
+    exit 1
+}
+if (-not (Test-PortFree $backendPort)) {
+    Write-Host "ERROR: Port $backendPort in use — close the process and try again." -ForegroundColor Red
+    exit 1
+}
+if (-not (Test-PortFree $frontendPort)) {
+    Write-Host "ERROR: Port $frontendPort in use — close the process and try again." -ForegroundColor Red
+    exit 1
+}
+
+# -----------------------------
+# FRONTEND PATH DETECTION
+# -----------------------------
+$frontendPath = $null
+foreach ($candidate in $frontendCandidates) {
+    if (Test-Path (Join-Path $candidate "package.json")) {
+        $frontendPath = Resolve-Path $candidate
+        break
     }
-  }
+}
+if (-not $frontendPath) {
+    Write-Host "ERROR: Could not find frontend folder with package.json" -ForegroundColor Red
+    exit 1
 }
 
-# Optionally open browser
-if ($frontendStarted) {
-  Start-Sleep -Seconds 2
-  $webUrl = "http://localhost:$WebPort"
-  Write-Host "Opening $webUrl ..." -ForegroundColor Cyan
-  try { Start-Process $webUrl } catch {}
-} else {
-  # Open API docs as a friendly landing page if no frontend
-  $docsUrl = "$apiUrl/docs"
-  Write-Host "Opening API docs at $docsUrl ..." -ForegroundColor Cyan
-  try { Start-Process $docsUrl } catch {}
+# -----------------------------
+# DB CHECK
+# -----------------------------
+if (-not (Start-IfStopped $dbServiceName)) {
+    Write-Host "WARNING: PostgreSQL service '$dbServiceName' not found or not running." -ForegroundColor Yellow
 }
 
-Write-Host "MauEyeCare is running in separate windows. You can close this launcher." -ForegroundColor DarkGray
+# -----------------------------
+# START BACKEND
+# -----------------------------
+if (-not (Test-Path $backendFolder)) {
+    Write-Host "ERROR: Backend folder '$backendFolder' not found." -ForegroundColor Red
+    exit 1
+}
+Write-Host "`n[1/3] Starting backend..." -ForegroundColor Green
+Start-Process "uvicorn.exe" -ArgumentList "$($backendFolder.Replace('\','/')).app.main:app", "--reload", "--port", "$backendPort" -WorkingDirectory (Resolve-Path $backendFolder)
+
+# -----------------------------
+# START FRONTEND
+# -----------------------------
+Write-Host "`n[2/3] Starting frontend..." -ForegroundColor Green
+Push-Location $frontendPath
+& npm.cmd install
+Start-Process "npm.cmd" -ArgumentList "run", "dev" -WorkingDirectory $frontendPath
+Pop-Location
+
+# --- OPEN APP IN BROWSER ---
+Write-Host "`n[3/3] Launching browser..." -ForegroundColor Green
+Start-Sleep -Seconds 3
+Start-Process "http://localhost:$frontendPort/"
+
+Write-Host "`nMauEyeCare is starting — backend on :$backendPort, frontend on :$frontendPort" -ForegroundColor Cyan
+Write-Host "Keep this window open; close it to stop servers.`n" -ForegroundColor Yellow
