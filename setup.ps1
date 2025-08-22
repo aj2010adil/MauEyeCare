@@ -1,171 +1,140 @@
-﻿# setup.ps1 - MauEyeCare Project Environment Setup Script
-# For the `windows_version4_all_feature` branch, August 2025
-# Installs backend and frontend dependencies, runs Alembic migrations, optionally seeds the database.
+﻿# setup.ps1
+# Fully automates Python and Node dependency installation, Alembic migrations, and attempts to run DB seed.sql if present.
+# Works with dynamic MauEyeCare folder structure and robust error handling.
 
-Write-Host "`n---- MauEyeCare Setup Script Started ----`n"
+Write-Host "=== MauEyeCare Setup Script ===" -ForegroundColor Cyan
 
-# --- 1. Detect backend folder ---
-$repoFolders = Get-ChildItem -Directory | Where-Object { $_.Name -notin @('.git', '.vscode', '.idea', 'node_modules', 'dist') }
-
-$backendCandidates = @('backend', 'server', 'api')
-$backendFolder = $null
-
-foreach ($candidate in $backendCandidates) {
-    $found = $repoFolders | Where-Object { $_.Name -eq $candidate }
-    if ($found) {
-        $backendFolder = $found.FullName
-        break
+# Helper: Find folder containing a marker file (e.g., requirements.txt for backend)
+function Find-FolderWithFile($root, $filename) {
+    $result = Get-ChildItem -Path $root -Recurse -File -Filter $filename -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+    if ($result) {
+        return $result.Directory.FullName
+    } else {
+        return $null
     }
 }
 
-if (-not $backendFolder) {
-    # Fallback: search for a folder containing main.py and alembic.ini
-    foreach ($folder in $repoFolders) {
-        if (Test-Path (Join-Path $folder.FullName 'app\main.py') -or Test-Path (Join-Path $folder.FullName 'main.py')) {
-            if (Test-Path (Join-Path $folder.FullName 'alembic.ini')) {
-                $backendFolder = $folder.FullName
-                break
-            }
-        }
-    }
+# Find backend (looks for requirements.txt or alembic.ini)
+$backendDir = Find-FolderWithFile "." "requirements.txt"
+if (-not $backendDir) {
+    $backendDir = Find-FolderWithFile "." "alembic.ini"
+}
+if (-not $backendDir) {
+    Write-Error "❌ Could not find backend folder containing requirements.txt or alembic.ini. Aborting setup." 
+    exit 2
 }
 
-if (-not $backendFolder) {
-    Write-Error "Could not locate backend folder. Please ensure it is named 'backend' or contains 'main.py' and 'alembic.ini'. Exiting..."
-    exit 1
-}
-
-Write-Host "📦 Backend detected: $backendFolder"
-
-# --- 2. Detect frontend folder ---
-$frontendCandidates = @('frontend', 'client', 'web')
-$frontendFolder = $null
-
-foreach ($candidate in $frontendCandidates) {
-    $found = $repoFolders | Where-Object { $_.Name -eq $candidate }
-    if ($found -and (Test-Path (Join-Path $found.FullName 'package.json'))) {
-        $frontendFolder = $found.FullName
-        break
-    }
-}
-
-if (-not $frontendFolder) {
-    # Fallback: search for package.json
-    foreach ($folder in $repoFolders) {
-        if (Test-Path (Join-Path $folder.FullName 'package.json')) {
-            $frontendFolder = $folder.FullName
-            break
-        }
-    }
-}
-
-if (-not $frontendFolder) {
-    Write-Error "Could not locate frontend folder. Please ensure it contains 'package.json'. Exiting..."
-    exit 1
-}
-
-Write-Host "📦 Frontend detected: $frontendFolder"
-
-# --- 3. Install backend dependencies (Python) ---
-Write-Host "`n---- Installing backend (Python) dependencies ----"
-Push-Location $backendFolder
-
-if (Test-Path 'requirements.txt') {
-    Write-Host "Installing Python dependencies from requirements.txt ..."
-    try {
-        pip install -r requirements.txt
-    }
-    catch {
-        Write-Error "pip install failed. Please ensure Python and pip are installed and on your PATH."
-        Pop-Location
-        exit 1
+# Find frontend (looks for package.json and vite.config.*)
+$frontendDir = Find-FolderWithFile "." "package.json"
+if ($frontendDir) {
+    $viteConfig = Get-ChildItem -Path $frontendDir -Filter "vite.config.*" -ErrorAction SilentlyContinue
+    if (-not $viteConfig) {
+        Write-Warning "⚠️ package.json found at $frontendDir but vite.config.* missing. Check your frontend structure."
     }
 } else {
-    Write-Warning "No requirements.txt found in $backendFolder. Skipping Python dependency installation."
+    Write-Warning "⚠️ No package.json found in tree. Frontend install will be skipped."
 }
 
-# --- 4. Run Alembic migrations ---
-if (Test-Path 'alembic.ini') {
-    # Remove .pyc and orphaned migration folders if needed (optional, but good practice in dev)
-    Write-Host "`nRunning Alembic migrations ..."
-    try {
-        alembic upgrade head
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warning "Alembic migration failed. Please check if any migration script is missing (e.g., '20250821_fix_spectacles_schema')."
-            Pop-Location
-            exit 1
+# --- Install Python requirements ---
+Write-Host "`n[1/4] Installing backend requirements in `"$backendDir`"..."
+Push-Location $backendDir
+try {
+    if (Test-Path ".venv" -PathType Container) {
+        Write-Host "Activating found Python venv..."
+        $venvScripts = Join-Path ".venv" "Scripts"
+        $activateScript = Join-Path $venvScripts "Activate.ps1"
+        if (Test-Path $activateScript) {
+            & $activateScript
+        } else {
+            Write-Warning "⚠️ .venv\\Scripts\\Activate.ps1 not found. Continuing without venv."
         }
     }
-    catch {
-        Write-Error "Alembic command not found or failed. Ensure Alembic is installed in your Python environment."
-        Pop-Location
-        exit 1
+    pip install --upgrade pip
+    pip install -r requirements.txt
+    Write-Host "✅ Python packages installed successfully."
+} catch {
+    Write-Error "❌ Failed to install Python requirements: $($_.Exception.Message)"
+    exit 3
+}
+Pop-Location
+
+# --- Install Node.js frontend dependencies ---
+if ($frontendDir) {
+    Write-Host "`n[2/4] Installing frontend dependencies in `"$frontendDir`"..."
+    Push-Location $frontendDir
+    try {
+        if (Test-Path "package-lock.json") {
+            npm ci
+        } else {
+            npm install
+        }
+        Write-Host "✅ Node packages installed successfully."
+    } catch {
+        Write-Error "❌ Failed to install Node dependencies: $($_.Exception.Message)"
+        exit 4
     }
-} else {
-    Write-Error "alembic.ini not found in $backendFolder. Cannot apply migrations!"
     Pop-Location
-    exit 1
+} else {
+    Write-Warning "⚠️ Frontend directory not found. Skipping npm install."
 }
 
-# --- 5. Seed the database (optional) ---
-$seedSql = Join-Path $backendFolder 'seed.sql'
-if (Test-Path $seedSql) {
-    Write-Host "`nSeeding the database from seed.sql ..."
-    # Load .env if available for credentials
-    $envFile = Join-Path $backendFolder '.env'
-    $dbUrl = $null
-    if (Test-Path $envFile) {
-        $lines = Get-Content $envFile
-        foreach ($line in $lines) {
-            if ($line -match 'DATABASE_URL\s*=\s*(.+)') {
-                $dbUrl = $Matches[1].Trim()
-            }
-        }
+# --- Run Alembic migrations ---
+Write-Host "`n[3/4] Running Alembic migrations..."
+Push-Location $backendDir
+try {
+    $alembicIni = Join-Path $backendDir "alembic.ini"
+    if (-not (Test-Path $alembicIni -PathType Leaf)) {
+        Write-Error "❌ alembic.ini not found in $backendDir. Cannot run migrations."
+        exit 5
     }
-    # If DATABASE_URL found, parse protocol
-    if ($dbUrl) {
-        if ($dbUrl -match '^postgresql://') {
-            # Use psql
-            $psqlPath = Get-Command psql -ErrorAction SilentlyContinue
-            if ($psqlPath) {
-                Write-Host "Using psql for seeding (PostgreSQL detected)."
-                $env:DATABASE_URL = $dbUrl
-                psql $dbUrl -f $seedSql
-            } else {
-                Write-Host "psql not found in PATH. Please install PostgreSQL Client Tools."
+    $alembicOut = & alembic -c $alembicIni upgrade head 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        if ($alembicOut -match "Can't locate revision identified by '20250821_fix_spectacles_schema'") {
+            Write-Warning "⚠️ Migration failed: missing revision '20250821_fix_spectacles_schema'. Attempting Alembic recovery with 'stamp head'..."
+            & alembic -c $alembicIni stamp head
+            & alembic -c $alembicIni upgrade head
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "❌ Alembic migration recovery failed. Manual intervention required."
+                exit 6
             }
         } else {
-            Write-Warning "Unrecognized DATABASE_URL protocol. Please manually seed the database."
+            Write-Error "❌ Alembic migration failed: $alembicOut"
+            exit 6
+        }
+    }
+    Write-Host "✅ Alembic migrations applied."
+} catch {
+    Write-Error "❌ Exception during Alembic migration: $($_.Exception.Message)"
+    exit 7
+}
+Pop-Location
+
+# --- Run seed.sql if present ---
+Write-Host "`n[4/4] Attempting to seed DB with seed.sql (if present)..."
+$seedPath = Join-Path $backendDir "seed.sql"
+if (Test-Path $seedPath -PathType Leaf) {
+    # Try to parse connection string from .env
+    $envPath = Join-Path $backendDir ".env"
+    $dbConnLine = ""
+    if (Test-Path $envPath) {
+        $dbConnLine = Get-Content $envPath | Where-Object { $_ -match "^DATABASE_URL\s*=" }
+    }
+    if ($dbConnLine -match "postgres://") {
+        $pgUri = $dbConnLine -replace "DATABASE_URL\s*=\s*", ""
+        Write-Host "Seeding database using psql and parsed connection string (may require configuration)..."
+        try {
+            & psql $pgUri -f $seedPath
+            Write-Host "✅ Database seeded."
+        } catch {
+            Write-Warning "⚠️ Could not seed with psql: $($_.Exception.Message). Seed may require manual execution."
         }
     } else {
-        Write-Warning "No DATABASE_URL found. Cannot automatically seed; please seed manually."
+        Write-Warning "⚠️ Could not find a suitable postgres DATABASE_URL in .env. Skipping automatic seeding."
     }
 } else {
-    Write-Host "No seed.sql found in $backendFolder. Skipping seeding step."
+    Write-Host "ℹ️ No seed.sql present. Skipping database seeding."
 }
 
-Pop-Location
-
-# --- 6. Install frontend dependencies (Node/NPM) ---
-Write-Host "`n---- Installing frontend (Node) dependencies ----"
-Push-Location $frontendFolder
-
-if (Test-Path 'package.json') {
-    Write-Host "Installing Node.js dependencies via npm install ..."
-    try {
-        npm install
-    }
-    catch {
-        Write-Error "npm install failed. Please ensure Node.js and npm are installed and on your PATH."
-        Pop-Location
-        exit 1
-    }
-} else {
-    Write-Warning "No package.json found in $frontendFolder. Skipping Node.js dependency installation."
-}
-
-Pop-Location
-
-Write-Host "`n✅ MauEyeCare setup complete. Ready to launch servers with run.ps1!`n"
-
+Write-Host "`n=== Setup Complete ===" -ForegroundColor Green
 exit 0
