@@ -100,7 +100,9 @@ Push-Location $frontendPath
 Start-Process "npm.cmd" -ArgumentList "run", "dev" -WorkingDirectory $frontendPath
 Pop-Location
 
-# --- OPEN APP IN BROWSER ---
+# -----------------------------
+# OPEN APP IN BROWSER
+# -----------------------------
 Write-Host "`n[3/3] Launching browser..." -ForegroundColor Green
 Start-Sleep -Seconds 3
 Start-Process "http://localhost:$frontendPort/"
