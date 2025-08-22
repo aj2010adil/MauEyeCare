@@ -8,7 +8,7 @@ from config import settings
 from database import create_start_app_handler, create_stop_app_handler
 from auth import router as auth_router
 from patients import router as patients_router
-from visits import router as visits_router
+from visits import router as visits_router  
 from prescriptions import router as prescriptions_router
 from dashboard import router as dashboard_router
 from insights import router as insights_router

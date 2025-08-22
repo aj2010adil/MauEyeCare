@@ -7,7 +7,7 @@ class MauEyeCareLauncher {
   constructor() {
     this.backendProcess = null;
     this.frontendProcess = null;
-    this.backendPort = 8001;
+    this.backendPort = 8000;
     this.frontendPort = 5173;
     this.isBackendReady = false;
     this.isFrontendReady = false;
@@ -61,7 +61,7 @@ class MauEyeCareLauncher {
     console.log('🚀 Starting backend server...');
     
     return new Promise((resolve, reject) => {
-      this.backendProcess = spawn('python', ['main.py'], {
+      this.backendProcess = spawn('.venv/Scripts/python', ['-m', 'uvicorn', 'main:app', '--host', '0.0.0.0', '--port', '8000'], {
         stdio: 'pipe',
         shell: true
       });
@@ -268,10 +268,9 @@ class MauEyeCareLauncher {
       ]);
       
       // Wait for services to be ready
-      await Promise.all([
-        this.waitForService(this.backendPort, 'Backend'),
-        this.waitForService(this.frontendPort, 'Frontend')
-      ]);
+      // Wait for backend first, then frontend
+      await this.waitForService(this.backendPort, 'Backend');
+      await this.waitForService(this.frontendPort, 'Frontend');
       
       // Open browser
       await this.openBrowser();
@@ -281,7 +280,7 @@ class MauEyeCareLauncher {
       
       console.log('\n🎉 MauEyeCare is ready!');
       console.log('📱 Frontend: http://localhost:5173');
-      console.log('🔧 Backend: http://localhost:8001');
+      console.log('🔧 Backend: http://localhost:8000');
       console.log('\n💡 Press Ctrl+C to stop the application');
       
     } catch (error) {
