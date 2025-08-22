@@ -1,80 +1,165 @@
-﻿<#
-.SYNOPSIS
-    Environment setup for MauEyeCare (Windows 11)
-.DESCRIPTION
-    Installs backend & frontend dependencies, runs Alembic migrations, and seeds initial data.
-#>
+﻿# setup.ps1: MauEyeCare project environment setup script.
+# - Installs Python and Node dependencies for backend and frontend.
+# - Runs Alembic migrations (handles missing revision errors).
+# - Optionally applies database seeds from seed.sql.
+# Copy and run from the project root.
 
-Write-Host "`n=== MauEyeCare Setup Script ===" -ForegroundColor Cyan
+$ErrorActionPreference = "Stop"
 
-# --- CONFIG ---
-$pythonExe      = "python"
-$dbServiceName  = "postgresql-x64-17"
-$backendFolder  = "backend"
-$frontendFolder = "frontend"
+Write-Host "========== MauEyeCare Setup Script ==========" -ForegroundColor Cyan
 
-# --- FUNCTIONS ---
-function Ensure-Command($cmd, $installMsg) {
-    if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
-        Write-Host "ERROR: $cmd not found. $installMsg" -ForegroundColor Red
-        exit 1
+function Find-Directory($relativeName) {
+    $dirs = Get-ChildItem -Path . -Directory -Recurse `
+        | Where-Object { $_.Name -ieq $relativeName }
+    if ($dirs.Count -eq 1) {
+        return $dirs[0].FullName
+    } elseif ($dirs.Count -gt 1) {
+        # Prefer the directory at depth 1
+        $firstLevel = $dirs | Where-Object { $_.Parent.FullName -eq (Get-Location).Path }
+        if ($firstLevel.Count -ge 1) { return $firstLevel[0].FullName }
+        return $dirs[0].FullName
     }
+    else { return $null }
 }
 
-# --- PRECHECKS ---
-Ensure-Command $pythonExe "Install Python 3.11+ from https://www.python.org"
-Ensure-Command "npm.cmd"   "Install Node.js from https://nodejs.org"
-Ensure-Command "psql"      "Install PostgreSQL and ensure psql is in PATH"
-
-# --- START DB SERVICE ---
-$svc = Get-Service -Name $dbServiceName -ErrorAction SilentlyContinue
-if ($null -ne $svc -and $svc.Status -ne 'Running') {
-    Write-Host "Starting PostgreSQL service..." -ForegroundColor Yellow
-    Start-Service $dbServiceName
+function Find-Backend {
+    # Heuristics: Looks for folder containing alembic.ini, requirements.txt, app/main.py, or pyproject.toml
+    $candidates = Get-ChildItem -Path . -Directory -Recurse | Where-Object {
+        Test-Path "$($_.FullName)\alembic.ini" -or
+        Test-Path "$($_.FullName)\requirements.txt" -or
+        Test-Path "$($_.FullName)\pyproject.toml"
+    }
+    # Prioritize directories containing app/main.py as FastAPI entrypoint
+    foreach ($dir in $candidates) {
+        if (Test-Path "$($dir.FullName)\app\main.py" -or Test-Path "$($dir.FullName)\main.py") {
+            return $dir.FullName
+        }
+    }
+    if ($candidates) { return $candidates[0].FullName }
+    throw "No backend directory found."
 }
 
-# --- BACKEND SETUP ---
-$reqFile = Join-Path $backendFolder "requirements.txt"
-if (-not (Test-Path $reqFile)) {
-    Write-Host "ERROR: Backend requirements.txt not found in $backendFolder" -ForegroundColor Red
-    exit 1
+function Find-Frontend {
+    # Looks for directory with package.json and vite.config.* files
+    $candidates = Get-ChildItem -Path . -Directory -Recurse | Where-Object {
+        Test-Path "$($_.FullName)\package.json"
+    }
+    foreach ($dir in $candidates) {
+        $viteConfig = Get-ChildItem "$($dir.FullName)" -Filter "vite.config.*" -File
+        if ($viteConfig) { return $dir.FullName }
+    }
+    if ($candidates) { return $candidates[0].FullName }
+    throw "No frontend directory found."
 }
-Write-Host "`n[1/4] Installing backend dependencies..." -ForegroundColor Green
-Push-Location $backendFolder
-& $pythonExe -m pip install --upgrade pip
-& $pythonExe -m pip install -r requirements.txt
+
+$backendDir = Find-Backend
+Write-Host "Found backend directory: $backendDir" -ForegroundColor Green
+
+$frontendDir = Find-Frontend
+Write-Host "Found frontend directory: $frontendDir" -ForegroundColor Green
+
+Push-Location $backendDir
+
+# 1. (Optional) Create virtual environment if not present
+if (-not (Test-Path ".venv")) {
+    Write-Host "Creating Python virtual environment (.venv)..." -ForegroundColor Yellow
+    python -m venv .venv
+}
+if (Test-Path ".venv") {
+    $venvPython = ".venv\Scripts\python.exe"
+    $pip = "$venvPython -m pip"
+} else {
+    # fallback to system Python
+    $venvPython = "python"
+    $pip = "python -m pip"
+}
+
+# 2. Install backend deps
+Write-Host "Installing backend Python dependencies..." -ForegroundColor Yellow
+if (Test-Path "requirements.txt") {
+    & $venvPython -m pip install --upgrade pip
+    & $venvPython -m pip install -r requirements.txt
+} elseif (Test-Path "pyproject.toml") {
+    # Use pip or, if poetry present, prefer poetry
+    if (Test-Path "poetry.lock" -or (Get-Command poetry -ErrorAction SilentlyContinue)) {
+        & poetry install
+    } else {
+        & $venvPython -m pip install .
+    }
+} else {
+    Write-Host "No requirements.txt or pyproject.toml found in backend." -ForegroundColor Red
+}
+
+# 3. Install Alembic if needed
+try {
+    & $venvPython -m pip show alembic | Out-Null
+} catch {
+    & $venvPython -m pip install alembic
+}
+
+# 4. Alembic migration with error recovery
+if (Test-Path "alembic.ini") {
+    Write-Host "Running Alembic migrations..." -ForegroundColor Yellow
+    try {
+        & $venvPython -m alembic upgrade head
+        Write-Host "Alembic migrations completed." -ForegroundColor Green
+    } catch {
+        Write-Host "Alembic migration failed: $($_.Exception.Message)" -ForegroundColor Red
+        if ($_.Exception.Message -match "Can't locate revision") {
+            $response = Read-Host "Alembic revision missing. Attempt to reset migrations? (stamp database to current and reapply? y/n)"
+            if ($response -eq "y") {
+                & $venvPython -m alembic stamp head
+                & $venvPython -m alembic upgrade head
+                Write-Host "Alembic database pointer reset and re-applied."
+            } else {
+                throw "Migration failed due to missing revision; please resolve manually."
+            }
+        } else {
+            throw $_.Exception
+        }
+    }
+} else {
+    Write-Host "No alembic.ini found; skipping migrations." -ForegroundColor Yellow
+}
+
+# 5. Database seed
+if (Test-Path "seed.sql") {
+    Write-Host "Seeding database from seed.sql..." -ForegroundColor Yellow
+    # Try using psql (Postgres, common in FastAPI stacks)
+    $psqlFound = Get-Command psql -ErrorAction SilentlyContinue
+    if ($psqlFound) {
+        # Read DB URI from env or alembic.ini
+        $conn = $env:DATABASE_URL
+        if (-not $conn -and (Test-Path ".env")) {
+            $conn = ((Get-Content .env | Select-String -Pattern '^DATABASE_URL=')).ToString().Split("=",2)[1].Trim()
+        }
+        if (-not $conn -and (Test-Path "alembic.ini")) {
+            $line = Select-String "sqlalchemy.url" alembic.ini
+            if ($line) { $conn = $line -replace "sqlalchemy.url\s*=\s*", "" }
+        }
+        if ($conn) {
+            & psql "$conn" -f seed.sql
+            Write-Host "Seed applied via psql." -ForegroundColor Green
+        } else {
+            Write-Host "Could not locate DATABASE_URL for seeding. Please run manually." -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "psql (Postgres CLI) not found in PATH. Please seed manually." -ForegroundColor Red
+    }
+} else {
+    Write-Host "No seed.sql present, skipping seeding."
+}
+
 Pop-Location
 
-# --- FRONTEND SETUP ---
-$pkgFile = Join-Path $frontendFolder "package.json"
-if (-not (Test-Path $pkgFile)) {
-    Write-Host "ERROR: Frontend package.json not found in $frontendFolder" -ForegroundColor Red
-    exit 1
+# 6. Frontend dependency install
+Push-Location $frontendDir
+Write-Host "Installing frontend Node dependencies..." -ForegroundColor Yellow
+if (Test-Path "package-lock.json") {
+    npm ci
+} else {
+    npm install
 }
-Write-Host "`n[2/4] Installing frontend dependencies..." -ForegroundColor Green
-Push-Location $frontendFolder
-& npm.cmd install
 Pop-Location
 
-# --- DB MIGRATIONS ---
-$alembicFile = Join-Path $backendFolder "alembic.ini"
-if (-not (Test-Path $alembicFile)) {
-    Write-Host "ERROR: alembic.ini not found in $backendFolder" -ForegroundColor Red
-    exit 1
-}
-Write-Host "`n[3/4] Running Alembic migrations..." -ForegroundColor Green
-Push-Location $backendFolder
-& $pythonExe -m alembic -c alembic.ini upgrade head
-Pop-Location
-
-# --- DB SEED ---
-$seedFile = Join-Path $backendFolder "seed.sql"
-if (Test-Path $seedFile) {
-    Write-Host "`n[4/4] Seeding database from $seedFile..." -ForegroundColor Green
-    & psql -U postgres -d mau_eyecare -f $seedFile
-}
-else {
-    Write-Host "WARNING: Seed file not found in $backendFolder. Skipping seed step." -ForegroundColor Yellow
-}
-
-Write-Host "`nSetup complete! You can now run .\run.ps1 to start MauEyeCare." -ForegroundColor Cyan
+Write-Host "✅ MauEyeCare setup complete. Ready to run the servers!" -ForegroundColor Cyan

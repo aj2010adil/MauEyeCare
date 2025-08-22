@@ -1,93 +1,119 @@
-﻿<#
-.SYNOPSIS
-    One-click launcher for MauEyeCare
-.DESCRIPTION
-    Cleans caches, starts backend (FastAPI) + frontend (Vite/React), and opens browser.
-#>
+﻿# run.ps1: MauEyeCare dev run script.
+# - Cleans up backend test caches.
+# - Locates FastAPI entrypoint and starts backend server.
+# - Starts frontend vite dev server.
+# - Opens browser to frontend.
+# Recommended: run from the repo root.
 
-Write-Host "`n=== MauEyeCare One‑Click Launcher ===" -ForegroundColor Cyan
+$ErrorActionPreference = "Stop"
 
-# --- CONFIG ---
-$backendFolder   = "backend"
-$frontendFolder  = "frontend"
-$backendPort     = 8000
-$frontendPort    = 5173
-$dbServiceName   = "postgresql-x64-17"
+Write-Host "========== MauEyeCare Run Script ==========" -ForegroundColor Green
 
-# --- FUNCTIONS ---
-function Test-PortFree {
-    param([int]$Port)
-    $inUse = netstat -ano | Select-String ":$Port " | ForEach-Object { $_.ToString().Trim() }
-    return -not $inUse
-}
-function Start-IfStopped {
-    param([string]$ServiceName)
-    $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-    if ($null -eq $svc) { return $false }
-    if ($svc.Status -ne 'Running') {
-        Write-Host "Starting service: $ServiceName" -ForegroundColor Yellow
-        Start-Service $ServiceName
+function Find-Backend {
+    $candidates = Get-ChildItem -Path . -Directory -Recurse | Where-Object {
+        Test-Path "$($_.FullName)\alembic.ini" -or
+        Test-Path "$($_.FullName)\requirements.txt" -or
+        Test-Path "$($_.FullName)\pyproject.toml"
     }
-    return $true
+    foreach ($dir in $candidates) {
+        if (Test-Path "$($dir.FullName)\app\main.py" -or Test-Path "$($dir.FullName)\main.py") {
+            return $dir.FullName
+        }
+    }
+    if ($candidates) { return $candidates[0].FullName }
+    throw "No backend directory found."
 }
 
-# --- CLEAN CACHES ---
-if (Test-Path ".pytest_cache") {
-    Remove-Item -Recurse -Force ".pytest_cache"
-    Write-Host "Removed .pytest_cache" -ForegroundColor Yellow
+function Find-Frontend {
+    $candidates = Get-ChildItem -Path . -Directory -Recurse | Where-Object {
+        Test-Path "$($_.FullName)\package.json"
+    }
+    foreach ($dir in $candidates) {
+        $viteConfig = Get-ChildItem "$($dir.FullName)" -Filter "vite.config.*" -File
+        if ($viteConfig) { return $dir.FullName }
+    }
+    if ($candidates) { return $candidates[0].FullName }
+    throw "No frontend directory found."
 }
 
-# --- PRECHECKS ---
-if (-not (Get-Command npm.cmd -ErrorAction SilentlyContinue)) {
-    Write-Host "ERROR: Node.js not found" -ForegroundColor Red
-    exit 1
-}
-if (-not (Get-Command uvicorn.exe -ErrorAction SilentlyContinue)) {
-    Write-Host "ERROR: uvicorn not found" -ForegroundColor Red
-    exit 1
-}
-if (-not (Test-PortFree $backendPort)) {
-    Write-Host "ERROR: Port $backendPort in use" -ForegroundColor Red
-    exit 1
-}
-if (-not (Test-PortFree $frontendPort)) {
-    Write-Host "ERROR: Port $frontendPort in use" -ForegroundColor Red
-    exit 1
+$backendDir = Find-Backend
+Write-Host "Found backend directory: $backendDir" -ForegroundColor Green
+
+$frontendDir = Find-Frontend
+Write-Host "Found frontend directory: $frontendDir" -ForegroundColor Green
+
+# 1. Clean pytest and build caches in backend
+Push-Location $backendDir
+foreach ($cache in @(".pytest_cache", "dist", ".mypy_cache")) {
+    if (Test-Path $cache) {
+        Write-Host "Removing $cache..." -ForegroundColor Yellow
+        Remove-Item $cache -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
 
-# --- START DB SERVICE ---
-if (-not (Start-IfStopped $dbServiceName)) {
-    Write-Host "WARNING: PostgreSQL '$dbServiceName' not running." -ForegroundColor Yellow
+# 2. Find FastAPI main.py relative path (app.main:app or main:app)
+$mainFile = $null; $appModule = $null
+if (Test-Path "app\main.py") {
+    $mainFile = "app\main.py"
+    $appModule = "app.main:app"
+} elseif (Test-Path "main.py") {
+    $mainFile = "main.py"
+    $appModule = "main:app"
+} else {
+    $candidates = Get-ChildItem -Recurse -Filter "main.py"
+    if ($candidates) {
+        $relMain = $candidates[0].FullName.Substring($backendDir.Length+1)
+        $mainFile = $relMain
+        # Convert path to Python module string
+        $mod = $relMain -replace "\\","."
+        $mod = $mod -replace ".py$",""
+        $appModule = "$mod:app"
+    }
+}
+if (-not $appModule) {
+    throw "Could not locate FastAPI main.py entrypoint."
 }
 
-# --- BACKEND ENTRYPOINT ---
-$entryFile = Join-Path $backendFolder "app\main.py"
-if (-not (Test-Path $entryFile)) {
-    Write-Host "ERROR: FastAPI entrypoint not found at $entryFile" -ForegroundColor Red
-    exit 1
-}
-$uvicornTarget = "app.main:app"
+Write-Host "FastAPI entrypoint: $appModule (file: $mainFile)" -ForegroundColor Green
 
-# --- START BACKEND ---
-Write-Host "`n[1/3] Starting backend..." -ForegroundColor Green
-Start-Process "uvicorn.exe" -ArgumentList $uvicornTarget, "--reload", "--port", "$backendPort" -WorkingDirectory (Resolve-Path $backendFolder)
-
-# --- START FRONTEND ---
-$pkgFile = Join-Path $frontendFolder "package.json"
-if (-not (Test-Path $pkgFile)) {
-    Write-Host "ERROR: package.json not found in $frontendFolder" -ForegroundColor Red
-    exit 1
+# 3. Activate virtual environment (if present)
+if (Test-Path ".venv") {
+    $uvicornCmd = ".venv\Scripts\python.exe -m uvicorn $appModule --reload"
+} else {
+    $uvicornCmd = "python -m uvicorn $appModule --reload"
 }
-Write-Host "`n[2/3] Starting frontend..." -ForegroundColor Green
-Push-Location $frontendFolder
-npm.cmd install
-Start-Process "npm.cmd" -ArgumentList "run", "dev" -WorkingDirectory $frontendFolder
+
 Pop-Location
 
-# --- OPEN APP ---
-Write-Host "`n[3/3] Launching browser..." -ForegroundColor Green
-Start-Sleep -Seconds 3
-Start-Process "http://localhost:$frontendPort/"
+# 4. Start backend server in new terminal
+Write-Host "Starting backend FastAPI server..." -ForegroundColor Yellow
+Start-Process -NoNewWindow -WorkingDirectory $backendDir powershell "-NoExit", "-Command", $uvicornCmd
 
-Write-Host "`nMauEyeCare is running — backend :$backendPort, frontend :$frontendPort" -ForegroundColor Cyan
-Write-Host "Keep this window open; close to stop servers.`n" -ForegroundColor Yellow
+# 5. Start frontend dev server in new terminal
+Write-Host "Starting frontend Vite server..." -ForegroundColor Yellow
+Start-Process -NoNewWindow -WorkingDirectory $frontendDir powershell "-NoExit", "-Command", "npm run dev"
+
+# 6. Detect frontend port from vite.config.*, fallback to 5173
+$frontendPort = 5173
+Push-Location $frontendDir
+$viteConfig = Get-ChildItem . -Filter "vite.config.*" -File | Select-Object -First 1
+if ($viteConfig) {
+    $configText = Get-Content $viteConfig.FullName
+    $portMatch = $configText | Select-String -Pattern "port\s*:\s*(\d+)"
+    if ($portMatch) {
+        $portNumber = ($portMatch.Matches[0].Groups[1].Value)
+        if ([int]::TryParse($portNumber, [ref]$null)) {
+            $frontendPort = [int]$portNumber
+        }
+    }
+}
+Pop-Location
+
+# 7. Open browser to frontend
+Start-Sleep -Seconds 3 # Wait for frontend dev server
+$frontendUrl = "http://localhost:$frontendPort"
+Write-Host "Opening browser to $frontendUrl ..." -ForegroundColor Green
+Start-Process $frontendUrl
+
+Write-Host "`nAll servers started. Backend and frontend are each running in their own terminals."
+Write-Host "Press Ctrl+C in any terminal to terminate that dev server instance when done."
