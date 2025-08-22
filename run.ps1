@@ -12,7 +12,7 @@ $backendFolder   = "backend"
 $frontendFolder  = "frontend"
 $backendPort     = 8000
 $frontendPort    = 5173
-$dbServiceName   = "postgresql-x64-15"
+$dbServiceName   = "postgresql-x64-17"
 
 # --- FUNCTIONS ---
 function Test-PortFree {

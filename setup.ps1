@@ -9,7 +9,7 @@ Write-Host "`n=== MauEyeCare Setup Script ===" -ForegroundColor Cyan
 
 # --- CONFIG ---
 $pythonExe      = "python"
-$dbServiceName  = "postgresql-x64-15"
+$dbServiceName  = "postgresql-x64-17"
 $backendFolder  = "backend"
 $frontendFolder = "frontend"
 
