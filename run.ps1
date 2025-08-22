@@ -9,7 +9,7 @@ Write-Host "`n=== MauEyeCare One‑Click Launcher ===" -ForegroundColor Cyan
 
 # --- CONFIG ---
 $backendFolder   = "backend"
-$frontendFolder  = "MauEyeCareLauncher"
+$frontendFolder  = "frontend"
 $backendPort     = 8000
 $frontendPort    = 5173
 $dbServiceName   = "postgresql-x64-15"
@@ -60,30 +60,28 @@ if (-not (Start-IfStopped $dbServiceName)) {
     Write-Host "WARNING: PostgreSQL '$dbServiceName' not running." -ForegroundColor Yellow
 }
 
-# --- BACKEND TARGET DETECTION ---
-if (Test-Path (Join-Path $backendFolder "app\main.py")) {
-    $uvicornTarget = "app.main:app"
-} elseif (Test-Path (Join-Path $backendFolder "main.py")) {
-    $uvicornTarget = "main:app"
-} else {
-    Write-Host "ERROR: Could not find FastAPI entrypoint in $backendFolder" -ForegroundColor Red
+# --- BACKEND ENTRYPOINT ---
+$entryFile = Join-Path $backendFolder "app\main.py"
+if (-not (Test-Path $entryFile)) {
+    Write-Host "ERROR: FastAPI entrypoint not found at $entryFile" -ForegroundColor Red
     exit 1
 }
+$uvicornTarget = "app.main:app"
 
 # --- START BACKEND ---
 Write-Host "`n[1/3] Starting backend..." -ForegroundColor Green
 Start-Process "uvicorn.exe" -ArgumentList $uvicornTarget, "--reload", "--port", "$backendPort" -WorkingDirectory (Resolve-Path $backendFolder)
 
 # --- START FRONTEND ---
-$frontendPath = Resolve-Path $frontendFolder
-if (-not (Test-Path (Join-Path $frontendPath "package.json"))) {
+$pkgFile = Join-Path $frontendFolder "package.json"
+if (-not (Test-Path $pkgFile)) {
     Write-Host "ERROR: package.json not found in $frontendFolder" -ForegroundColor Red
     exit 1
 }
 Write-Host "`n[2/3] Starting frontend..." -ForegroundColor Green
-Push-Location $frontendPath
-& npm.cmd install
-Start-Process "npm.cmd" -ArgumentList "run", "dev" -WorkingDirectory $frontendPath
+Push-Location $frontendFolder
+npm.cmd install
+Start-Process "npm.cmd" -ArgumentList "run", "dev" -WorkingDirectory $frontendFolder
 Pop-Location
 
 # --- OPEN APP ---
