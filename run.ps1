@@ -28,3 +28,14 @@ function Test-PortFree {
     $inUse = netstat -ano | Select-String ":$Port " | ForEach-Object { $_.ToString().Trim() }
     return -not $inUse
 }
+
+function Start-IfStopped {
+  param([string]$ServiceName)
+  $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+  if ($null -eq $svc) { return $false }
+  if ($svc.Status -ne 'Running') {
+      Write-Host "Starting service: $ServiceName" -ForegroundColor Yellow
+      Start-Service $ServiceName
+  }
+  return $true
+}
