@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     One‑click launcher for MauEyeCare on Windows 11
 .DESCRIPTION
@@ -13,11 +13,11 @@ Write-Host "`n=== MauEyeCare One‑Click Launcher ===" -ForegroundColor Cyan
 # -----------------------------
 # CONFIG
 # -----------------------------
-$backendFolder = "backend"   # Change if backend lives elsewhere
+$backendFolder = "."   # Change if backend lives elsewhere
 $frontendCandidates = @("frontend", "ui", ".")
 $backendPort = 8000
 $frontendPort = 5173
-$dbServiceName = "postgresql-x64-15"  # Change if your PG version differs
+$dbServiceName = "postgresql-x64-17"  # Change if your PG version differs
 
 # -----------------------------
 # FUNCTIONS
@@ -89,7 +89,7 @@ if (-not (Test-Path $backendFolder)) {
     exit 1
 }
 Write-Host "`n[1/3] Starting backend..." -ForegroundColor Green
-Start-Process "uvicorn.exe" -ArgumentList "$($backendFolder.Replace('\','/')).app.main:app", "--reload", "--port", "$backendPort" -WorkingDirectory (Resolve-Path $backendFolder)
+Start-Process "uvicorn.exe" -ArgumentList "$($backendFolder.Replace('\','/')).main:app", "--reload", "--port", "$backendPort" -WorkingDirectory (Resolve-Path $backendFolder)
 
 # -----------------------------
 # START FRONTEND
