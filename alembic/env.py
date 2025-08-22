@@ -25,6 +25,8 @@ import product  # noqa: F401
 import stock  # noqa: F401
 import pos  # noqa: F401
 import audit  # noqa: F401
+import medicine  # noqa: F401
+import spectacle  # noqa: F401
 
 
 config = context.config
