@@ -1,119 +1,119 @@
-﻿# run.ps1: MauEyeCare dev run script.
-# - Cleans up backend test caches.
-# - Locates FastAPI entrypoint and starts backend server.
-# - Starts frontend vite dev server.
-# - Opens browser to frontend.
-# Recommended: run from the repo root.
+﻿# run.ps1 - MauEyeCare Project Development Run Script
+# For the `windows_version4_all_feature` branch, August 2025
+# Launches backend (FastAPI) and frontend (Vite) dev servers, clears .pytest_cache.
 
-$ErrorActionPreference = "Stop"
+Write-Host "`n---- MauEyeCare Run Script Started ----`n"
 
-Write-Host "========== MauEyeCare Run Script ==========" -ForegroundColor Green
+# --- 1. Detect backend and frontend folders (same logic as setup.ps1) ---
+$repoFolders = Get-ChildItem -Directory | Where-Object { $_.Name -notin @('.git', '.vscode', '.idea', 'node_modules', 'dist') }
 
-function Find-Backend {
-    $candidates = Get-ChildItem -Path . -Directory -Recurse | Where-Object {
-        Test-Path "$($_.FullName)\alembic.ini" -or
-        Test-Path "$($_.FullName)\requirements.txt" -or
-        Test-Path "$($_.FullName)\pyproject.toml"
+$backendCandidates = @('backend', 'server', 'api')
+$backendFolder = $null
+foreach ($candidate in $backendCandidates) {
+    $found = $repoFolders | Where-Object { $_.Name -eq $candidate }
+    if ($found) {
+        $backendFolder = $found.FullName
+        break
     }
-    foreach ($dir in $candidates) {
-        if (Test-Path "$($dir.FullName)\app\main.py" -or Test-Path "$($dir.FullName)\main.py") {
-            return $dir.FullName
+}
+if (-not $backendFolder) {
+    foreach ($folder in $repoFolders) {
+        if (Test-Path (Join-Path $folder.FullName 'app\main.py') -or Test-Path (Join-Path $folder.FullName 'main.py')) {
+            $backendFolder = $folder.FullName
+            break
         }
     }
-    if ($candidates) { return $candidates[0].FullName }
-    throw "No backend directory found."
 }
-
-function Find-Frontend {
-    $candidates = Get-ChildItem -Path . -Directory -Recurse | Where-Object {
-        Test-Path "$($_.FullName)\package.json"
-    }
-    foreach ($dir in $candidates) {
-        $viteConfig = Get-ChildItem "$($dir.FullName)" -Filter "vite.config.*" -File
-        if ($viteConfig) { return $dir.FullName }
-    }
-    if ($candidates) { return $candidates[0].FullName }
-    throw "No frontend directory found."
+if (-not $backendFolder) {
+    Write-Error "Could not locate backend folder. Exiting..."
+    exit 1
 }
+Write-Host "📦 Backend detected: $backendFolder"
 
-$backendDir = Find-Backend
-Write-Host "Found backend directory: $backendDir" -ForegroundColor Green
-
-$frontendDir = Find-Frontend
-Write-Host "Found frontend directory: $frontendDir" -ForegroundColor Green
-
-# 1. Clean pytest and build caches in backend
-Push-Location $backendDir
-foreach ($cache in @(".pytest_cache", "dist", ".mypy_cache")) {
-    if (Test-Path $cache) {
-        Write-Host "Removing $cache..." -ForegroundColor Yellow
-        Remove-Item $cache -Recurse -Force -ErrorAction SilentlyContinue
+$frontendCandidates = @('frontend', 'client', 'web')
+$frontendFolder = $null
+foreach ($candidate in $frontendCandidates) {
+    $found = $repoFolders | Where-Object { $_.Name -eq $candidate }
+    if ($found -and (Test-Path (Join-Path $found.FullName 'package.json'))) {
+        $frontendFolder = $found.FullName
+        break
     }
 }
-
-# 2. Find FastAPI main.py relative path (app.main:app or main:app)
-$mainFile = $null; $appModule = $null
-if (Test-Path "app\main.py") {
-    $mainFile = "app\main.py"
-    $appModule = "app.main:app"
-} elseif (Test-Path "main.py") {
-    $mainFile = "main.py"
-    $appModule = "main:app"
-} else {
-    $candidates = Get-ChildItem -Recurse -Filter "main.py"
-    if ($candidates) {
-        $relMain = $candidates[0].FullName.Substring($backendDir.Length+1)
-        $mainFile = $relMain
-        # Convert path to Python module string
-        $mod = $relMain -replace "\\","."
-        $mod = $mod -replace ".py$",""
-        $appModule = "$mod:app"
-    }
-}
-if (-not $appModule) {
-    throw "Could not locate FastAPI main.py entrypoint."
-}
-
-Write-Host "FastAPI entrypoint: $appModule (file: $mainFile)" -ForegroundColor Green
-
-# 3. Activate virtual environment (if present)
-if (Test-Path ".venv") {
-    $uvicornCmd = ".venv\Scripts\python.exe -m uvicorn $appModule --reload"
-} else {
-    $uvicornCmd = "python -m uvicorn $appModule --reload"
-}
-
-Pop-Location
-
-# 4. Start backend server in new terminal
-Write-Host "Starting backend FastAPI server..." -ForegroundColor Yellow
-Start-Process -NoNewWindow -WorkingDirectory $backendDir powershell "-NoExit", "-Command", $uvicornCmd
-
-# 5. Start frontend dev server in new terminal
-Write-Host "Starting frontend Vite server..." -ForegroundColor Yellow
-Start-Process -NoNewWindow -WorkingDirectory $frontendDir powershell "-NoExit", "-Command", "npm run dev"
-
-# 6. Detect frontend port from vite.config.*, fallback to 5173
-$frontendPort = 5173
-Push-Location $frontendDir
-$viteConfig = Get-ChildItem . -Filter "vite.config.*" -File | Select-Object -First 1
-if ($viteConfig) {
-    $configText = Get-Content $viteConfig.FullName
-    $portMatch = $configText | Select-String -Pattern "port\s*:\s*(\d+)"
-    if ($portMatch) {
-        $portNumber = ($portMatch.Matches[0].Groups[1].Value)
-        if ([int]::TryParse($portNumber, [ref]$null)) {
-            $frontendPort = [int]$portNumber
+if (-not $frontendFolder) {
+    foreach ($folder in $repoFolders) {
+        if (Test-Path (Join-Path $folder.FullName 'package.json')) {
+            $frontendFolder = $folder.FullName
+            break
         }
+    }
+}
+if (-not $frontendFolder) {
+    Write-Error "Could not locate frontend folder. Exiting..."
+    exit 1
+}
+Write-Host "📦 Frontend detected: $frontendFolder"
+
+# --- 2. Clear .pytest_cache (if present) ---
+$pytestCache = Join-Path $backendFolder '.pytest_cache'
+if (Test-Path $pytestCache) {
+    Write-Host "`nRemoving existing .pytest_cache ..."
+    try {
+        Remove-Item -Recurse -Force $pytestCache
+    }
+    catch {
+        Write-Warning "Failed to remove .pytest_cache (possibly locked)."
+    }
+}
+
+# --- 3. Detect FastAPI entrypoint ---
+$mainPy = $null
+$appDir = Join-Path $backendFolder 'app'
+# Try backend/app/main.py then backend/main.py
+if (Test-Path (Join-Path $appDir 'main.py')) {
+    $mainPy = (Join-Path $appDir 'main.py')
+    $uvicornModule = 'app.main:app'
+    $workingDir = $backendFolder
+} elseif (Test-Path (Join-Path $backendFolder 'main.py')) {
+    $mainPy = (Join-Path $backendFolder 'main.py')
+    $uvicornModule = 'main:app'
+    $workingDir = $backendFolder
+} else {
+    Write-Error "Could not find backend app main.py. Please ensure your FastAPI entrypoint exists."
+    exit 1
+}
+
+Write-Host "`n▶️ FastAPI entrypoint: $uvicornModule"
+
+# --- 4. Launch backend (FastAPI) server ---
+Write-Host "`nLaunching backend server (`uvicorn`) ..."
+
+# Start backend in a new PowerShell window for developer convenience
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$workingDir'; uvicorn $uvicornModule --reload --port 8000" -WindowStyle Minimized
+
+# --- 5. Launch frontend (Vite) server ---
+Write-Host "`nLaunching frontend dev server (npm run dev) ..."
+Push-Location $frontendFolder
+if (Test-Path 'package.json') {
+    # Figure out which npm script starts Vite; assume 'dev' is present
+    $pkgJson = Get-Content 'package.json' | Out-String | ConvertFrom-Json
+    if ($pkgJson.scripts.dev) {
+        Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$frontendFolder'; npm run dev" -WindowStyle Minimized
+    } else {
+        Write-Error "No 'dev' script found in package.json. Please define it for Vite or use the correct script."
+        Pop-Location
+        exit 1
     }
 }
 Pop-Location
 
-# 7. Open browser to frontend
-Start-Sleep -Seconds 3 # Wait for frontend dev server
-$frontendUrl = "http://localhost:$frontendPort"
-Write-Host "Opening browser to $frontendUrl ..." -ForegroundColor Green
-Start-Process $frontendUrl
+# --- 6. Open frontend in default browser (Vite default port: 5173) ---
+Start-Sleep -Seconds 5 # Wait for servers to spin up
 
-Write-Host "`nAll servers started. Backend and frontend are each running in their own terminals."
-Write-Host "Press Ctrl+C in any terminal to terminate that dev server instance when done."
+$vitePort = 5173
+$viteUrl = "http://localhost:$vitePort"
+Write-Host "`n🌍 Opening frontend in default browser at $viteUrl..."
+Start-Process $viteUrl
+
+Write-Host "`n✅ Both servers launched. Modify code, save, and enjoy hot reload!"
+
+exit 0
