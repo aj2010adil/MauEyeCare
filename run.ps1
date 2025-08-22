@@ -28,6 +28,3 @@ function Test-PortFree {
     $inUse = netstat -ano | Select-String ":$Port " | ForEach-Object { $_.ToString().Trim() }
     return -not $inUse
 }
-
-function Start-IfStopped {
-    param
