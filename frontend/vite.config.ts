@@ -22,12 +22,5 @@ export default defineConfig({
     },
   },
   // Add SPA fallback
-  base: '/', // Correctly specify base URL
-  esbuild: {
-    jsxFactory: 'React.createElement',
-    jsxFragment: 'React.Fragment',
-    loader: 'tsx',
-    include: /src\\/.*\\.tsx?$/,
-    exclude: null,
-  },
+ 
 });
