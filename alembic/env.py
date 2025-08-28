@@ -1,89 +1,23 @@
-from __future__ import annotations
-# === Alembic env.py path bootstrap ===
-import sys
-import os
-
-# Get absolute path to the MauEyeCare project root (one level above alembic/)
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-
-# Optional: log this during troubleshooting
-# print(f"[env.py] Added to sys.path: {PROJECT_ROOT}")
-# === End bootstrap ===
-
-
-
-
-import sys
-import os
-from pathlib import Path
 from logging.config import fileConfig
-
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 from alembic import context
+import os
+from dotenv import load_dotenv
 
-# Add project root to the path to ensure modules are found
-#sys.path.append(str(Path(__file__).resolve().parents[1]))
-# Add the parent directory of alembic/ to sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from config import settings
-from database import Base
-# Import all models here so that Alembic's 'autogenerate'
-# feature can detect them.
-import user  # noqa: F401
-import patient  # noqa: F401
-import visit  # noqa: F401
-import prescription  # noqa: F401
-import consent  # noqa: F401
-import lab  # noqa: F401
-import product  # noqa: F401
-import stock  # noqa: F401
-import pos  # noqa: F401
-import audit  # noqa: F401
-import medicine  # noqa: F401
-import spectacle  # noqa: F401
+# Load environment variables
+load_dotenv()
 
-
+# Alembic Config object
 config = context.config
+fileConfig(config.config_file_name)
 
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+# Set DB URL from .env
+db_url = os.getenv("DATABASE_URL")
+if not db_url:
+    raise ValueError("DATABASE_URL not found in environment. Make sure .env file is present.")
 
-target_metadata = Base.metadata
+config.set_main_option('sqlalchemy.url', db_url)
 
+# If you have SQLAlchemy models, import them here
+target_metadata = None
 
-def run_migrations_offline() -> None:
-    url = settings.sync_database_url
-    context.configure(
-        url=url,
-        target_metadata=target_metadata,
-        literal_binds=True,
-        dialect_opts={"paramstyle": "named"},
-    )
-
-    with context.begin_transaction():
-        context.run_migrations()
-
-
-def run_migrations_online() -> None:
-    configuration = config.get_section(config.config_ini_section)
-    configuration["sqlalchemy.url"] = settings.sync_database_url
-    connectable = engine_from_config(
-        configuration,
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
-
-    with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
-
-        with context.begin_transaction():
-            context.run_migrations()
-
-
-if context.is_offline_mode():
-    run_migrations_offline()
-else:
-    run_migrations_online()
