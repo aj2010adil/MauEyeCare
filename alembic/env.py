@@ -1,6 +1,22 @@
 from __future__ import annotations
+# === Alembic env.py path bootstrap ===
+import sys
+import os
+
+# Get absolute path to the MauEyeCare project root (one level above alembic/)
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+# Optional: log this during troubleshooting
+# print(f"[env.py] Added to sys.path: {PROJECT_ROOT}")
+# === End bootstrap ===
+
+
+
 
 import sys
+import os
 from pathlib import Path
 from logging.config import fileConfig
 
@@ -9,8 +25,9 @@ from sqlalchemy import pool
 from alembic import context
 
 # Add project root to the path to ensure modules are found
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-
+#sys.path.append(str(Path(__file__).resolve().parents[1]))
+# Add the parent directory of alembic/ to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from config import settings
 from database import Base
 # Import all models here so that Alembic's 'autogenerate'
