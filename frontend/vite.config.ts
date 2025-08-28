@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import autoprefixer from 'autoprefixer';
 import path from 'path';
 
 export default defineConfig({
@@ -11,20 +10,24 @@ export default defineConfig({
   ],
   server: {
     port: 5175,
-    hmr: true,  // Enable hot module replacement
+    hmr: true,
   },
   build: {
     sourcemap: true,
     outDir: 'dist',
-    rollupOptions: {
-      input: {
-        main: path.resolve(__dirname, 'index.html'),
-      },
-    },
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
     },
-  }
+  },
+  // Add SPA fallback
+  base: '/', // Correctly specify base URL
+  esbuild: {
+    jsxFactory: 'React.createElement',
+    jsxFragment: 'React.Fragment',
+    loader: 'tsx',
+    include: /src\\/.*\\.tsx?$/,
+    exclude: null,
+  },
 });
