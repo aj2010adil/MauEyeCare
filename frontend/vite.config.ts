@@ -1,18 +1,37 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from 'tailwindcss';
+import autoprefixer from 'autoprefixer';
+import path from 'path';
 
-
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    tailwindcss()
+    {
+      name: 'tailwindcss',
+      config: {
+        postcss: {
+          plugins: [tailwindcss, autoprefixer],
+        },
+      },
+    },
   ],
   server: {
-    port: 5175, // Ensure Vite uses the correct port
+    port: 5175,
+    hmr: true,  // Enable hot module replacement
   },
   build: {
-    sourcemap: true, // Enable sourcemaps for debugging
+    sourcemap: true,
+    outDir: 'dist',
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+      },
+    },
   },
-})
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+    },
+  },
+});
