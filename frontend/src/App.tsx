@@ -1,6 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import AppLayout from './AppLayout'
+//import AppLayout from './AppLayout'
 import LoginPage from './LoginPage'
 import Dashboard from './Dashboard'
 import PatientsPage from './PatientsPage'
@@ -22,7 +22,7 @@ function App() {
     <AuthProvider>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<AuthGuard><AppLayout /></AuthGuard>}>
+        <Route path="/" element={<AuthGuard> {/*<AppLayout />*/}</AuthGuard>}>
           <Route index element={<Dashboard />} />
           <Route path="patients" element={<PatientsPage />} />
           <Route path="visits/new" element={<NewVisitPage />} />
