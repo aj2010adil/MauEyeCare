@@ -12,6 +12,11 @@ const config = {
     minify: false,
     cssMinify: false,
     terserOptions: { compress: false, mangle: false },
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'src/main.tsx'),
+      },
+    },
   },
   define: { "process.env.NODE_ENV": "'development'" },
   esbuild: { jsx: "automatic", jsxImportSource: "react" },
