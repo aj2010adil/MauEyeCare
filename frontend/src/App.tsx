@@ -14,7 +14,7 @@ import POSPage from './POSPage'
 import InventoryPage from './InventoryPage'
 import ShowcasePage from './ShowcasePage'
 import { AuthProvider } from './AuthContext'
-import AuthGuard from './AuthGuard'
+//import AuthGuard from './AuthGuard'
 import RoleGuard from './RoleGuard'
 
 function App() {
@@ -22,8 +22,7 @@ function App() {
     <AuthProvider>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<AuthGuard> {/*<AppLayout />*/}</AuthGuard>}>
-          <Route index element={<Dashboard />} />
+        <Route path="/" element={<Dashboard />} />
           <Route path="patients" element={<PatientsPage />} />
           <Route path="visits/new" element={<NewVisitPage />} />
           <Route path="pos" element={<POSPage />} />
@@ -34,7 +33,7 @@ function App() {
           <Route path="operations" element={<OperationsDashboard />} />
           <Route path="insights" element={<InsightsPage />} />
           <Route path="settings" element={<RoleGuard roles={["admin"]}><SettingsPage /></RoleGuard>} />
-        </Route>
+      
       </Routes>
     </AuthProvider>
   )
