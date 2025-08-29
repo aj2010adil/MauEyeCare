@@ -1,35 +1,22 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import path from 'path';
 import { checker } from 'vite-plugin-checker'
-
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-   
-  ],
+   checker({
+      typescript: true,
+    }),  ],
   server: {
     port: 5175,
     hmr: true,
   },
-  build: {
-    sourcemap: true,
-    outDir: 'dist',
-  },
+  base: '/',
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
+      '@': '/src',
     },
-  },
-  // Add SPA fallback
-  base: '/',
-  esbuild: {
-    jsxFactory: 'React.createElement',
-    jsxFragment: 'React.Fragment',
-    loader: 'tsx',
-    include: /src\/.*\\.(tsx|jsx)?$/,
-    exclude: null,
   },
 });

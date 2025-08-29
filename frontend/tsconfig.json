@@ -10,15 +10,17 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
-    "moduleResolution": "NodeNext",
+    "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react",
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     },
+     "types": ["vite/client"],
     "incremental": true,
     "noFallthroughCasesInSwitch": true
   },
