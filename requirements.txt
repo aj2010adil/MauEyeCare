@@ -12,3 +12,5 @@ soupsieve>=2.3.0
 reportlab>=3.6.0
 openpyxl>=3.0.0
 xlrd>=2.0.0
+contextlib2>=0.6.0
+typing-extensions>=4.0.0
