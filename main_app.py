@@ -176,21 +176,202 @@ def main():
             # Eye Prescription Section
             st.markdown("**👁️ Eye Prescription (RX)**")
             
+            # Generate comprehensive sphere options (-20.00 to +20.00 with 0.25 increments)
+            sphere_options = [""]
+            for i in range(-2000, 2025, 25):  # -20.00 to +20.00 in 0.25 steps
+                value = i / 100
+                if value > 0:
+                    sphere_options.append(f"+{value:.2f}")
+                elif value < 0:
+                    sphere_options.append(f"{value:.2f}")
+            
+            # Generate comprehensive cylinder options
+            cylinder_options = [""]
+            for i in range(-1000, 25, 25):  # -10.00 to 0.00 in 0.25 steps
+                value = i / 100
+                if value != 0:
+                    cylinder_options.append(f"{value:.2f}")
+            
+            # Generate axis options (0 to 180)
+            axis_options = [""] + [str(i) for i in range(0, 181, 5)]
+            
             col_od, col_os = st.columns(2)
-            sphere_options = ["", "+0.25", "+0.50", "+0.75", "+1.00", "+1.25", "+1.50", "+2.00", "+2.50", "+3.00", 
-                            "-0.25", "-0.50", "-0.75", "-1.00", "-1.25", "-1.50", "-2.00", "-2.50", "-3.00"]
             
             with col_od:
                 st.markdown("**OD (Right Eye)**")
-                od_sphere = st.selectbox("Sphere OD", sphere_options, key="sphere_od")
-                od_cylinder = st.selectbox("Cylinder OD", ["", "-0.25", "-0.50", "-0.75", "-1.00"], key="cylinder_od")
-                od_axis = st.selectbox("Axis OD", ["", "90", "180", "45", "135"], key="axis_od")
+                od_sphere_mode = st.radio("Sphere OD Input", ["Select from list", "Custom value"], key="od_sphere_mode")
+                if od_sphere_mode == "Select from list":
+                    od_sphere = st.selectbox("Sphere OD", sphere_options, key="sphere_od")
+                else:
+                    od_sphere = st.text_input("Custom Sphere OD (e.g., +2.75, -1.25)", key="custom_sphere_od")
+                
+                od_cylinder_mode = st.radio("Cylinder OD Input", ["Select from list", "Custom value"], key="od_cylinder_mode")
+                if od_cylinder_mode == "Select from list":
+                    od_cylinder = st.selectbox("Cylinder OD", cylinder_options, key="cylinder_od")
+                else:
+                    od_cylinder = st.text_input("Custom Cylinder OD (e.g., -0.75)", key="custom_cylinder_od")
+                
+                od_axis_mode = st.radio("Axis OD Input", ["Select from list", "Custom value"], key="od_axis_mode")
+                if od_axis_mode == "Select from list":
+                    od_axis = st.selectbox("Axis OD", axis_options, key="axis_od")
+                else:
+                    od_axis = st.text_input("Custom Axis OD (0-180)", key="custom_axis_od")
             
             with col_os:
                 st.markdown("**OS (Left Eye)**")
-                os_sphere = st.selectbox("Sphere OS", sphere_options, key="sphere_os")
-                os_cylinder = st.selectbox("Cylinder OS", ["", "-0.25", "-0.50", "-0.75", "-1.00"], key="cylinder_os")
-                os_axis = st.selectbox("Axis OS", ["", "90", "180", "45", "135"], key="axis_os")
+                os_sphere_mode = st.radio("Sphere OS Input", ["Select from list", "Custom value"], key="os_sphere_mode")
+                if os_sphere_mode == "Select from list":
+                    os_sphere = st.selectbox("Sphere OS", sphere_options, key="sphere_os")
+                else:
+                    os_sphere = st.text_input("Custom Sphere OS (e.g., +2.75, -1.25)", key="custom_sphere_os")
+                
+                os_cylinder_mode = st.radio("Cylinder OS Input", ["Select from list", "Custom value"], key="os_cylinder_mode")
+                if os_cylinder_mode == "Select from list":
+                    os_cylinder = st.selectbox("Cylinder OS", cylinder_options, key="cylinder_os")
+                else:
+                    os_cylinder = st.text_input("Custom Cylinder OS (e.g., -0.75)", key="custom_cylinder_os")
+                
+                os_axis_mode = st.radio("Axis OS Input", ["Select from list", "Custom value"], key="os_axis_mode")
+                if os_axis_mode == "Select from list":
+                    os_axis = st.selectbox("Axis OS", axis_options, key="axis_os")
+                else:
+                    os_axis = st.text_input("Custom Axis OS (0-180)", key="custom_axis_os")
+            
+            # Medicine Selection in Prescription
+            st.markdown("**💊 Medicine Selection**")
+            
+            # Medicine filters for prescription
+            col_med1, col_med2, col_med3 = st.columns(3)
+            
+            with col_med1:
+                med_usage = st.selectbox("Usage Type", ["All", "Internal", "External"], key="rx_med_usage")
+            
+            with col_med2:
+                med_category = st.selectbox("Category", 
+                    ["All", "Antibiotic", "Steroid", "Glaucoma", "Lubricant", "Antihistamine", "NSAID", "Analgesic", "Vitamin", "Supplement"], 
+                    key="rx_med_category")
+            
+            with col_med3:
+                prescription_req = st.selectbox("Prescription Required", ["All", "Yes", "No"], key="rx_prescription_req")
+            
+            # Filter medicines for prescription
+            COMPREHENSIVE_MEDICINE_DATABASE = get_medicine_database()
+            filtered_rx_medicines = COMPREHENSIVE_MEDICINE_DATABASE.copy()
+            
+            # Apply filters
+            if med_usage == "External":
+                external_keywords = ['drop', 'ointment', 'gel', 'cream', 'solution']
+                filtered_rx_medicines = {k: v for k, v in filtered_rx_medicines.items() 
+                                       if any(keyword in k.lower() for keyword in external_keywords)}
+            elif med_usage == "Internal":
+                external_keywords = ['drop', 'ointment', 'gel', 'cream', 'solution']
+                filtered_rx_medicines = {k: v for k, v in filtered_rx_medicines.items() 
+                                       if not any(keyword in k.lower() for keyword in external_keywords)}
+            
+            if med_category != "All":
+                filtered_rx_medicines = {k: v for k, v in filtered_rx_medicines.items() if v['category'] == med_category}
+            
+            if prescription_req == "Yes":
+                filtered_rx_medicines = {k: v for k, v in filtered_rx_medicines.items() if v['prescription_required'] == True}
+            elif prescription_req == "No":
+                filtered_rx_medicines = {k: v for k, v in filtered_rx_medicines.items() if v['prescription_required'] == False}
+            
+            # Display filtered medicines for selection
+            if filtered_rx_medicines:
+                st.markdown(f"**Available Medicines ({len(filtered_rx_medicines)} found):**")
+                
+                # Multi-select for medicines
+                selected_rx_medicines = st.multiselect(
+                    "Select medicines for prescription:",
+                    options=list(filtered_rx_medicines.keys()),
+                    default=st.session_state.get('selected_medicines', {}).keys() if 'selected_medicines' in st.session_state else [],
+                    key="rx_medicine_multiselect"
+                )
+                
+                # Quantity and dosage for selected medicines
+                if selected_rx_medicines:
+                    st.markdown("**Medicine Details:**")
+                    medicine_details = {}
+                    
+                    for med_name in selected_rx_medicines:
+                        if med_name in filtered_rx_medicines:
+                            med_data = filtered_rx_medicines[med_name]
+                            
+                            with st.expander(f"📋 {med_name} - ₹{med_data['price']}"):
+                                col_qty, col_dosage, col_duration = st.columns(3)
+                                
+                                with col_qty:
+                                    qty = st.number_input(f"Quantity", min_value=1, max_value=10, value=1, key=f"qty_{med_name}")
+                                
+                                with col_dosage:
+                                    custom_dosage = st.text_input(f"Custom Dosage", 
+                                                                 value=med_data.get('dosage', ''), 
+                                                                 key=f"dosage_{med_name}")
+                                
+                                with col_duration:
+                                    duration = st.selectbox(f"Duration", 
+                                                          ["3 days", "5 days", "7 days", "10 days", "14 days", "1 month", "Custom"], 
+                                                          key=f"duration_{med_name}")
+                                    if duration == "Custom":
+                                        custom_duration = st.text_input(f"Custom Duration", key=f"custom_duration_{med_name}")
+                                        duration = custom_duration if custom_duration else "As needed"
+                                
+                                # Display medicine info
+                                st.info(f"**Type:** {med_data['type']} | **Category:** {med_data['category']} | **Prescription Required:** {'Yes' if med_data['prescription_required'] else 'No'}")
+                                st.info(f"**Indication:** {med_data['indication']}")
+                                
+                                medicine_details[med_name] = {
+                                    'quantity': qty,
+                                    'dosage': custom_dosage,
+                                    'duration': duration,
+                                    'price': med_data['price'],
+                                    'total_cost': med_data['price'] * qty
+                                }
+                    
+                    # Store medicine details in session
+                    st.session_state['selected_medicines'] = {med: medicine_details[med]['quantity'] for med in medicine_details}
+                    st.session_state['medicine_details'] = medicine_details
+                    
+                    # Show total medicine cost
+                    total_med_cost = sum([details['total_cost'] for details in medicine_details.values()])
+                    st.success(f"**Total Medicine Cost: ₹{total_med_cost:,}**")
+            
+            # Custom Medicine Addition
+            st.markdown("**➕ Add Custom Medicine**")
+            with st.expander("Add medicine not in database"):
+                col_custom1, col_custom2, col_custom3 = st.columns(3)
+                
+                with col_custom1:
+                    custom_med_name = st.text_input("Medicine Name", key="custom_med_name")
+                    custom_med_type = st.selectbox("Type", ["Eye Drops", "Tablet", "Capsule", "Ointment", "Gel", "Injection"], key="custom_med_type")
+                
+                with col_custom2:
+                    custom_med_usage = st.selectbox("Usage", ["Internal", "External"], key="custom_med_usage")
+                    custom_med_price = st.number_input("Price (₹)", min_value=0, value=100, key="custom_med_price")
+                
+                with col_custom3:
+                    custom_med_dosage = st.text_input("Dosage Instructions", key="custom_med_dosage")
+                    custom_med_qty = st.number_input("Quantity", min_value=1, value=1, key="custom_med_qty")
+                
+                if st.button("➕ Add Custom Medicine", key="add_custom_med"):
+                    if custom_med_name:
+                        if 'selected_medicines' not in st.session_state:
+                            st.session_state['selected_medicines'] = {}
+                        if 'medicine_details' not in st.session_state:
+                            st.session_state['medicine_details'] = {}
+                        
+                        st.session_state['selected_medicines'][custom_med_name] = custom_med_qty
+                        st.session_state['medicine_details'][custom_med_name] = {
+                            'quantity': custom_med_qty,
+                            'dosage': custom_med_dosage,
+                            'duration': 'As prescribed',
+                            'price': custom_med_price,
+                            'total_cost': custom_med_price * custom_med_qty,
+                            'type': custom_med_type,
+                            'usage': custom_med_usage,
+                            'custom': True
+                        }
+                        st.success(f"✅ Added custom medicine: {custom_med_name}")
             
             rx_table = {
                 "OD": {"Sphere": od_sphere, "Cylinder": od_cylinder, "Axis": od_axis},
@@ -659,19 +840,52 @@ def main():
     </div>"""
                     
                     # Add selected medicines
-                    if selected_medicines:
+                    medicine_details = st.session_state.get('medicine_details', {})
+                    if selected_medicines or medicine_details:
                         prescription_html += """
         <div class="prescription">
             <div class="section-title">💊 Prescribed Medicines</div>"""
                         
                         total_med_cost = 0
-                        for med_name, quantity in selected_medicines.items():
-                            if med_name in COMPREHENSIVE_MEDICINE_DATABASE:
-                                med_data = COMPREHENSIVE_MEDICINE_DATABASE[med_name]
-                                total_price = med_data['price'] * quantity
-                                total_med_cost += total_price
+                        
+                        # Handle detailed medicine information
+                        if medicine_details:
+                            for med_name, details in medicine_details.items():
+                                total_med_cost += details['total_cost']
                                 
-                                prescription_html += f"""
+                                # Check if it's a custom medicine
+                                if details.get('custom', False):
+                                    prescription_html += f"""
+        <div class="item">
+            <strong>{med_name}</strong> (Custom)<br>
+            Type: {details.get('type', 'N/A')} | Usage: {details.get('usage', 'N/A')} | Quantity: {details['quantity']}<br>
+            Dosage: {details['dosage']}<br>
+            Duration: {details['duration']}<br>
+            Price: ₹{details['price']} x {details['quantity']} = <strong>₹{details['total_cost']}</strong>
+        </div>"""
+                                else:
+                                    # Regular medicine from database
+                                    if med_name in COMPREHENSIVE_MEDICINE_DATABASE:
+                                        med_data = COMPREHENSIVE_MEDICINE_DATABASE[med_name]
+                                        prescription_html += f"""
+        <div class="item">
+            <strong>{med_name}</strong><br>
+            Category: {med_data['category']} | Type: {med_data['type']} | Quantity: {details['quantity']}<br>
+            Dosage: {details['dosage']}<br>
+            Duration: {details['duration']}<br>
+            Indication: {med_data['indication']}<br>
+            Price: ₹{details['price']} x {details['quantity']} = <strong>₹{details['total_cost']}</strong><br>
+            Prescription Required: {'Yes' if med_data['prescription_required'] else 'No'}
+        </div>"""
+                        else:
+                            # Fallback for old format
+                            for med_name, quantity in selected_medicines.items():
+                                if med_name in COMPREHENSIVE_MEDICINE_DATABASE:
+                                    med_data = COMPREHENSIVE_MEDICINE_DATABASE[med_name]
+                                    total_price = med_data['price'] * quantity
+                                    total_med_cost += total_price
+                                    
+                                    prescription_html += f"""
         <div class="item">
             <strong>{med_name}</strong><br>
             Category: {med_data['category']} | Quantity: {quantity}<br>
@@ -789,13 +1003,21 @@ Prescribed Items:
                                         total_price = spec_data['price'] + spec_data['lens_price']
                                         text_prescription += f"- {spec_data['brand']} {spec_data['model']} - Rs.{total_price:,}\n"
                             
-                            if selected_medicines:
+                            medicine_details = st.session_state.get('medicine_details', {})
+                            if selected_medicines or medicine_details:
                                 text_prescription += "\nMEDICINES:\n"
-                                for med_name, qty in selected_medicines.items():
-                                    if med_name in COMPREHENSIVE_MEDICINE_DATABASE:
-                                        med_data = COMPREHENSIVE_MEDICINE_DATABASE[med_name]
-                                        total_price = med_data['price'] * qty
-                                        text_prescription += f"- {med_name} (Qty: {qty}) - Rs.{total_price}\n"
+                                
+                                if medicine_details:
+                                    for med_name, details in medicine_details.items():
+                                        text_prescription += f"- {med_name} (Qty: {details['quantity']}) - Rs.{details['total_cost']}\n"
+                                        text_prescription += f"  Dosage: {details['dosage']}\n"
+                                        text_prescription += f"  Duration: {details['duration']}\n"
+                                else:
+                                    for med_name, qty in selected_medicines.items():
+                                        if med_name in COMPREHENSIVE_MEDICINE_DATABASE:
+                                            med_data = COMPREHENSIVE_MEDICINE_DATABASE[med_name]
+                                            total_price = med_data['price'] * qty
+                                            text_prescription += f"- {med_name} (Qty: {qty}) - Rs.{total_price}\n"
                             
                             # Add RX details if available
                             rx_table = st.session_state.get('rx_table', {})
@@ -830,7 +1052,7 @@ Prescribed Items:
                                 'clinic': 'MauEyeCare Optical Center',
                                 'selected_spectacles': selected_spectacles,
                                 'selected_medicines': selected_medicines,
-                                'medicine_dosages': st.session_state.get('medicine_dosages', {}),
+                                'medicine_details': st.session_state.get('medicine_details', {}),
                                 'rx_table': st.session_state.get('rx_table', {}),
                                 'advice': st.session_state.get('advice', ''),
                                 'patient_issue': st.session_state.get('patient_issue', ''),
@@ -958,6 +1180,7 @@ Your eye care prescription has been prepared by Dr. Danish.
                             inventory_updates = []
                             
                             # Update medicine inventory
+                            from modules.inventory_utils import get_inventory_dict, reduce_inventory
                             for med_name, quantity in selected_medicines.items():
                                 old_stock = get_inventory_dict().get(med_name, 0)
                                 reduce_inventory(med_name, quantity)
