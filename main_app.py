@@ -254,9 +254,34 @@ def main():
             with col_med3:
                 prescription_req = st.selectbox("Prescription Required", ["All", "Yes", "No"], key="rx_prescription_req")
             
-            # Filter medicines for prescription
+            # Filter medicines for prescription (include custom medicines)
             COMPREHENSIVE_MEDICINE_DATABASE = get_medicine_database()
             filtered_rx_medicines = COMPREHENSIVE_MEDICINE_DATABASE.copy()
+            
+            # Add custom medicines from session state
+            if 'custom_medicines' in st.session_state:
+                filtered_rx_medicines.update(st.session_state['custom_medicines'])
+            
+            # Add medicines from inventory that aren't in database
+            try:
+                from modules.inventory_utils import get_inventory_dict
+                inventory = get_inventory_dict()
+                for item_name in inventory.keys():
+                    if item_name not in filtered_rx_medicines:
+                        # Check if it's likely a medicine (not spectacle)
+                        medicine_keywords = ['drop', 'tablet', 'capsule', 'ointment', 'gel', 'syrup', 'injection']
+                        if any(keyword in item_name.lower() for keyword in medicine_keywords):
+                            filtered_rx_medicines[item_name] = {
+                                'category': 'Inventory',
+                                'type': 'Medicine',
+                                'price': 100,  # Default price
+                                'prescription_required': True,
+                                'indication': 'From inventory',
+                                'dosage': 'As prescribed',
+                                'custom': True
+                            }
+            except:
+                pass
             
             # Apply filters
             if med_usage == "External":
@@ -304,9 +329,21 @@ def main():
                                     qty = st.number_input(f"Quantity", min_value=1, max_value=10, value=1, key=f"qty_{med_name}")
                                 
                                 with col_dosage:
-                                    custom_dosage = st.text_input(f"Custom Dosage", 
-                                                                 value=med_data.get('dosage', ''), 
-                                                                 key=f"dosage_{med_name}")
+                                    # Dosage options
+                                    dosage_options = [
+                                        "1 drop twice daily", "2 drops twice daily", "1 drop thrice daily",
+                                        "1 tablet daily", "1 tablet twice daily", "1 capsule daily",
+                                        "Apply twice daily", "As needed", "Custom"
+                                    ]
+                                    
+                                    dosage_mode = st.selectbox(f"Dosage", ["Select", "Custom"], key=f"dosage_mode_{med_name}")
+                                    
+                                    if dosage_mode == "Select":
+                                        custom_dosage = st.selectbox(f"Select Dosage", dosage_options, key=f"dosage_select_{med_name}")
+                                    else:
+                                        custom_dosage = st.text_input(f"Custom Dosage", 
+                                                                     value=med_data.get('dosage', ''), 
+                                                                     key=f"dosage_{med_name}")
                                 
                                 with col_duration:
                                     duration = st.selectbox(f"Duration", 
@@ -420,6 +457,26 @@ def main():
             
             if st.button("➕ Add Custom Medicine", key="add_custom_med_outside"):
                 if custom_med_name:
+                    # Add to inventory
+                    from modules.inventory_utils import add_or_update_inventory
+                    add_or_update_inventory(custom_med_name, custom_med_qty)
+                    
+                    # Add to custom medicine database
+                    if 'custom_medicines' not in st.session_state:
+                        st.session_state['custom_medicines'] = {}
+                    
+                    st.session_state['custom_medicines'][custom_med_name] = {
+                        'category': 'Custom',
+                        'type': custom_med_type,
+                        'price': custom_med_price,
+                        'prescription_required': True,
+                        'indication': 'As prescribed by doctor',
+                        'dosage': custom_med_dosage,
+                        'usage': custom_med_usage,
+                        'custom': True
+                    }
+                    
+                    # Add to current prescription
                     if 'selected_medicines' not in st.session_state:
                         st.session_state['selected_medicines'] = {}
                     if 'medicine_details' not in st.session_state:
@@ -436,7 +493,7 @@ def main():
                         'usage': custom_med_usage,
                         'custom': True
                     }
-                    st.success(f"✅ Added custom medicine: {custom_med_name}")
+                    st.success(f"✅ Added to inventory & prescription: {custom_med_name}")
                     st.rerun()
                 else:
                     st.warning("⚠️ Please enter medicine name")
@@ -534,9 +591,32 @@ def main():
         with col4:
             prescription_req = st.selectbox("Prescription", ["All", "Required", "Not Required"])
         
-        # Apply medicine filters
+        # Apply medicine filters (include custom and inventory medicines)
         COMPREHENSIVE_MEDICINE_DATABASE = get_medicine_database()
         filtered_medicines = COMPREHENSIVE_MEDICINE_DATABASE.copy()
+        
+        # Add custom medicines
+        if 'custom_medicines' in st.session_state:
+            filtered_medicines.update(st.session_state['custom_medicines'])
+        
+        # Add medicines from inventory
+        try:
+            from modules.inventory_utils import get_inventory_dict
+            inventory = get_inventory_dict()
+            for item_name, stock in inventory.items():
+                if item_name not in filtered_medicines and stock > 0:
+                    medicine_keywords = ['drop', 'tablet', 'capsule', 'ointment', 'gel', 'syrup', 'injection']
+                    if any(keyword in item_name.lower() for keyword in medicine_keywords):
+                        filtered_medicines[item_name] = {
+                            'category': 'Inventory',
+                            'type': 'Medicine',
+                            'price': 100,
+                            'prescription_required': True,
+                            'indication': f'Available in stock: {stock}',
+                            'custom': True
+                        }
+        except:
+            pass
         
         # Filter by medicine type (eye related vs other)
         if med_type == "Eye Related":
