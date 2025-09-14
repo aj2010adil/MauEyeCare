@@ -336,42 +336,7 @@ def main():
                     total_med_cost = sum([details['total_cost'] for details in medicine_details.values()])
                     st.success(f"**Total Medicine Cost: ₹{total_med_cost:,}**")
             
-            # Custom Medicine Addition
-            st.markdown("**➕ Add Custom Medicine**")
-            with st.expander("Add medicine not in database"):
-                col_custom1, col_custom2, col_custom3 = st.columns(3)
-                
-                with col_custom1:
-                    custom_med_name = st.text_input("Medicine Name", key="custom_med_name")
-                    custom_med_type = st.selectbox("Type", ["Eye Drops", "Tablet", "Capsule", "Ointment", "Gel", "Injection"], key="custom_med_type")
-                
-                with col_custom2:
-                    custom_med_usage = st.selectbox("Usage", ["Internal", "External"], key="custom_med_usage")
-                    custom_med_price = st.number_input("Price (₹)", min_value=0, value=100, key="custom_med_price")
-                
-                with col_custom3:
-                    custom_med_dosage = st.text_input("Dosage Instructions", key="custom_med_dosage")
-                    custom_med_qty = st.number_input("Quantity", min_value=1, value=1, key="custom_med_qty")
-                
-                if st.button("➕ Add Custom Medicine", key="add_custom_med"):
-                    if custom_med_name:
-                        if 'selected_medicines' not in st.session_state:
-                            st.session_state['selected_medicines'] = {}
-                        if 'medicine_details' not in st.session_state:
-                            st.session_state['medicine_details'] = {}
-                        
-                        st.session_state['selected_medicines'][custom_med_name] = custom_med_qty
-                        st.session_state['medicine_details'][custom_med_name] = {
-                            'quantity': custom_med_qty,
-                            'dosage': custom_med_dosage,
-                            'duration': 'As prescribed',
-                            'price': custom_med_price,
-                            'total_cost': custom_med_price * custom_med_qty,
-                            'type': custom_med_type,
-                            'usage': custom_med_usage,
-                            'custom': True
-                        }
-                        st.success(f"✅ Added custom medicine: {custom_med_name}")
+
             
             rx_table = {
                 "OD": {"Sphere": od_sphere, "Cylinder": od_cylinder, "Axis": od_axis},
@@ -432,6 +397,49 @@ def main():
                     st.info(f"🎆 **New Patient** - Welcome to MauEyeCare! We're excited to help with your eye care needs.")
                 
                 st.info("🎯 Now go to 'AI Camera Analysis' tab to capture photo and get recommendations!")
+        
+        # Custom Medicine Addition (Outside Form)
+        st.markdown("---")
+        st.markdown("### ➕ Add Custom Medicine")
+        st.info("📝 Add medicines not in our database")
+        
+        with st.expander("Add Custom Medicine"):
+            col_custom1, col_custom2, col_custom3 = st.columns(3)
+            
+            with col_custom1:
+                custom_med_name = st.text_input("Medicine Name", key="custom_med_name_outside")
+                custom_med_type = st.selectbox("Type", ["Eye Drops", "Tablet", "Capsule", "Ointment", "Gel", "Injection"], key="custom_med_type_outside")
+            
+            with col_custom2:
+                custom_med_usage = st.selectbox("Usage", ["Internal", "External"], key="custom_med_usage_outside")
+                custom_med_price = st.number_input("Price (₹)", min_value=0, value=100, key="custom_med_price_outside")
+            
+            with col_custom3:
+                custom_med_dosage = st.text_input("Dosage Instructions", key="custom_med_dosage_outside")
+                custom_med_qty = st.number_input("Quantity", min_value=1, value=1, key="custom_med_qty_outside")
+            
+            if st.button("➕ Add Custom Medicine", key="add_custom_med_outside"):
+                if custom_med_name:
+                    if 'selected_medicines' not in st.session_state:
+                        st.session_state['selected_medicines'] = {}
+                    if 'medicine_details' not in st.session_state:
+                        st.session_state['medicine_details'] = {}
+                    
+                    st.session_state['selected_medicines'][custom_med_name] = custom_med_qty
+                    st.session_state['medicine_details'][custom_med_name] = {
+                        'quantity': custom_med_qty,
+                        'dosage': custom_med_dosage,
+                        'duration': 'As prescribed',
+                        'price': custom_med_price,
+                        'total_cost': custom_med_price * custom_med_qty,
+                        'type': custom_med_type,
+                        'usage': custom_med_usage,
+                        'custom': True
+                    }
+                    st.success(f"✅ Added custom medicine: {custom_med_name}")
+                    st.rerun()
+                else:
+                    st.warning("⚠️ Please enter medicine name")
 
     # --- Spectacle Gallery Tab ---
     with tab2:
