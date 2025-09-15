@@ -1404,47 +1404,44 @@ Prescribed Items:
                             else:
                                 df = pd.read_excel(uploaded_file)
                             
-                            # Expected columns: Item, Stock
+                            # Expected columns: Item, Stock (Price, Category, Type optional)
                             if 'Item' in df.columns and 'Stock' in df.columns:
-                                # Clear inventory if overwrite mode
-                                if import_mode == "Overwrite all":
-                                    # Clear existing inventory by setting all to 0
-                                    current_inventory = get_inventory_dict()
-                                    for item in list(current_inventory.keys()):
-                                        from modules.inventory_utils import reduce_inventory
-                                        # Reduce to 0 by reducing current stock
-                                        current_stock = current_inventory[item]
-                                        if current_stock > 0:
-                                            reduce_inventory(item, current_stock)
-                                    st.info("🗑️ Cleared existing inventory")
-                                
                                 imported_count = 0
                                 for _, row in df.iterrows():
                                     item = str(row['Item']).strip()
                                     stock = int(row['Stock']) if pd.notna(row['Stock']) else 0
+                                    price = int(row.get('Price', 100)) if pd.notna(row.get('Price')) else 100
+                                    category = str(row.get('Category', 'General')).strip() if pd.notna(row.get('Category')) else 'General'
+                                    item_type = str(row.get('Type', 'Item')).strip() if pd.notna(row.get('Type')) else 'Item'
                                     
-                                    if import_mode == "Add to existing":
-                                        # Add to existing stock
-                                        current_stock = get_inventory_dict().get(item, 0)
-                                        add_or_update_inventory(item, stock)  # This adds to existing
+                                    # Determine if it's a medicine based on keywords or category
+                                    medicine_keywords = ['drop', 'tablet', 'capsule', 'ointment', 'gel', 'syrup', 'injection']
+                                    is_medicine = (any(keyword in item.lower() for keyword in medicine_keywords) or 
+                                                 category.lower() in ['antibiotic', 'steroid', 'lubricant', 'antihistamine', 'nsaid', 'vitamin', 'supplement'])
+                                    
+                                    if is_medicine:
+                                        from modules.separate_inventory import add_medicine_inventory
+                                        add_medicine_inventory(item, stock, price, category, item_type)
                                     else:
-                                        # Set new stock (inventory already cleared)
-                                        add_or_update_inventory(item, stock)
+                                        from modules.separate_inventory import add_spectacle_inventory
+                                        add_spectacle_inventory(item, stock)
                                     
                                     imported_count += 1
                                 
-                                mode_text = "added to" if import_mode == "Add to existing" else "imported (overwrite)"
-                                st.success(f"✅ {imported_count} items {mode_text} inventory successfully!")
+                                st.success(f"✅ {imported_count} items imported successfully!")
                                 st.rerun()
                             else:
-                                st.error("❌ Excel must have 'Item' and 'Stock' columns")
+                                st.error("❌ Excel must have 'Item' and 'Stock' columns (Price, Category, Type are optional)")
                         except Exception as e:
                             st.error(f"❌ Import failed: {str(e)}")
                 
-                # Sample format
+                # Sample format with enhanced fields
                 sample_data = pd.DataFrame({
-                    'Item': ['Ray-Ban Aviator', 'Refresh Tears', 'Oakley Holbrook'],
-                    'Stock': [15, 25, 10]
+                    'Item': ['Ray-Ban Aviator', 'Refresh Tears Eye Drops', 'Oakley Holbrook'],
+                    'Stock': [15, 25, 10],
+                    'Price': [5000, 150, 8000],
+                    'Category': ['Spectacle', 'Lubricant', 'Spectacle'],
+                    'Type': ['Sunglasses', 'Eye Drops', 'Sunglasses']
                 })
                 csv = sample_data.to_csv(index=False)
                 st.download_button(
@@ -1472,10 +1469,11 @@ Prescribed Items:
                             df.to_excel(writer, sheet_name='Inventory', index=False)
                         output.seek(0)
                         
+                        timestamp = datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')
                         st.download_button(
                             "📤 Download Excel",
                             data=output.getvalue(),
-                            file_name=f"inventory_{datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')}.xlsx",
+                            file_name=f"inventory_{timestamp}.xlsx",
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                             use_container_width=True
                         )
@@ -1483,10 +1481,11 @@ Prescribed Items:
                         st.error(f"Excel export failed: {str(e)}")
                         # Fallback to CSV
                         csv = df.to_csv(index=False)
+                        timestamp = datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')
                         st.download_button(
                             "📤 Download CSV (Fallback)",
                             csv,
-                            f"inventory_{datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')}.csv",
+                            f"inventory_{timestamp}.csv",
                             "text/csv",
                             use_container_width=True
                         )
@@ -1517,10 +1516,11 @@ Prescribed Items:
                     
                     df = pd.DataFrame(export_data)
                     csv = df.to_csv(index=False)
+                    timestamp = datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')
                     st.download_button(
                         "📤 Download CSV",
                         data=csv,
-                        file_name=f"inventory_{datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')}.csv",
+                        file_name=f"inventory_{timestamp}.csv",
                         mime="text/csv",
                         use_container_width=True
                     )
