@@ -474,9 +474,9 @@ def main():
             
             if st.button("➕ Add Custom Medicine", key="add_custom_med_outside"):
                 if custom_med_name:
-                    # Add to separate medicine inventory
+                    # Add to separate medicine inventory with detailed info
                     from modules.separate_inventory import add_medicine_inventory
-                    add_medicine_inventory(custom_med_name, custom_med_qty)
+                    add_medicine_inventory(custom_med_name, custom_med_qty, custom_med_price, 'Custom', custom_med_type)
                     
                     # Add to custom medicine database
                     if 'custom_medicines' not in st.session_state:
@@ -493,7 +493,7 @@ def main():
                         'custom': True
                     }
                     
-                    st.success(f"✅ Added to medicine inventory: {custom_med_name} (Qty: {custom_med_qty})")
+                    st.success(f"✅ Added to inventory: {custom_med_name} (Qty: {custom_med_qty}, Price: ₹{custom_med_price}, Type: {custom_med_type})")
                     st.rerun()
                 else:
                     st.warning("⚠️ Please enter medicine name")
@@ -1368,12 +1368,17 @@ Prescribed Items:
                 item_name = st.text_input("Item Name", placeholder="Enter item name")
                 quantity = st.number_input("Quantity", min_value=0, value=1)
                 
+                if item_type == "Medicine":
+                    price = st.number_input("Price (₹)", min_value=0, value=100)
+                    category = st.selectbox("Category", ["Antibiotic", "Steroid", "Lubricant", "Antihistamine", "NSAID", "Vitamin", "Supplement", "Other"])
+                    med_type = st.selectbox("Type", ["Eye Drops", "Tablet", "Capsule", "Ointment", "Gel", "Syrup", "Injection"])
+                
                 if st.button("💾 Update Stock"):
                     if item_name:
                         from modules.separate_inventory import add_medicine_inventory, add_spectacle_inventory
                         if item_type == "Medicine":
-                            add_medicine_inventory(item_name, quantity)
-                            st.success(f"✅ Updated medicine: {item_name} = {quantity} units")
+                            add_medicine_inventory(item_name, quantity, price, category, med_type)
+                            st.success(f"✅ Updated medicine: {item_name} = {quantity} units (₹{price}, {category}, {med_type})")
                         else:
                             add_spectacle_inventory(item_name, quantity)
                             st.success(f"✅ Updated spectacle: {item_name} = {quantity} units")
@@ -1488,10 +1493,29 @@ Prescribed Items:
                 
                 # CSV Export (always works)
                 if inventory:
-                    df = pd.DataFrame([
-                        {"Item": item, "Stock": stock, "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"}
-                        for item, stock in inventory.items()
-                    ])
+                    # Create enhanced dataframe with medicine details
+                    from modules.separate_inventory import load_medicine_inventory
+                    med_inventory = load_medicine_inventory()
+                    
+                    export_data = []
+                    for item, stock in inventory.items():
+                        row = {"Item": item, "Stock": stock, "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"}
+                        
+                        # Add medicine details if available
+                        if item in med_inventory and isinstance(med_inventory[item], dict):
+                            med_data = med_inventory[item]
+                            row.update({
+                                "Price": med_data.get('price', 100),
+                                "Category": med_data.get('category', 'General'),
+                                "Type": med_data.get('type', 'Medicine'),
+                                "Date_Added": med_data.get('date_added', '').split('T')[0] if med_data.get('date_added') else 'N/A'
+                            })
+                        else:
+                            row.update({"Price": 100, "Category": "General", "Type": "Item", "Date_Added": "N/A"})
+                        
+                        export_data.append(row)
+                    
+                    df = pd.DataFrame(export_data)
                     csv = df.to_csv(index=False)
                     st.download_button(
                         "📤 Download CSV",
@@ -1514,11 +1538,25 @@ Prescribed Items:
                 if search_term:
                     filtered_items = [(k, v) for k, v in inventory.items() if search_term.lower() in k.lower()]
                 
-                # Display items
+                # Import inventory functions
+                from modules.separate_inventory import load_medicine_inventory, load_spectacle_inventory
+                
+                # Display items with enhanced information
+                med_inventory = load_medicine_inventory()
+                spec_inventory = load_spectacle_inventory()
+                
                 for item, stock in list(filtered_items)[:30]:  # Show up to 30 items
-                    col1, col2, col3 = st.columns([4, 1, 1])
+                    col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+                    
                     with col1:
-                        st.write(item)
+                        # Show item details if available
+                        if item in med_inventory and isinstance(med_inventory[item], dict):
+                            med_data = med_inventory[item]
+                            st.write(f"**{item}**")
+                            st.caption(f"{med_data.get('type', 'Medicine')} | ₹{med_data.get('price', 100)} | {med_data.get('category', 'General')}")
+                        else:
+                            st.write(item)
+                    
                     with col2:
                         if stock == 0:
                             st.error(f"OUT: {stock}")
@@ -1526,10 +1564,35 @@ Prescribed Items:
                             st.warning(f"LOW: {stock}")
                         else:
                             st.success(f"OK: {stock}")
+                    
                     with col3:
+                        # Show date added if available
+                        if item in med_inventory and isinstance(med_inventory[item], dict):
+                            date_added = med_inventory[item].get('date_added', '')
+                            if date_added:
+                                try:
+                                    from datetime import datetime
+                                    dt = datetime.fromisoformat(date_added.replace('Z', '+00:00'))
+                                    st.caption(dt.strftime('%d/%m/%Y'))
+                                except:
+                                    st.caption('N/A')
+                            else:
+                                st.caption('N/A')
+                        else:
+                            st.caption('N/A')
+                    
+                    with col4:
                         # Quick update buttons
                         if st.button("➕", key=f"add_{item}", help="Add 1"):
-                            add_or_update_inventory(item, stock + 1)
+                            if item in med_inventory:
+                                from modules.separate_inventory import add_medicine_inventory
+                                if isinstance(med_inventory[item], dict):
+                                    med_data = med_inventory[item]
+                                    add_medicine_inventory(item, stock + 1, med_data.get('price', 100), med_data.get('category', 'Medicine'), med_data.get('type', 'Tablet'))
+                                else:
+                                    add_medicine_inventory(item, stock + 1)
+                            else:
+                                add_or_update_inventory(item, stock + 1)
                             st.rerun()
             else:
                 st.info("📦 No inventory items. Click 'Load Complete Database' in sidebar or import Excel file.")
