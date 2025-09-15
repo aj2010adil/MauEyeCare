@@ -18,9 +18,8 @@ streamlit run main_app.py
 
 ## 📋 Features
 
-- **👥 Patient Management** - Registration and history tracking
+- **👥 Patient Management** - Registration with integrated medicine selection and prescription details
 - **👓 Spectacle Gallery** - 1000+ spectacle database with filters
-- **💊 Medicine Gallery** - Comprehensive medicine database
 - **📸 AI Camera Analysis** - Face shape detection for spectacle recommendations
 - **📦 Inventory Management** - Real-time stock tracking and alerts
 - **📄 Prescription Generation** - Professional prescription with download options
@@ -66,10 +65,10 @@ MauEyeCare/
 
 ## 🎯 Usage
 
-1. **Register Patient** - Add patient information and eye prescription
-2. **Browse Galleries** - Select spectacles and medicines
+1. **Register Patient** - Add patient information, eye prescription, and select medicines with dosage details
+2. **Browse Spectacle Gallery** - Select spectacles with AI recommendations
 3. **AI Analysis** - Use camera for face shape detection (optional)
-4. **Generate Prescription** - Create and share professional prescription
+4. **Generate Prescription** - Create and share professional prescription with all details
 5. **Manage Inventory** - Track stock levels and get alerts
 
 ## 🔒 Security

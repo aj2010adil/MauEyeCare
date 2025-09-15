@@ -139,10 +139,9 @@ def main():
             st.error(f"☁️ Google Drive: Error - {str(e)}")
 
     # Main tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
         "👥 Patient Registration", 
         "👓 Spectacle Gallery", 
-        "💊 Medicine Gallery",
         "📸 AI Camera Analysis",
         "📋 Patient History",
         "📤 Prescription & Sharing",
@@ -571,109 +570,10 @@ def main():
                     else:
                         st.warning("Already added to prescription")
 
-    # --- Medicine Gallery Tab ---
-    with tab3:
-        st.header("💊 Medicine Gallery")
-        st.markdown("*Browse our collection of medicines*")
-        
-        # Medicine filters
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            med_type = st.selectbox("Medicine Type", ["All", "Eye Related", "Other"])
-        
-        with col2:
-            usage_type = st.selectbox("Usage Type", ["All", "Internal", "External"])
-        
-        with col3:
-            med_category = st.selectbox("Category", 
-                ["All", "Antibiotic", "Anti-inflammatory", "Lubricant", "Antihistamine", "Antiviral"])
-        
-        with col4:
-            prescription_req = st.selectbox("Prescription", ["All", "Required", "Not Required"])
-        
-        # Apply medicine filters (include custom and inventory medicines)
-        COMPREHENSIVE_MEDICINE_DATABASE = get_medicine_database()
-        filtered_medicines = COMPREHENSIVE_MEDICINE_DATABASE.copy()
-        
-        # Add custom medicines
-        if 'custom_medicines' in st.session_state:
-            filtered_medicines.update(st.session_state['custom_medicines'])
-        
-        # Add medicines from inventory
-        try:
-            from modules.inventory_utils import get_inventory_dict
-            inventory = get_inventory_dict()
-            for item_name, stock in inventory.items():
-                if item_name not in filtered_medicines and stock > 0:
-                    medicine_keywords = ['drop', 'tablet', 'capsule', 'ointment', 'gel', 'syrup', 'injection']
-                    if any(keyword in item_name.lower() for keyword in medicine_keywords):
-                        filtered_medicines[item_name] = {
-                            'category': 'Inventory',
-                            'type': 'Medicine',
-                            'price': 100,
-                            'prescription_required': True,
-                            'indication': f'Available in stock: {stock}',
-                            'custom': True
-                        }
-        except:
-            pass
-        
-        # Filter by medicine type (eye related vs other)
-        if med_type == "Eye Related":
-            eye_keywords = ['eye', 'tear', 'vision', 'glaucoma', 'cataract', 'retina', 'conjunctiv', 'dry']
-            filtered_medicines = {k: v for k, v in filtered_medicines.items() 
-                                if any(keyword in k.lower() or keyword in v.get('category', '').lower() 
-                                      for keyword in eye_keywords)}
-        elif med_type == "Other":
-            eye_keywords = ['eye', 'tear', 'vision', 'glaucoma', 'cataract', 'retina', 'conjunctiv', 'dry']
-            filtered_medicines = {k: v for k, v in filtered_medicines.items() 
-                                if not any(keyword in k.lower() or keyword in v.get('category', '').lower() 
-                                          for keyword in eye_keywords)}
-        
-        # Filter by usage type
-        if usage_type == "External":
-            external_keywords = ['drop', 'ointment', 'gel', 'cream', 'solution']
-            filtered_medicines = {k: v for k, v in filtered_medicines.items() 
-                                if any(keyword in k.lower() for keyword in external_keywords)}
-        elif usage_type == "Internal":
-            external_keywords = ['drop', 'ointment', 'gel', 'cream', 'solution']
-            filtered_medicines = {k: v for k, v in filtered_medicines.items() 
-                                if not any(keyword in k.lower() for keyword in external_keywords)}
-        
-        if med_category != "All":
-            filtered_medicines = {k: v for k, v in filtered_medicines.items() if v['category'] == med_category}
-        
-        if prescription_req == "Required":
-            filtered_medicines = {k: v for k, v in filtered_medicines.items() if v['prescription_required'] == True}
-        elif prescription_req == "Not Required":
-            filtered_medicines = {k: v for k, v in filtered_medicines.items() if v['prescription_required'] == False}
-        
-        # Display medicine gallery (limited for speed)
-        st.markdown(f"### 💊 Medicine Gallery ({min(len(filtered_medicines), 9)} items shown)")
-        
-        cols = st.columns(3)
-        
-        for i, (med_name, med_data) in enumerate(list(filtered_medicines.items())[:9]):
-            with cols[i % 3]:
-                st.markdown(f"**{med_name}**")
-                st.markdown(f"Category: {med_data['category']}")
-                st.markdown(f"Price: ₹{med_data['price']}")
-                st.markdown(f"Prescription: {'Required' if med_data['prescription_required'] else 'Not Required'}")
-                
-                if st.button(f"➕ Add to Prescription", key=f"add_med_{i}"):
-                    if 'selected_medicines' not in st.session_state:
-                        st.session_state['selected_medicines'] = {}
-                    
-                    if med_name in st.session_state['selected_medicines']:
-                        st.session_state['selected_medicines'][med_name] += 1
-                    else:
-                        st.session_state['selected_medicines'][med_name] = 1
-                    
-                    st.success(f"Added {med_name}")
+
 
     # --- AI Camera Analysis Tab ---
-    with tab4:
+    with tab3:
         st.header("📸 AI Camera Analysis")
         
         if 'patient_name' in st.session_state and st.session_state['patient_name']:
@@ -752,7 +652,7 @@ def main():
             st.info("Please go to the **'Patient Registration'** tab first and enter patient information.")
 
     # --- Patient History Tab ---
-    with tab5:
+    with tab4:
         st.header("📋 Patient History & Records")
         
         patients = db.get_patients()
@@ -784,7 +684,7 @@ def main():
                     st.success(f"Selected patient: {p[1]}")
 
     # --- Prescription Generator Tab ---
-    with tab6:
+    with tab5:
         st.header("📄 Prescription Generator")
         
         if 'patient_name' in st.session_state:
@@ -811,9 +711,14 @@ def main():
             
             with col2:
                 st.markdown("### 💊 Selected Medicines")
+                medicine_details = st.session_state.get('medicine_details', {})
                 selected_medicines = st.session_state.get('selected_medicines', {})
                 
-                if selected_medicines:
+                if medicine_details:
+                    for med_name, details in medicine_details.items():
+                        st.write(f"• {med_name} (Qty: {details['quantity']}) - ₹{details['total_cost']}")
+                        st.write(f"  Dosage: {details['dosage']} | Duration: {details['duration']}")
+                elif selected_medicines:
                     COMPREHENSIVE_MEDICINE_DATABASE = get_medicine_database()
                     for med_name, quantity in selected_medicines.items():
                         if med_name in COMPREHENSIVE_MEDICINE_DATABASE:
@@ -827,7 +732,8 @@ def main():
             st.markdown("---")
             
             if st.button("📤 Generate & Share Prescription", type="primary"):
-                if selected_spectacles or selected_medicines:
+                medicine_details = st.session_state.get('medicine_details', {})
+                if selected_spectacles or selected_medicines or medicine_details:
                     # Create prescription HTML
                     prescription_html = f"""
 <!DOCTYPE html>
@@ -930,7 +836,7 @@ def main():
                     
                     # Add selected medicines
                     medicine_details = st.session_state.get('medicine_details', {})
-                    if selected_medicines or medicine_details:
+                    if medicine_details or selected_medicines:
                         prescription_html += """
         <div class="prescription">
             <div class="section-title">💊 Prescribed Medicines</div>"""
@@ -1430,7 +1336,7 @@ Prescribed Items:
             st.warning("⚠️ Please select a patient first")
 
     # --- Inventory Management Tab ---
-    with tab7:
+    with tab6:
         st.header("📦 Inventory Management")
         
         try:
@@ -1633,7 +1539,7 @@ Prescribed Items:
             st.info("Please load the database first using the sidebar button.")
     
     # --- Integration Setup Tab ---
-    with tab8:
+    with tab7:
         st.header("🔧 Clinic Settings")
         
         # Data Backup & Security
@@ -1823,7 +1729,7 @@ Prescribed Items:
             st.markdown("- ✅ Download options")
     
     # --- Analytics Tab ---
-    with tab9:
+    with tab8:
         st.header("📊 Professional Analytics")
         
         visit_data = st.session_state.get('visit_analytics', [])
