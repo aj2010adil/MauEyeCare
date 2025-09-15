@@ -1434,8 +1434,10 @@ Prescribed Items:
         st.header("📦 Inventory Management")
         
         try:
-            from modules.inventory_utils import get_inventory_dict, add_or_update_inventory
-            inventory = get_inventory_dict()
+            from modules.separate_inventory import load_medicine_inventory, load_spectacle_inventory
+            med_inventory = load_medicine_inventory()
+            spec_inventory = load_spectacle_inventory()
+            inventory = {**med_inventory, **spec_inventory}  # Combine for stats
             
             # Stats
             col1, col2, col3 = st.columns(3)
@@ -1454,28 +1456,21 @@ Prescribed Items:
             col1, col2, col3 = st.columns(3)
             
             with col1:
-                # Manual Update
+                # Manual Update with separate inventories
                 st.markdown("**✏️ Manual Update**")
+                item_type = st.radio("Item Type:", ["Medicine", "Spectacle"], key="item_type_manual")
                 item_name = st.text_input("Item Name", placeholder="Enter item name")
-                
-                update_mode = st.radio(
-                    "Update Mode:",
-                    ["Set quantity", "Add quantity"],
-                    key="manual_mode"
-                )
-                
                 quantity = st.number_input("Quantity", min_value=0, value=1)
                 
                 if st.button("💾 Update Stock"):
                     if item_name:
-                        if update_mode == "Add quantity":
-                            current_stock = get_inventory_dict().get(item_name, 0)
-                            new_stock = current_stock + quantity
-                            add_or_update_inventory(item_name, new_stock)
-                            st.success(f"✅ Added {quantity} to {item_name}: {new_stock} total")
+                        from modules.separate_inventory import add_medicine_inventory, add_spectacle_inventory
+                        if item_type == "Medicine":
+                            add_medicine_inventory(item_name, quantity)
+                            st.success(f"✅ Updated medicine: {item_name} = {quantity} units")
                         else:
-                            add_or_update_inventory(item_name, quantity)
-                            st.success(f"✅ Set {item_name}: {quantity} units")
+                            add_spectacle_inventory(item_name, quantity)
+                            st.success(f"✅ Updated spectacle: {item_name} = {quantity} units")
                         st.rerun()
             
             with col2:
