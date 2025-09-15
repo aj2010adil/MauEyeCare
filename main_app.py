@@ -203,19 +203,19 @@ def main():
                 if od_sphere_mode == "Select from list":
                     od_sphere = st.selectbox("Sphere OD", sphere_options, key="sphere_od")
                 else:
-                    od_sphere = st.text_input("Custom Sphere OD (e.g., +2.75, -1.25)", key="custom_sphere_od")
+                    od_sphere = st.text_input("Custom Sphere OD (e.g., +2.75, -1.25)", key="custom_sphere_od", help="Enter any value like +2.75, -1.25, etc.")
                 
                 od_cylinder_mode = st.radio("Cylinder OD Input", ["Select from list", "Custom value"], key="od_cylinder_mode")
                 if od_cylinder_mode == "Select from list":
                     od_cylinder = st.selectbox("Cylinder OD", cylinder_options, key="cylinder_od")
                 else:
-                    od_cylinder = st.text_input("Custom Cylinder OD (e.g., -0.75)", key="custom_cylinder_od")
+                    od_cylinder = st.text_input("Custom Cylinder OD (e.g., -0.75)", key="custom_cylinder_od", help="Enter any cylinder value")
                 
                 od_axis_mode = st.radio("Axis OD Input", ["Select from list", "Custom value"], key="od_axis_mode")
                 if od_axis_mode == "Select from list":
                     od_axis = st.selectbox("Axis OD", axis_options, key="axis_od")
                 else:
-                    od_axis = st.text_input("Custom Axis OD (0-180)", key="custom_axis_od")
+                    od_axis = st.text_input("Custom Axis OD (0-180)", key="custom_axis_od", help="Enter axis value between 0-180")
             
             with col_os:
                 st.markdown("**OS (Left Eye)**")
@@ -223,19 +223,19 @@ def main():
                 if os_sphere_mode == "Select from list":
                     os_sphere = st.selectbox("Sphere OS", sphere_options, key="sphere_os")
                 else:
-                    os_sphere = st.text_input("Custom Sphere OS (e.g., +2.75, -1.25)", key="custom_sphere_os")
+                    os_sphere = st.text_input("Custom Sphere OS (e.g., +2.75, -1.25)", key="custom_sphere_os", help="Enter any value like +2.75, -1.25, etc.")
                 
                 os_cylinder_mode = st.radio("Cylinder OS Input", ["Select from list", "Custom value"], key="os_cylinder_mode")
                 if os_cylinder_mode == "Select from list":
                     os_cylinder = st.selectbox("Cylinder OS", cylinder_options, key="cylinder_os")
                 else:
-                    os_cylinder = st.text_input("Custom Cylinder OS (e.g., -0.75)", key="custom_cylinder_os")
+                    os_cylinder = st.text_input("Custom Cylinder OS (e.g., -0.75)", key="custom_cylinder_os", help="Enter any cylinder value")
                 
                 os_axis_mode = st.radio("Axis OS Input", ["Select from list", "Custom value"], key="os_axis_mode")
                 if os_axis_mode == "Select from list":
                     os_axis = st.selectbox("Axis OS", axis_options, key="axis_os")
                 else:
-                    os_axis = st.text_input("Custom Axis OS (0-180)", key="custom_axis_os")
+                    os_axis = st.text_input("Custom Axis OS (0-180)", key="custom_axis_os", help="Enter axis value between 0-180")
             
             # Medicine Selection in Prescription
             st.markdown("**💊 Medicine Selection**")
@@ -262,24 +262,21 @@ def main():
             if 'custom_medicines' in st.session_state:
                 filtered_rx_medicines.update(st.session_state['custom_medicines'])
             
-            # Add medicines from inventory that aren't in database
+            # Add medicines from separate inventory
             try:
-                from modules.inventory_utils import get_inventory_dict
-                inventory = get_inventory_dict()
-                for item_name in inventory.keys():
-                    if item_name not in filtered_rx_medicines:
-                        # Check if it's likely a medicine (not spectacle)
-                        medicine_keywords = ['drop', 'tablet', 'capsule', 'ointment', 'gel', 'syrup', 'injection']
-                        if any(keyword in item_name.lower() for keyword in medicine_keywords):
-                            filtered_rx_medicines[item_name] = {
-                                'category': 'Inventory',
-                                'type': 'Medicine',
-                                'price': 100,  # Default price
-                                'prescription_required': True,
-                                'indication': 'From inventory',
-                                'dosage': 'As prescribed',
-                                'custom': True
-                            }
+                from modules.separate_inventory import get_medicine_list
+                medicine_inventory = get_medicine_list()
+                for med_name, stock in medicine_inventory.items():
+                    if med_name not in filtered_rx_medicines:
+                        filtered_rx_medicines[med_name] = {
+                            'category': 'Inventory',
+                            'type': 'Medicine',
+                            'price': 100,
+                            'prescription_required': True,
+                            'indication': f'Stock: {stock}',
+                            'dosage': 'As prescribed',
+                            'custom': True
+                        }
             except:
                 pass
             
@@ -305,73 +302,94 @@ def main():
             if filtered_rx_medicines:
                 st.markdown(f"**Available Medicines ({len(filtered_rx_medicines)} found):**")
                 
-                # Multi-select for medicines
+                # Medicine selection with search
+                search_med = st.text_input("🔍 Search medicines", key="search_rx_med")
+                
+                # Filter by search
+                if search_med:
+                    display_medicines = {k: v for k, v in filtered_rx_medicines.items() 
+                                       if search_med.lower() in k.lower()}
+                else:
+                    display_medicines = dict(list(filtered_rx_medicines.items())[:20])  # Show first 20
+                
                 selected_rx_medicines = st.multiselect(
-                    "Select medicines for prescription:",
-                    options=list(filtered_rx_medicines.keys()),
-                    default=st.session_state.get('selected_medicines', {}).keys() if 'selected_medicines' in st.session_state else [],
+                    f"Select medicines ({len(display_medicines)} shown):",
+                    options=list(display_medicines.keys()),
+                    default=[k for k in st.session_state.get('selected_medicines', {}).keys() if k in display_medicines],
                     key="rx_medicine_multiselect"
                 )
                 
-                # Quantity and dosage for selected medicines
+                # Enhanced medicine details with doctor controls
                 if selected_rx_medicines:
-                    st.markdown("**Medicine Details:**")
+                    st.markdown("**💊 Medicine Prescription Details:**")
                     medicine_details = {}
                     
                     for med_name in selected_rx_medicines:
-                        if med_name in filtered_rx_medicines:
-                            med_data = filtered_rx_medicines[med_name]
+                        med_data = display_medicines.get(med_name, {})
+                        
+                        with st.expander(f"📋 {med_name} - ₹{med_data.get('price', 100)}"):
+                            col1, col2, col3, col4 = st.columns(4)
                             
-                            with st.expander(f"📋 {med_name} - ₹{med_data['price']}"):
-                                col_qty, col_dosage, col_duration = st.columns(3)
-                                
-                                with col_qty:
-                                    qty = st.number_input(f"Quantity", min_value=1, max_value=10, value=1, key=f"qty_{med_name}")
-                                
-                                with col_dosage:
-                                    # Dosage options
-                                    dosage_options = [
-                                        "1 drop twice daily", "2 drops twice daily", "1 drop thrice daily",
-                                        "1 tablet daily", "1 tablet twice daily", "1 capsule daily",
-                                        "Apply twice daily", "As needed", "Custom"
-                                    ]
-                                    
-                                    dosage_mode = st.selectbox(f"Dosage", ["Select", "Custom"], key=f"dosage_mode_{med_name}")
-                                    
-                                    if dosage_mode == "Select":
-                                        custom_dosage = st.selectbox(f"Select Dosage", dosage_options, key=f"dosage_select_{med_name}")
-                                    else:
-                                        custom_dosage = st.text_input(f"Custom Dosage", 
-                                                                     value=med_data.get('dosage', ''), 
-                                                                     key=f"dosage_{med_name}")
-                                
-                                with col_duration:
-                                    duration = st.selectbox(f"Duration", 
-                                                          ["3 days", "5 days", "7 days", "10 days", "14 days", "1 month", "Custom"], 
-                                                          key=f"duration_{med_name}")
-                                    if duration == "Custom":
-                                        custom_duration = st.text_input(f"Custom Duration", key=f"custom_duration_{med_name}")
-                                        duration = custom_duration if custom_duration else "As needed"
-                                
-                                # Display medicine info
-                                st.info(f"**Type:** {med_data['type']} | **Category:** {med_data['category']} | **Prescription Required:** {'Yes' if med_data['prescription_required'] else 'No'}")
-                                st.info(f"**Indication:** {med_data['indication']}")
-                                
-                                medicine_details[med_name] = {
-                                    'quantity': qty,
-                                    'dosage': custom_dosage,
-                                    'duration': duration,
-                                    'price': med_data['price'],
-                                    'total_cost': med_data['price'] * qty
-                                }
+                            with col1:
+                                qty = st.number_input("Quantity", min_value=1, max_value=20, value=1, key=f"qty_{hash(med_name)}")
+                            
+                            with col2:
+                                dosage_options = [
+                                    "1 drop in each eye", "2 drops in each eye", "1 drop twice daily",
+                                    "1 tablet daily", "1 tablet twice daily", "1 capsule daily",
+                                    "Apply thin layer", "As needed"
+                                ]
+                                dosage = st.selectbox("Dosage", ["Custom"] + dosage_options, key=f"dosage_{hash(med_name)}")
+                                if dosage == "Custom":
+                                    dosage = st.text_input("Custom Dosage", value=med_data.get('dosage', ''), key=f"custom_dosage_{hash(med_name)}")
+                            
+                            with col3:
+                                timing_options = ["Morning", "Evening", "Morning & Evening", "After meals", "Before meals", "As needed"]
+                                timing = st.selectbox("Timing", timing_options, key=f"timing_{hash(med_name)}")
+                            
+                            with col4:
+                                duration = st.selectbox("Duration", 
+                                    ["3 days", "5 days", "7 days", "10 days", "14 days", "1 month", "Custom"], 
+                                    key=f"duration_{hash(med_name)}")
+                                if duration == "Custom":
+                                    duration = st.text_input("Custom Duration", key=f"custom_duration_{hash(med_name)}")
+                            
+                            # Doctor's notes
+                            notes = st.text_area("Doctor's Notes (Optional)", 
+                                placeholder="Special instructions, warnings, or additional notes...",
+                                key=f"notes_{hash(med_name)}", height=60)
+                            
+                            # Medicine info
+                            col_info1, col_info2 = st.columns(2)
+                            with col_info1:
+                                st.info(f"**Type:** {med_data.get('type', 'Medicine')} | **Category:** {med_data.get('category', 'General')}")
+                            with col_info2:
+                                st.info(f"**Indication:** {med_data.get('indication', 'As prescribed')}")
+                            
+                            medicine_details[med_name] = {
+                                'quantity': qty,
+                                'dosage': dosage,
+                                'timing': timing,
+                                'duration': duration,
+                                'notes': notes,
+                                'price': med_data.get('price', 100),
+                                'total_cost': med_data.get('price', 100) * qty
+                            }
                     
                     # Store medicine details in session
                     st.session_state['selected_medicines'] = {med: medicine_details[med]['quantity'] for med in medicine_details}
                     st.session_state['medicine_details'] = medicine_details
                     
-                    # Show total medicine cost
+                    # Show total medicine cost and summary
                     total_med_cost = sum([details['total_cost'] for details in medicine_details.values()])
                     st.success(f"**Total Medicine Cost: ₹{total_med_cost:,}**")
+                    
+                    # Quick summary
+                    with st.expander("📋 Prescription Summary"):
+                        for med_name, details in medicine_details.items():
+                            st.write(f"• **{med_name}**: {details['dosage']} | {details.get('timing', '')} | {details['duration']}")
+                            if details.get('notes'):
+                                st.write(f"  📝 *{details['notes']}*")
             
 
             
@@ -457,9 +475,9 @@ def main():
             
             if st.button("➕ Add Custom Medicine", key="add_custom_med_outside"):
                 if custom_med_name:
-                    # Add to inventory
-                    from modules.inventory_utils import add_or_update_inventory
-                    add_or_update_inventory(custom_med_name, custom_med_qty)
+                    # Add to separate medicine inventory
+                    from modules.separate_inventory import add_medicine_inventory
+                    add_medicine_inventory(custom_med_name, custom_med_qty)
                     
                     # Add to custom medicine database
                     if 'custom_medicines' not in st.session_state:
@@ -470,30 +488,13 @@ def main():
                         'type': custom_med_type,
                         'price': custom_med_price,
                         'prescription_required': True,
-                        'indication': 'As prescribed by doctor',
+                        'indication': 'Custom medicine added by doctor',
                         'dosage': custom_med_dosage,
                         'usage': custom_med_usage,
                         'custom': True
                     }
                     
-                    # Add to current prescription
-                    if 'selected_medicines' not in st.session_state:
-                        st.session_state['selected_medicines'] = {}
-                    if 'medicine_details' not in st.session_state:
-                        st.session_state['medicine_details'] = {}
-                    
-                    st.session_state['selected_medicines'][custom_med_name] = custom_med_qty
-                    st.session_state['medicine_details'][custom_med_name] = {
-                        'quantity': custom_med_qty,
-                        'dosage': custom_med_dosage,
-                        'duration': 'As prescribed',
-                        'price': custom_med_price,
-                        'total_cost': custom_med_price * custom_med_qty,
-                        'type': custom_med_type,
-                        'usage': custom_med_usage,
-                        'custom': True
-                    }
-                    st.success(f"✅ Added to inventory & prescription: {custom_med_name}")
+                    st.success(f"✅ Added to medicine inventory: {custom_med_name} (Qty: {custom_med_qty})")
                     st.rerun()
                 else:
                     st.warning("⚠️ Please enter medicine name")
