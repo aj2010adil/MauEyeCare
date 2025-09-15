@@ -1616,6 +1616,7 @@ Prescribed Items:
             patients = db.get_patients()
             if patients:
                 # Create backup data
+                import datetime
                 backup_data = {
                     'backup_date': datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat(),
                     'total_patients': len(patients),
