@@ -303,11 +303,23 @@ def main():
             if filtered_rx_medicines:
                 st.markdown(f"**Available Medicines ({len(filtered_rx_medicines)} found):**")
                 
-                # Show first 20 medicines
-                display_medicines = dict(list(filtered_rx_medicines.items())[:20])
+                # Pagination for medicines
+                medicines_per_page = 50
+                total_medicines = len(filtered_rx_medicines)
+                
+                if total_medicines > medicines_per_page:
+                    page = st.selectbox(f"Page (Total: {total_medicines} medicines)", 
+                                       range(1, (total_medicines // medicines_per_page) + 2),
+                                       key="medicine_page")
+                    start_idx = (page - 1) * medicines_per_page
+                    end_idx = start_idx + medicines_per_page
+                    display_medicines = dict(list(filtered_rx_medicines.items())[start_idx:end_idx])
+                    st.info(f"Showing medicines {start_idx + 1}-{min(end_idx, total_medicines)} of {total_medicines}")
+                else:
+                    display_medicines = filtered_rx_medicines
                 
                 selected_rx_medicines = st.multiselect(
-                    f"Select medicines ({len(display_medicines)} shown):",
+                    f"Select medicines ({len(display_medicines)} shown of {total_medicines} total):",
                     options=list(display_medicines.keys()),
                     default=[k for k in st.session_state.get('selected_medicines', {}).keys() if k in display_medicines],
                     key="rx_medicine_multiselect"
@@ -1386,6 +1398,7 @@ Prescribed Items:
                     material = st.selectbox("Material", ["Plastic", "Metal", "Titanium", "Acetate", "TR90", "Stainless Steel"])
                     color = st.selectbox("Color", ["Black", "Brown", "Silver", "Gold", "Blue", "Red", "Clear", "Tortoise"])
                     size = st.selectbox("Size", ["Small", "Medium", "Large", "XL"])
+                    image_url = st.text_input("Image URL (Optional)", placeholder="https://example.com/image.jpg")
                 
                 if st.button("💾 Update Stock"):
                     if item_name:
@@ -1394,7 +1407,7 @@ Prescribed Items:
                             add_medicine_inventory(item_name, quantity, price, category, med_type)
                             st.success(f"✅ Updated medicine: {item_name} = {quantity} units (₹{price}, {category}, {med_type})")
                         else:
-                            add_spectacle_inventory(item_name, quantity, price, brand, model, frame_type, material, color, size)
+                            add_spectacle_inventory(item_name, quantity, price, brand, model, frame_type, material, color, size, image_url)
                             st.success(f"✅ Updated spectacle: {item_name} = {quantity} units (₹{price}, {brand} {model})")
                         st.rerun()
             
@@ -1444,7 +1457,8 @@ Prescribed Items:
                                         material = str(row.get('Material', 'Plastic')).strip() if pd.notna(row.get('Material')) else 'Plastic'
                                         color = str(row.get('Color', 'Black')).strip() if pd.notna(row.get('Color')) else 'Black'
                                         size = str(row.get('Size', 'Medium')).strip() if pd.notna(row.get('Size')) else 'Medium'
-                                        add_spectacle_inventory(item, stock, price, brand, model, frame_type, material, color, size)
+                                        image_url = str(row.get('Image_URL', '')).strip() if pd.notna(row.get('Image_URL')) else ''
+                                        add_spectacle_inventory(item, stock, price, brand, model, frame_type, material, color, size, image_url)
                                     
                                     imported_count += 1
                                 
@@ -1467,6 +1481,7 @@ Prescribed Items:
                     'Color': ['Gold', 'Clear', 'Black'],
                     'Size': ['Medium', 'N/A', 'Large'],
                     'QR_Code': ['SP0001', 'MD0001', 'SP0002'],
+                    'Image_URL': ['https://example.com/rayban.jpg', '', 'https://example.com/oakley.jpg'],
                     'Category': ['Spectacle', 'Medicine', 'Spectacle'],
                     'Type': ['Sunglasses', 'Eye Drops', 'Sunglasses']
                 })
@@ -1607,6 +1622,7 @@ Prescribed Items:
                                 "Color": data.get('color', 'Black'),
                                 "Size": data.get('size', 'Medium'),
                                 "QR_Code": data.get('qr_code', 'N/A'),
+                                "Image_URL": data.get('image_url', ''),
                                 "Category": "Spectacle",
                                 "Type": "Eyewear",
                                 "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"
@@ -1624,6 +1640,7 @@ Prescribed Items:
                                 "Color": "Black",
                                 "Size": "Medium",
                                 "QR_Code": "N/A",
+                                "Image_URL": "",
                                 "Category": "Spectacle",
                                 "Type": "Eyewear",
                                 "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"
@@ -1711,7 +1728,7 @@ Prescribed Items:
                                 from modules.separate_inventory import add_spectacle_inventory
                                 if isinstance(spec_inventory[item], dict):
                                     spec_data = spec_inventory[item]
-                                    add_spectacle_inventory(item, stock + 1, spec_data.get('price', 5000), spec_data.get('brand', 'Generic'), spec_data.get('model', 'Standard'), spec_data.get('frame_type', 'Full Rim'), spec_data.get('material', 'Plastic'), spec_data.get('color', 'Black'), spec_data.get('size', 'Medium'))
+                                    add_spectacle_inventory(item, stock + 1, spec_data.get('price', 5000), spec_data.get('brand', 'Generic'), spec_data.get('model', 'Standard'), spec_data.get('frame_type', 'Full Rim'), spec_data.get('material', 'Plastic'), spec_data.get('color', 'Black'), spec_data.get('size', 'Medium'), spec_data.get('image_url', ''))
                                 else:
                                     add_spectacle_inventory(item, stock + 1)
                             st.rerun()

@@ -47,7 +47,7 @@ def save_medicine_inventory(inventory):
     except:
         pass
 
-def add_spectacle_inventory(item_name, quantity, price=5000, brand="Generic", model="Standard", frame_type="Full Rim", material="Plastic", color="Black", size="Medium"):
+def add_spectacle_inventory(item_name, quantity, price=5000, brand="Generic", model="Standard", frame_type="Full Rim", material="Plastic", color="Black", size="Medium", image_url=""):
     """Add or update spectacle inventory with detailed information"""
     inventory = load_spectacle_inventory()
     # Generate simple QR code (SKU format)
@@ -62,6 +62,7 @@ def add_spectacle_inventory(item_name, quantity, price=5000, brand="Generic", mo
         'color': color,
         'size': size,
         'qr_code': qr_code,
+        'image_url': image_url,
         'date_added': datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat(),
         'last_updated': datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat()
     }
