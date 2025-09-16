@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-MauEyeCare - Complete AI-Powered Eye Care System
-Main Application File
+MauEyeCare - Professional Eye Care Hospital Management System
+Google Sheets Integration for Real-time Data Management
 """
 
 import streamlit as st
@@ -17,8 +17,9 @@ from io import BytesIO
 # Add current directory to path
 sys.path.append(os.path.dirname(__file__))
 
-# Core imports - optimized for speed
-import db
+# Core imports
+from modules.google_sheets_manager import sheets_manager
+from modules.image_manager import image_manager
 
 # Lazy imports for better performance
 @st.cache_data
@@ -31,33 +32,17 @@ def get_medicine_database():
     from modules.comprehensive_medicine_database import COMPREHENSIVE_MEDICINE_DATABASE
     return COMPREHENSIVE_MEDICINE_DATABASE
 
-# Initialize database
-db.init_db()
-
 @st.cache_data
-def populate_inventory():
-    """Populate inventory with spectacles and medicines - cached for speed"""
-    from modules.separate_inventory import add_medicine_inventory, add_spectacle_inventory
-    import random
-    
-    COMPREHENSIVE_SPECTACLE_DATABASE = get_spectacle_database()
-    COMPREHENSIVE_MEDICINE_DATABASE = get_medicine_database()
-    
-    # Add spectacles (limited for speed)
-    for i, (item_name, item_data) in enumerate(COMPREHENSIVE_SPECTACLE_DATABASE.items()):
-        if i >= 50:  # Limit to first 50 for speed
-            break
-        stock = random.randint(5, 25)
-        add_spectacle_inventory(item_name, stock)
-    
-    # Add medicines (limited for speed)
-    for i, (item_name, item_data) in enumerate(COMPREHENSIVE_MEDICINE_DATABASE.items()):
-        if i >= 50:  # Limit to first 50 for speed
-            break
-        stock = random.randint(10, 50)
-        add_medicine_inventory(item_name, stock, item_data.get('price', 100), item_data.get('category', 'Medicine'), 'Medicine')
-    
-    return True
+def get_sheet_data():
+    """Load data from Google Sheets"""
+    try:
+        medicines = sheets_manager.get_medicines()
+        spectacles = sheets_manager.get_spectacles()
+        patients = sheets_manager.get_patients()
+        return medicines, spectacles, patients
+    except Exception as e:
+        st.error(f"Error loading Google Sheets data: {str(e)}")
+        return [], [], []
 
 def main():
     st.set_page_config(
@@ -67,17 +52,18 @@ def main():
         initial_sidebar_state="expanded"
     )
     
-    st.title("👁️ MauEyeCare - AI Eye Care System")
-    st.markdown("*Complete AI-Powered Eye Care with Inventory Management*")
+    st.title("🏥 MauEyeCare - Professional Eye Care Hospital")
+    st.markdown("*Google Sheets Integrated Hospital Management System*")
     
     # Sidebar
     with st.sidebar:
         st.header("🔧 System Controls")
         
-        if st.button("🔄 Load Complete Database"):
-            with st.spinner("Loading database (optimized)..."):
-                populate_inventory()
-            st.success(f"✅ Loaded 50 spectacles and 50 medicines for faster performance!")
+        if st.button("🔄 Sync Google Sheets"):
+            with st.spinner("Syncing with Google Sheets..."):
+                get_sheet_data.clear()
+                medicines, spectacles, patients = get_sheet_data()
+            st.success(f"✅ Synced: {len(medicines)} medicines, {len(spectacles)} spectacles, {len(patients)} patients!")
         
         st.markdown("---")
         st.markdown("**📊 Database Stats:**")
@@ -89,15 +75,13 @@ def main():
         
         with col2:
             try:
-                from modules.separate_inventory import load_medicine_inventory, load_spectacle_inventory
-                med_inv = load_medicine_inventory()
-                spec_inv = load_spectacle_inventory()
-                total_items = len(med_inv) + len(spec_inv)
+                medicines, spectacles, patients = get_sheet_data()
+                total_items = len(medicines) + len(spectacles)
                 st.metric("📦 Inventory Items", total_items)
+                st.metric("👥 Patients", len(patients))
             except:
                 st.metric("📦 Inventory Items", 0)
-            patients = db.get_patients()
-            st.metric("👥 Patients", len(patients))
+                st.metric("👥 Patients", 0)
         
         # Current patient info
         if 'patient_name' in st.session_state and st.session_state['patient_name']:
@@ -107,49 +91,29 @@ def main():
             st.info(f"Age: {st.session_state.get('age', 'N/A')}")
             st.info(f"Gender: {st.session_state.get('gender', 'N/A')}")
         
-        # WhatsApp & Google Drive Status
+        # Google Sheets Status
         st.markdown("---")
-        st.markdown("**🔗 Integration Status:**")
+        st.markdown("**📊 Google Sheets Status:**")
         
-        # Test WhatsApp (lazy loaded)
         try:
-            from modules.whatsapp_utils import test_whatsapp_connection
-            whatsapp_status = test_whatsapp_connection()
-        except ImportError:
-            whatsapp_status = {'success': False, 'demo': True}
-        
-        if whatsapp_status['success']:
-            if whatsapp_status.get('demo'):
-                st.warning("📱 WhatsApp: Demo Mode")
+            medicines, spectacles, patients = get_sheet_data()
+            if medicines or spectacles or patients:
+                st.success("✅ Google Sheets: Connected")
+                st.info(f"Sheet ID: ...{sheets_manager.sheet_id[-8:]}")
             else:
-                st.success("📱 WhatsApp: Connected")
-        else:
-            st.error("📱 WhatsApp: Not Configured")
-        
-        # Test Google Drive (lazy loaded)
-        try:
-            from modules.google_drive_integration import drive_integrator
-            drive_status = drive_integrator.test_drive_connection()
-            if drive_status['success']:
-                if drive_status.get('demo'):
-                    st.warning("☁️ Google Drive: Demo Mode")
-                else:
-                    st.success("☁️ Google Drive: Connected")
-            else:
-                st.error("☁️ Google Drive: Not Configured")
-        except Exception as e:
-            st.error(f"☁️ Google Drive: Error - {str(e)}")
+                st.warning("⚠️ Google Sheets: No Data")
+        except:
+            st.error("❌ Google Sheets: Connection Error")
 
     # Main tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "👥 Patient Registration", 
         "👓 Spectacle Gallery", 
-        "📸 AI Camera Analysis",
         "📋 Patient History",
-        "📤 Prescription & Sharing",
+        "📤 Prescription Generator",
         "📦 Inventory Management",
-        "🔧 Clinic Settings",
-        "📊 Analytics"
+        "📊 Hospital Analytics",
+        "📊 Google Sheets Setup"
     ])
 
     # --- Patient Registration Tab ---
@@ -579,7 +543,7 @@ def main():
 
 
 
-    # --- AI Camera Analysis Tab ---
+    # --- Patient History Tab ---
     with tab3:
         st.header("📸 AI Camera Analysis")
         
@@ -658,7 +622,7 @@ def main():
             st.warning("⚠️ **Patient Required**")
             st.info("Please go to the **'Patient Registration'** tab first and enter patient information.")
 
-    # --- Patient History Tab ---
+    # --- Prescription Generator Tab ---
     with tab4:
         st.header("📋 Patient History & Records")
         
@@ -690,7 +654,7 @@ def main():
                     })
                     st.success(f"Selected patient: {p[1]}")
 
-    # --- Prescription Generator Tab ---
+    # --- Inventory Management Tab ---
     with tab5:
         st.header("📄 Prescription Generator")
         
@@ -1347,7 +1311,7 @@ Prescribed Items:
         else:
             st.warning("⚠️ Please select a patient first")
 
-    # --- Inventory Management Tab ---
+    # --- Hospital Analytics Tab ---
     with tab6:
         st.header("📦 Inventory Management")
         
@@ -1739,12 +1703,87 @@ Prescribed Items:
             st.error("😱 Inventory system not available")
             st.info("Please load the database first using the sidebar button.")
     
-    # --- Integration Setup Tab ---
+    # --- Google Sheets Setup Tab ---
     with tab7:
-        st.header("🔧 Clinic Settings")
+        st.header("📊 Google Sheets Integration")
         
-        # Data Backup & Security
-        st.subheader("🔒 Data Security & Backup")
+        sheets_manager.show_sheet_instructions()
+        
+        st.markdown("---")
+        
+        # Pending data sync
+        st.subheader("🔄 Data Sync Status")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            pending_patients = len(st.session_state.get('pending_patients', []))
+            st.metric("Pending Patients", pending_patients)
+            if pending_patients > 0:
+                if st.button("📤 Export Patients CSV"):
+                    df = pd.DataFrame(st.session_state['pending_patients'])
+                    csv = df.to_csv(index=False)
+                    st.download_button(
+                        "Download Patients CSV",
+                        csv,
+                        "patients_export.csv",
+                        "text/csv"
+                    )
+        
+        with col2:
+            pending_prescriptions = len(st.session_state.get('pending_prescriptions', []))
+            st.metric("Pending Prescriptions", pending_prescriptions)
+            if pending_prescriptions > 0:
+                if st.button("📤 Export Prescriptions CSV"):
+                    df = pd.DataFrame(st.session_state['pending_prescriptions'])
+                    csv = df.to_csv(index=False)
+                    st.download_button(
+                        "Download Prescriptions CSV",
+                        csv,
+                        "prescriptions_export.csv",
+                        "text/csv"
+                    )
+        
+        with col3:
+            custom_medicines = len(st.session_state.get('custom_medicines', []))
+            st.metric("Custom Medicines", custom_medicines)
+            if custom_medicines > 0:
+                if st.button("📤 Export Medicines CSV"):
+                    df = pd.DataFrame(st.session_state['custom_medicines'])
+                    csv = df.to_csv(index=False)
+                    st.download_button(
+                        "Download Medicines CSV",
+                        csv,
+                        "medicines_export.csv",
+                        "text/csv"
+                    )
+        
+        st.markdown("---")
+        
+        # Image upload for spectacles
+        st.subheader("🖼️ Spectacle Image Management")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**Upload Spectacle Image**")
+            spectacle_name = st.text_input("Spectacle Name", placeholder="Enter spectacle name")
+            uploaded_image = image_manager.image_uploader_widget("spectacle_image", "Upload Spectacle Image")
+            
+            if uploaded_image and spectacle_name:
+                if st.button("Save Spectacle Image"):
+                    image_path = image_manager.upload_image(uploaded_image, "spectacle")
+                    if image_path:
+                        st.success(f"Image saved: {image_path}")
+                        st.info("Add this path to your Google Sheets spectacle data")
+        
+        with col2:
+            st.markdown("**Image Storage Info**")
+            st.info("💾 Images are stored locally in 'uploaded_images' folder")
+            st.info("🔗 Add image paths to Google Sheets for display")
+            st.info("📊 Use relative paths like 'uploaded_images/spectacle_20241201_143022_image.jpg'")
+        
+
         
         col1, col2 = st.columns(2)
         
@@ -1930,8 +1969,7 @@ Prescribed Items:
             st.markdown("- ✅ Prescription generation")
             st.markdown("- ✅ Download options")
     
-    # --- Analytics Tab ---
-    with tab8:
+
         st.header("📊 Professional Analytics")
         
         visit_data = st.session_state.get('visit_analytics', [])
