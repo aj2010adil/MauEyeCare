@@ -1343,7 +1343,13 @@ Prescribed Items:
             from modules.separate_inventory import load_medicine_inventory, load_spectacle_inventory
             med_inventory = load_medicine_inventory()
             spec_inventory = load_spectacle_inventory()
-            inventory = {**med_inventory, **spec_inventory}  # Combine for stats
+            
+            # Combine inventories with proper stock extraction
+            inventory = {}
+            for name, data in med_inventory.items():
+                inventory[name] = data.get('quantity', 0) if isinstance(data, dict) else data
+            for name, data in spec_inventory.items():
+                inventory[name] = data.get('quantity', 0) if isinstance(data, dict) else data
             
             # Stats
             col1, col2, col3 = st.columns(3)
@@ -1372,6 +1378,14 @@ Prescribed Items:
                     price = st.number_input("Price (₹)", min_value=0, value=100)
                     category = st.selectbox("Category", ["Antibiotic", "Steroid", "Lubricant", "Antihistamine", "NSAID", "Vitamin", "Supplement", "Other"])
                     med_type = st.selectbox("Type", ["Eye Drops", "Tablet", "Capsule", "Ointment", "Gel", "Syrup", "Injection"])
+                else:
+                    price = st.number_input("Price (₹)", min_value=0, value=5000)
+                    brand = st.text_input("Brand", value="Generic")
+                    model = st.text_input("Model", value="Standard")
+                    frame_type = st.selectbox("Frame Type", ["Full Rim", "Half Rim", "Rimless", "Cat Eye", "Aviator", "Round", "Square"])
+                    material = st.selectbox("Material", ["Plastic", "Metal", "Titanium", "Acetate", "TR90", "Stainless Steel"])
+                    color = st.selectbox("Color", ["Black", "Brown", "Silver", "Gold", "Blue", "Red", "Clear", "Tortoise"])
+                    size = st.selectbox("Size", ["Small", "Medium", "Large", "XL"])
                 
                 if st.button("💾 Update Stock"):
                     if item_name:
@@ -1380,8 +1394,8 @@ Prescribed Items:
                             add_medicine_inventory(item_name, quantity, price, category, med_type)
                             st.success(f"✅ Updated medicine: {item_name} = {quantity} units (₹{price}, {category}, {med_type})")
                         else:
-                            add_spectacle_inventory(item_name, quantity)
-                            st.success(f"✅ Updated spectacle: {item_name} = {quantity} units")
+                            add_spectacle_inventory(item_name, quantity, price, brand, model, frame_type, material, color, size)
+                            st.success(f"✅ Updated spectacle: {item_name} = {quantity} units (₹{price}, {brand} {model})")
                         st.rerun()
             
             with col2:
@@ -1424,7 +1438,13 @@ Prescribed Items:
                                         add_medicine_inventory(item, stock, price, category, item_type)
                                     else:
                                         from modules.separate_inventory import add_spectacle_inventory
-                                        add_spectacle_inventory(item, stock)
+                                        brand = str(row.get('Brand', 'Generic')).strip() if pd.notna(row.get('Brand')) else 'Generic'
+                                        model = str(row.get('Model', 'Standard')).strip() if pd.notna(row.get('Model')) else 'Standard'
+                                        frame_type = str(row.get('Frame_Type', 'Full Rim')).strip() if pd.notna(row.get('Frame_Type')) else 'Full Rim'
+                                        material = str(row.get('Material', 'Plastic')).strip() if pd.notna(row.get('Material')) else 'Plastic'
+                                        color = str(row.get('Color', 'Black')).strip() if pd.notna(row.get('Color')) else 'Black'
+                                        size = str(row.get('Size', 'Medium')).strip() if pd.notna(row.get('Size')) else 'Medium'
+                                        add_spectacle_inventory(item, stock, price, brand, model, frame_type, material, color, size)
                                     
                                     imported_count += 1
                                 
@@ -1440,7 +1460,14 @@ Prescribed Items:
                     'Item': ['Ray-Ban Aviator', 'Refresh Tears Eye Drops', 'Oakley Holbrook'],
                     'Stock': [15, 25, 10],
                     'Price': [5000, 150, 8000],
-                    'Category': ['Spectacle', 'Lubricant', 'Spectacle'],
+                    'Brand': ['Ray-Ban', 'Refresh', 'Oakley'],
+                    'Model': ['Aviator Classic', 'Eye Drops', 'Holbrook'],
+                    'Frame_Type': ['Aviator', 'N/A', 'Square'],
+                    'Material': ['Metal', 'N/A', 'Plastic'],
+                    'Color': ['Gold', 'Clear', 'Black'],
+                    'Size': ['Medium', 'N/A', 'Large'],
+                    'QR_Code': ['SP0001', 'MD0001', 'SP0002'],
+                    'Category': ['Spectacle', 'Medicine', 'Spectacle'],
                     'Type': ['Sunglasses', 'Eye Drops', 'Sunglasses']
                 })
                 csv = sample_data.to_csv(index=False)
@@ -1565,16 +1592,42 @@ Prescribed Items:
                             }
                         export_data.append(row)
                     
-                    # Process spectacle inventory
-                    for item, stock in spec_inventory.items():
-                        row = {
-                            "Item": item, 
-                            "Stock": stock, 
-                            "Price": 5000,
-                            "Category": "Spectacle",
-                            "Type": "Eyewear",
-                            "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"
-                        }
+                    # Process spectacle inventory with detailed fields
+                    for item, data in spec_inventory.items():
+                        if isinstance(data, dict):
+                            stock = data.get('quantity', 0)
+                            row = {
+                                "Item": item,
+                                "Stock": stock,
+                                "Price": data.get('price', 5000),
+                                "Brand": data.get('brand', 'Generic'),
+                                "Model": data.get('model', 'Standard'),
+                                "Frame_Type": data.get('frame_type', 'Full Rim'),
+                                "Material": data.get('material', 'Plastic'),
+                                "Color": data.get('color', 'Black'),
+                                "Size": data.get('size', 'Medium'),
+                                "QR_Code": data.get('qr_code', 'N/A'),
+                                "Category": "Spectacle",
+                                "Type": "Eyewear",
+                                "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"
+                            }
+                        else:
+                            stock = data if isinstance(data, int) else 0
+                            row = {
+                                "Item": item,
+                                "Stock": stock,
+                                "Price": 5000,
+                                "Brand": "Generic",
+                                "Model": "Standard",
+                                "Frame_Type": "Full Rim",
+                                "Material": "Plastic",
+                                "Color": "Black",
+                                "Size": "Medium",
+                                "QR_Code": "N/A",
+                                "Category": "Spectacle",
+                                "Type": "Eyewear",
+                                "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"
+                            }
                         export_data.append(row)
                     
                     df = pd.DataFrame(export_data)
@@ -1618,6 +1671,10 @@ Prescribed Items:
                             med_data = med_inventory[item]
                             st.write(f"**{item}**")
                             st.caption(f"{med_data.get('type', 'Medicine')} | ₹{med_data.get('price', 100)} | {med_data.get('category', 'General')}")
+                        elif item in spec_inventory and isinstance(spec_inventory[item], dict):
+                            spec_data = spec_inventory[item]
+                            st.write(f"**{item}**")
+                            st.caption(f"{spec_data.get('brand', 'Generic')} {spec_data.get('model', 'Standard')} | ₹{spec_data.get('price', 5000)} | {spec_data.get('qr_code', 'N/A')}")
                         else:
                             st.write(item)
                     
@@ -1634,6 +1691,9 @@ Prescribed Items:
                         if item in med_inventory and isinstance(med_inventory[item], dict):
                             price = med_inventory[item].get('price', 100)
                             st.caption(f"₹{price}")
+                        elif item in spec_inventory and isinstance(spec_inventory[item], dict):
+                            price = spec_inventory[item].get('price', 5000)
+                            st.caption(f"₹{price}")
                         else:
                             st.caption('₹100')
                     
@@ -1649,7 +1709,11 @@ Prescribed Items:
                                     add_medicine_inventory(item, stock + 1)
                             elif item in spec_inventory:
                                 from modules.separate_inventory import add_spectacle_inventory
-                                add_spectacle_inventory(item, stock + 1)
+                                if isinstance(spec_inventory[item], dict):
+                                    spec_data = spec_inventory[item]
+                                    add_spectacle_inventory(item, stock + 1, spec_data.get('price', 5000), spec_data.get('brand', 'Generic'), spec_data.get('model', 'Standard'), spec_data.get('frame_type', 'Full Rim'), spec_data.get('material', 'Plastic'), spec_data.get('color', 'Black'), spec_data.get('size', 'Medium'))
+                                else:
+                                    add_spectacle_inventory(item, stock + 1)
                             st.rerun()
             else:
                 st.info("📦 No inventory items. Click 'Load Complete Database' in sidebar or import Excel file.")

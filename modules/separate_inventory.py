@@ -47,10 +47,24 @@ def save_medicine_inventory(inventory):
     except:
         pass
 
-def add_spectacle_inventory(item_name, quantity):
-    """Add or update spectacle inventory"""
+def add_spectacle_inventory(item_name, quantity, price=5000, brand="Generic", model="Standard", frame_type="Full Rim", material="Plastic", color="Black", size="Medium"):
+    """Add or update spectacle inventory with detailed information"""
     inventory = load_spectacle_inventory()
-    inventory[item_name] = quantity
+    # Generate simple QR code (SKU format)
+    qr_code = f"SP{len(inventory)+1:04d}"
+    inventory[item_name] = {
+        'quantity': quantity,
+        'price': price,
+        'brand': brand,
+        'model': model,
+        'frame_type': frame_type,
+        'material': material,
+        'color': color,
+        'size': size,
+        'qr_code': qr_code,
+        'date_added': datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat(),
+        'last_updated': datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat()
+    }
     save_spectacle_inventory(inventory)
 
 def add_medicine_inventory(item_name, quantity, price=100, category="Medicine", medicine_type="Tablet"):
@@ -93,5 +107,21 @@ def reduce_spectacle_stock(item_name, quantity):
     """Reduce spectacle stock"""
     inventory = load_spectacle_inventory()
     if item_name in inventory:
-        inventory[item_name] = max(0, inventory[item_name] - quantity)
+        if isinstance(inventory[item_name], dict):
+            inventory[item_name]['quantity'] = max(0, inventory[item_name]['quantity'] - quantity)
+            inventory[item_name]['last_updated'] = datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat()
+        else:
+            inventory[item_name] = max(0, inventory[item_name] - quantity)
         save_spectacle_inventory(inventory)
+
+def get_spectacle_list():
+    """Get list of available spectacles from inventory"""
+    inventory = load_spectacle_inventory()
+    result = {}
+    for name, data in inventory.items():
+        if isinstance(data, dict):
+            if data.get('quantity', 0) > 0:
+                result[name] = data['quantity']
+        elif isinstance(data, int) and data > 0:
+            result[name] = data
+    return result
