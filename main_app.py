@@ -1457,10 +1457,50 @@ Prescribed Items:
                 st.markdown("**📤 Excel Export**")
                 
                 if inventory:
-                    df = pd.DataFrame([
-                        {"Item": item, "Stock": stock, "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"}
-                        for item, stock in inventory.items()
-                    ])
+                    # Create enhanced dataframe with medicine details
+                    from modules.separate_inventory import load_medicine_inventory, load_spectacle_inventory
+                    med_inventory = load_medicine_inventory()
+                    spec_inventory = load_spectacle_inventory()
+                    
+                    export_data = []
+                    
+                    # Process medicine inventory
+                    for item, data in med_inventory.items():
+                        if isinstance(data, dict):
+                            stock = data.get('quantity', 0)
+                            row = {
+                                "Item": item, 
+                                "Stock": stock, 
+                                "Price": data.get('price', 100),
+                                "Category": data.get('category', 'Medicine'),
+                                "Type": data.get('type', 'Medicine'),
+                                "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"
+                            }
+                        else:
+                            stock = data if isinstance(data, int) else 0
+                            row = {
+                                "Item": item, 
+                                "Stock": stock, 
+                                "Price": 100,
+                                "Category": "Medicine",
+                                "Type": "Medicine",
+                                "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"
+                            }
+                        export_data.append(row)
+                    
+                    # Process spectacle inventory
+                    for item, stock in spec_inventory.items():
+                        row = {
+                            "Item": item, 
+                            "Stock": stock, 
+                            "Price": 5000,
+                            "Category": "Spectacle",
+                            "Type": "Eyewear",
+                            "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"
+                        }
+                        export_data.append(row)
+                    
+                    df = pd.DataFrame(export_data)
                     
                     # Excel export with proper buffer handling
                     try:
@@ -1495,24 +1535,46 @@ Prescribed Items:
                 # CSV Export (always works)
                 if inventory:
                     # Create enhanced dataframe with medicine details
-                    from modules.separate_inventory import load_medicine_inventory
+                    from modules.separate_inventory import load_medicine_inventory, load_spectacle_inventory
                     med_inventory = load_medicine_inventory()
+                    spec_inventory = load_spectacle_inventory()
                     
                     export_data = []
-                    for item, stock in inventory.items():
-                        row = {"Item": item, "Stock": stock, "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"}
-                        
-                        # Add medicine details if available
-                        if item in med_inventory and isinstance(med_inventory[item], dict):
-                            med_data = med_inventory[item]
-                            row.update({
-                                "Price": med_data.get('price', 100),
-                                "Category": med_data.get('category', 'General'),
-                                "Type": med_data.get('type', 'Medicine')
-                            })
+                    
+                    # Process medicine inventory
+                    for item, data in med_inventory.items():
+                        if isinstance(data, dict):
+                            stock = data.get('quantity', 0)
+                            row = {
+                                "Item": item, 
+                                "Stock": stock, 
+                                "Price": data.get('price', 100),
+                                "Category": data.get('category', 'Medicine'),
+                                "Type": data.get('type', 'Medicine'),
+                                "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"
+                            }
                         else:
-                            row.update({"Price": 100, "Category": "General", "Type": "Item"})
-                        
+                            stock = data if isinstance(data, int) else 0
+                            row = {
+                                "Item": item, 
+                                "Stock": stock, 
+                                "Price": 100,
+                                "Category": "Medicine",
+                                "Type": "Medicine",
+                                "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"
+                            }
+                        export_data.append(row)
+                    
+                    # Process spectacle inventory
+                    for item, stock in spec_inventory.items():
+                        row = {
+                            "Item": item, 
+                            "Stock": stock, 
+                            "Price": 5000,
+                            "Category": "Spectacle",
+                            "Type": "Eyewear",
+                            "Status": "OUT" if stock == 0 else "LOW" if stock < 5 else "OK"
+                        }
                         export_data.append(row)
                     
                     df = pd.DataFrame(export_data)
