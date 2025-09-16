@@ -303,15 +303,8 @@ def main():
             if filtered_rx_medicines:
                 st.markdown(f"**Available Medicines ({len(filtered_rx_medicines)} found):**")
                 
-                # Medicine selection with search
-                search_med = st.text_input("🔍 Search medicines", key="search_rx_med")
-                
-                # Filter by search
-                if search_med:
-                    display_medicines = {k: v for k, v in filtered_rx_medicines.items() 
-                                       if search_med.lower() in k.lower()}
-                else:
-                    display_medicines = dict(list(filtered_rx_medicines.items())[:20])  # Show first 20
+                # Show first 20 medicines
+                display_medicines = dict(list(filtered_rx_medicines.items())[:20])
                 
                 selected_rx_medicines = st.multiselect(
                     f"Select medicines ({len(display_medicines)} shown):",
@@ -1471,6 +1464,7 @@ Prescribed Items:
                     
                     # Excel export with proper buffer handling
                     try:
+                        import datetime
                         output = BytesIO()
                         with pd.ExcelWriter(output, engine='openpyxl') as writer:
                             df.to_excel(writer, sheet_name='Inventory', index=False)
@@ -1487,6 +1481,7 @@ Prescribed Items:
                     except Exception as e:
                         st.error(f"Excel export failed: {str(e)}")
                         # Fallback to CSV
+                        import datetime
                         csv = df.to_csv(index=False)
                         timestamp = datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')
                         st.download_button(
@@ -1521,6 +1516,7 @@ Prescribed Items:
                         export_data.append(row)
                     
                     df = pd.DataFrame(export_data)
+                    import datetime
                     csv = df.to_csv(index=False)
                     timestamp = datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')
                     st.download_button(
