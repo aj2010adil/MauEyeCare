@@ -37,7 +37,7 @@ db.init_db()
 @st.cache_data
 def populate_inventory():
     """Populate inventory with spectacles and medicines - cached for speed"""
-    from modules.inventory_utils import add_or_update_inventory
+    from modules.separate_inventory import add_medicine_inventory, add_spectacle_inventory
     import random
     
     COMPREHENSIVE_SPECTACLE_DATABASE = get_spectacle_database()
@@ -48,14 +48,14 @@ def populate_inventory():
         if i >= 50:  # Limit to first 50 for speed
             break
         stock = random.randint(5, 25)
-        add_or_update_inventory(item_name, stock)
+        add_spectacle_inventory(item_name, stock)
     
     # Add medicines (limited for speed)
     for i, (item_name, item_data) in enumerate(COMPREHENSIVE_MEDICINE_DATABASE.items()):
         if i >= 50:  # Limit to first 50 for speed
             break
         stock = random.randint(10, 50)
-        add_or_update_inventory(item_name, stock)
+        add_medicine_inventory(item_name, stock, item_data.get('price', 100), item_data.get('category', 'Medicine'), 'Medicine')
     
     return True
 
@@ -89,9 +89,11 @@ def main():
         
         with col2:
             try:
-                from modules.inventory_utils import get_inventory_dict
-                inventory = get_inventory_dict()
-                st.metric("📦 Inventory Items", len(inventory))
+                from modules.separate_inventory import load_medicine_inventory, load_spectacle_inventory
+                med_inv = load_medicine_inventory()
+                spec_inv = load_spectacle_inventory()
+                total_items = len(med_inv) + len(spec_inv)
+                st.metric("📦 Inventory Items", total_items)
             except:
                 st.metric("📦 Inventory Items", 0)
             patients = db.get_patients()
@@ -1175,11 +1177,13 @@ Your eye care prescription has been prepared by Dr. Danish.
                             inventory_updates = []
                             
                             # Update medicine inventory
-                            from modules.inventory_utils import get_inventory_dict, reduce_inventory
+                            from modules.separate_inventory import load_medicine_inventory, reduce_medicine_stock
                             for med_name, quantity in selected_medicines.items():
-                                old_stock = get_inventory_dict().get(med_name, 0)
-                                reduce_inventory(med_name, quantity)
-                                new_stock = get_inventory_dict().get(med_name, 0)
+                                med_inv = load_medicine_inventory()
+                                old_stock = med_inv.get(med_name, {}).get('quantity', 0) if isinstance(med_inv.get(med_name), dict) else med_inv.get(med_name, 0)
+                                reduce_medicine_stock(med_name, quantity)
+                                med_inv = load_medicine_inventory()
+                                new_stock = med_inv.get(med_name, {}).get('quantity', 0) if isinstance(med_inv.get(med_name), dict) else med_inv.get(med_name, 0)
                                 inventory_updates.append({
                                     'item': med_name,
                                     'type': 'Medicine',
@@ -1189,10 +1193,13 @@ Your eye care prescription has been prepared by Dr. Danish.
                                 })
                             
                             # Update spectacle inventory
+                            from modules.separate_inventory import load_spectacle_inventory, reduce_spectacle_stock
                             for spec_name in selected_spectacles:
-                                old_stock = get_inventory_dict().get(spec_name, 0)
-                                reduce_inventory(spec_name, 1)
-                                new_stock = get_inventory_dict().get(spec_name, 0)
+                                spec_inv = load_spectacle_inventory()
+                                old_stock = spec_inv.get(spec_name, 0)
+                                reduce_spectacle_stock(spec_name, 1)
+                                spec_inv = load_spectacle_inventory()
+                                new_stock = spec_inv.get(spec_name, 0)
                                 inventory_updates.append({
                                     'item': spec_name,
                                     'type': 'Spectacle',
@@ -1506,11 +1513,10 @@ Prescribed Items:
                             row.update({
                                 "Price": med_data.get('price', 100),
                                 "Category": med_data.get('category', 'General'),
-                                "Type": med_data.get('type', 'Medicine'),
-                                "Date_Added": med_data.get('date_added', '').split('T')[0] if med_data.get('date_added') else 'N/A'
+                                "Type": med_data.get('type', 'Medicine')
                             })
                         else:
-                            row.update({"Price": 100, "Category": "General", "Type": "Item", "Date_Added": "N/A"})
+                            row.update({"Price": 100, "Category": "General", "Type": "Item"})
                         
                         export_data.append(row)
                     
@@ -1566,20 +1572,12 @@ Prescribed Items:
                             st.success(f"OK: {stock}")
                     
                     with col3:
-                        # Show date added if available
+                        # Show price if available
                         if item in med_inventory and isinstance(med_inventory[item], dict):
-                            date_added = med_inventory[item].get('date_added', '')
-                            if date_added:
-                                try:
-                                    from datetime import datetime
-                                    dt = datetime.fromisoformat(date_added.replace('Z', '+00:00'))
-                                    st.caption(dt.strftime('%d/%m/%Y'))
-                                except:
-                                    st.caption('N/A')
-                            else:
-                                st.caption('N/A')
+                            price = med_inventory[item].get('price', 100)
+                            st.caption(f"₹{price}")
                         else:
-                            st.caption('N/A')
+                            st.caption('₹100')
                     
                     with col4:
                         # Quick update buttons
@@ -1591,8 +1589,9 @@ Prescribed Items:
                                     add_medicine_inventory(item, stock + 1, med_data.get('price', 100), med_data.get('category', 'Medicine'), med_data.get('type', 'Tablet'))
                                 else:
                                     add_medicine_inventory(item, stock + 1)
-                            else:
-                                add_or_update_inventory(item, stock + 1)
+                            elif item in spec_inventory:
+                                from modules.separate_inventory import add_spectacle_inventory
+                                add_spectacle_inventory(item, stock + 1)
                             st.rerun()
             else:
                 st.info("📦 No inventory items. Click 'Load Complete Database' in sidebar or import Excel file.")
