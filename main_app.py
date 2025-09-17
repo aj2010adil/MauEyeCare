@@ -75,10 +75,19 @@ def main():
                 medicines, spectacles, patients = get_sheet_data()
                 total_items = len(medicines) + len(spectacles)
                 st.metric("📦 Inventory Items", total_items)
-                st.metric("👥 Patients", len(patients))
+                
+                # Show Google Sheets patients + pending patients
+                pending_patients = len(st.session_state.get('pending_patients', []))
+                total_patients = len(patients) + pending_patients
+                st.metric("👥 Total Patients", total_patients)
+                if pending_patients > 0:
+                    st.caption(f"{len(patients)} in Google Sheets + {pending_patients} pending")
             except:
+                pending_patients = len(st.session_state.get('pending_patients', []))
                 st.metric("📦 Inventory Items", 0)
-                st.metric("👥 Patients", 0)
+                st.metric("👥 Total Patients", pending_patients)
+                if pending_patients > 0:
+                    st.caption(f"0 in Google Sheets + {pending_patients} pending")
         
         # Current patient info
         if 'patient_name' in st.session_state and st.session_state['patient_name']:
@@ -424,16 +433,14 @@ def main():
                             break
                     if not found:
                         patient_id = len(patients) + 1
-                        # Add to pending patients for Google Sheets sync
-                        if 'pending_patients' not in st.session_state:
-                            st.session_state['pending_patients'] = []
-                        st.session_state['pending_patients'].append({
+                        # Create patient record with all demographics
+                        patient_record = {
                             'id': patient_id,
                             'name': patient_name,
                             'age': age,
                             'gender': gender,
                             'mobile': contact,
-                            'registration_date': datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat(),
+                            'registration_date': datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y-%m-%d %H:%M:%S'),
                             'issue': patient_issue,
                             'advice': advice,
                             'occupation': occupation,
@@ -445,7 +452,16 @@ def main():
                             'current_glasses': current_glasses,
                             'eye_strain': eye_strain,
                             'referral_source': referral_source
-                        })
+                        }
+                        
+                        # Add to pending patients (since we can't write directly to Google Sheets)
+                        if 'pending_patients' not in st.session_state:
+                            st.session_state['pending_patients'] = []
+                        st.session_state['pending_patients'].append(patient_record)
+                        
+                        # Show instructions for manual Google Sheets update
+                        st.info("📊 **Patient data saved locally.** To sync with Google Sheets, go to 'Google Sheets Setup' tab and export patient data.")
+                        
                 except Exception as e:
                     # Fallback to session-based patient management
                     patient_id = len(st.session_state.get('pending_patients', [])) + 1
@@ -492,6 +508,11 @@ def main():
                 
                 visit_type = "New Patient" if not found else "Return Visit"
                 st.success(f"✅ {visit_type}: {patient_name} saved successfully!")
+                
+                # Show current database stats
+                pending_count = len(st.session_state.get('pending_patients', []))
+                if pending_count > 0:
+                    st.info(f"📊 **Database Stats:** {pending_count} patients pending Google Sheets sync")
                 
                 # Show visit analytics
                 if found:
@@ -1737,13 +1758,33 @@ Prescribed Items:
                 df_patients = pd.DataFrame(pending_patients)
                 csv_patients = df_patients.to_csv(index=False)
                 st.download_button(
-                    f"📥 Export {len(pending_patients)} Patients",
+                    f"📥 Export {len(pending_patients)} New Patients",
                     csv_patients,
-                    f"pending_patients_{datetime.now().strftime('%Y%m%d')}.csv",
-                    "text/csv"
+                    f"new_patients_for_google_sheets_{datetime.now().strftime('%Y%m%d')}.csv",
+                    "text/csv",
+                    help="Download and manually add to Google Sheets Patients tab"
                 )
+                st.success(f"📊 {len(pending_patients)} patients ready for Google Sheets")
+                
+                # Instructions for manual upload
+                with st.expander("📖 How to add to Google Sheets"):
+                    st.markdown("""
+                    **Steps to sync patients:**
+                    1. Download the CSV file above
+                    2. Open your Google Sheet
+                    3. Go to the "Patients" tab
+                    4. Copy and paste the data (skip headers if already present)
+                    5. Save the sheet
+                    6. Come back and click "Clear Synced Data" below
+                    """)
+                
+                if st.button("🗑️ Clear Synced Data", help="Clear after manually adding to Google Sheets"):
+                    st.session_state['pending_patients'] = []
+                    st.success("✅ Pending patients cleared!")
+                    st.rerun()
             else:
-                st.info("No pending patients")
+                st.info("📊 No new patients to sync")
+                st.caption("Register patients to see them here")
             
             # Export analytics
             visit_data = st.session_state.get('visit_analytics', [])
@@ -1765,13 +1806,26 @@ Prescribed Items:
             # Show sync statistics
             try:
                 medicines, spectacles, patients = get_sheet_data()
-                st.metric("Medicines", len(medicines))
-                st.metric("Spectacles", len(spectacles))
-                st.metric("Patients", len(patients))
-            except:
-                st.metric("Medicines", 0)
-                st.metric("Spectacles", 0)
-                st.metric("Patients", 0)
+                st.metric("💊 Google Sheets Medicines", len(medicines))
+                st.metric("👓 Google Sheets Spectacles", len(spectacles))
+                st.metric("👥 Google Sheets Patients", len(patients))
+                
+                # Show pending data
+                pending_patients = len(st.session_state.get('pending_patients', []))
+                pending_analytics = len(st.session_state.get('visit_analytics', []))
+                
+                if pending_patients > 0:
+                    st.warning(f"⚠️ {pending_patients} patients pending sync")
+                if pending_analytics > 0:
+                    st.info(f"📈 {pending_analytics} analytics records")
+                    
+            except Exception as e:
+                st.error("Connection failed")
+                st.caption(f"Error: {str(e)[:30]}...")
+                
+                # Show local data when Google Sheets fails
+                pending_patients = len(st.session_state.get('pending_patients', []))
+                st.metric("💾 Local Patients", pending_patients)
         
         with col3:
             st.markdown("**⚙️ Advanced Options**")
@@ -1805,9 +1859,10 @@ Prescribed Items:
             - Make sure data starts from row 2 (row 1 should be headers)
             
             **Issue: "Sync Problems"**
-            - Try clearing cache and syncing again
-            - Check internet connection
-            - Verify Google Sheets service is accessible
+            - This app only reads from Google Sheets (no automatic writing)
+            - Use Export Data section to download CSV files
+            - Manually copy data to your Google Sheets
+            - This ensures data security and prevents accidental overwrites
             
             **Issue: "Template Not Working"**
             - Download fresh templates from above
