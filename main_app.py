@@ -372,15 +372,32 @@ def main():
             
             if submitted and patient_name:
                 # Save patient with visit tracking
-                patients = db.get_patients()
-                found = False
-                for p in patients:
-                    if p[1].lower() == patient_name.lower() and p[4] == contact:
-                        patient_id = p[0]
-                        found = True
-                        break
-                if not found:
-                    patient_id = db.add_patient(patient_name, age, gender, contact)
+                try:
+                    patients = sheets_manager.get_patients()
+                    found = False
+                    patient_id = None
+                    for p in patients:
+                        if isinstance(p, dict) and p.get('name', '').lower() == patient_name.lower() and p.get('mobile', '') == contact:
+                            patient_id = p.get('id', len(patients) + 1)
+                            found = True
+                            break
+                    if not found:
+                        patient_id = len(patients) + 1
+                        # Add to pending patients for Google Sheets sync
+                        if 'pending_patients' not in st.session_state:
+                            st.session_state['pending_patients'] = []
+                        st.session_state['pending_patients'].append({
+                            'id': patient_id,
+                            'name': patient_name,
+                            'age': age,
+                            'gender': gender,
+                            'mobile': contact,
+                            'registration_date': datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat()
+                        })
+                except Exception as e:
+                    # Fallback to session-based patient management
+                    patient_id = len(st.session_state.get('pending_patients', [])) + 1
+                    found = False
                 
                 # Track visit data for analytics
                 visit_data = {
@@ -626,7 +643,13 @@ def main():
     with tab4:
         st.header("📋 Patient History & Records")
         
-        patients = db.get_patients()
+        try:
+            patients = sheets_manager.get_patients()
+            # Convert to list format for compatibility
+            if patients and isinstance(patients[0], dict):
+                patients = [[p.get('id', i), p.get('name', ''), p.get('age', 0), p.get('gender', ''), p.get('mobile', ''), p.get('registration_date', '')] for i, p in enumerate(patients)]
+        except:
+            patients = []
         
         col1, col2 = st.columns(2)
         with col1:
@@ -634,7 +657,7 @@ def main():
         with col2:
             search_name = st.text_input("🔍 Search by Name")
         
-        filtered = [p for p in patients if (search_mobile in p[4]) and (search_name.lower() in p[1].lower())]
+        filtered = [p for p in patients if (search_mobile in str(p[4])) and (search_name.lower() in str(p[1]).lower())]
         
         st.write(f"📊 Found {len(filtered)} patient(s)")
         
@@ -1790,7 +1813,14 @@ Prescribed Items:
         with col1:
             st.markdown("**💾 Patient Data Backup**")
             
-            patients = db.get_patients()
+            try:
+                patients = sheets_manager.get_patients()
+                # Convert to list format for compatibility
+                if patients and isinstance(patients[0], dict):
+                    patients = [[p.get('id', i), p.get('name', ''), p.get('age', 0), p.get('gender', ''), p.get('mobile', ''), p.get('registration_date', '')] for i, p in enumerate(patients)]
+            except:
+                patients = []
+            
             if patients:
                 # Create backup data
                 import datetime
@@ -1857,19 +1887,31 @@ Prescribed Items:
                             for patient in backup_data['patients']:
                                 # Check if patient exists (by name and mobile)
                                 existing = False
-                                current_patients = db.get_patients()
-                                for p in current_patients:
-                                    if p[1] == patient['name'] and p[4] == patient['mobile']:
-                                        existing = True
-                                        break
+                                try:
+                                    current_patients = sheets_manager.get_patients()
+                                    for p in current_patients:
+                                        if isinstance(p, dict):
+                                            if p.get('name') == patient['name'] and p.get('mobile') == patient['mobile']:
+                                                existing = True
+                                                break
+                                        else:
+                                            if p[1] == patient['name'] and p[4] == patient['mobile']:
+                                                existing = True
+                                                break
+                                except:
+                                    current_patients = []
                                 
                                 if not existing or restore_mode == "Replace all":
-                                    db.add_patient(
-                                        patient['name'],
-                                        patient['age'],
-                                        patient['gender'],
-                                        patient['mobile']
-                                    )
+                                    # Add to pending patients for Google Sheets sync
+                                    if 'pending_patients' not in st.session_state:
+                                        st.session_state['pending_patients'] = []
+                                    st.session_state['pending_patients'].append({
+                                        'name': patient['name'],
+                                        'age': patient['age'],
+                                        'gender': patient['gender'],
+                                        'mobile': patient['mobile'],
+                                        'registration_date': patient.get('registration_date', datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat())
+                                    })
                                     restored_count += 1
                             
                             # Restore analytics if available
