@@ -8,10 +8,8 @@ import streamlit as st
 import pandas as pd
 import sys, os
 import datetime
-import numpy as np
-from PIL import Image
-import json
 from datetime import timezone, timedelta
+import json
 from io import BytesIO
 
 # Add current directory to path
@@ -106,13 +104,11 @@ def main():
             st.error("❌ Google Sheets: Connection Error")
 
     # Main tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "👥 Patient Registration", 
         "👓 Spectacle Gallery", 
         "📋 Patient History",
         "📤 Prescription Generator",
-        "📦 Inventory Management",
-        "📊 Hospital Analytics",
         "📊 Google Sheets Setup"
     ])
 
@@ -400,16 +396,17 @@ def main():
                     found = False
                 
                 # Track visit data for analytics
+                current_time = datetime.datetime.now(timezone(timedelta(hours=5, minutes=30)))
                 visit_data = {
                     'patient_id': patient_id,
-                    'visit_date': datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat(),
+                    'visit_date': current_time.isoformat(),
                     'issue': patient_issue,
                     'advice': advice,
                     'rx_data': rx_table,
                     'age_group': 'Child' if age < 18 else 'Adult' if age < 60 else 'Senior',
                     'visit_type': 'Return' if found else 'New',
-                    'referral_source': 'Direct',  # Can be enhanced later
-                    'season': datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%B')
+                    'referral_source': 'Direct',
+                    'season': current_time.strftime('%B')
                 }
                 
                 # Store visit data in session for analytics
@@ -438,7 +435,7 @@ def main():
                 else:
                     st.info(f"🎆 **New Patient** - Welcome to MauEyeCare! We're excited to help with your eye care needs.")
                 
-                st.info("🎯 Now go to 'AI Camera Analysis' tab to capture photo and get recommendations!")
+                st.info("🎯 Now go to 'Spectacle Gallery' tab to select spectacles and generate prescription!")
         
         # Custom Medicine Addition (Outside Form)
         st.markdown("---")
@@ -562,85 +559,6 @@ def main():
 
     # --- Patient History Tab ---
     with tab3:
-        st.header("📸 AI Camera Analysis")
-        
-        if 'patient_name' in st.session_state and st.session_state['patient_name']:
-            patient_name = st.session_state['patient_name']
-            age = st.session_state.get('age', 30)
-            gender = st.session_state.get('gender', 'Male')
-            
-            st.success(f"👤 **Current Patient:** {patient_name} | Age: {age} | Gender: {gender}")
-            
-            st.markdown("### 📷 Face Analysis for Spectacle Recommendations")
-            st.info("📸 **Click below to start camera and capture photo for AI analysis**")
-            
-            if st.button("📸 Start Camera Analysis", type="primary"):
-                st.markdown("### 🤖 AI Face Analysis Camera")
-                # Lazy load camera module
-                from modules.simple_camera import show_camera_with_preview, analyze_captured_photo
-                captured_image = show_camera_with_preview()
-                
-                if captured_image is not None:
-                    st.session_state['analysis_photo'] = captured_image
-                    
-                    # Analyze the photo
-                    with st.spinner("🔍 AI analyzing face shape and matching spectacles..."):
-                        from modules.simple_camera import analyze_captured_photo
-                        analysis_result = analyze_captured_photo(captured_image, patient_name, age, gender)
-                    
-                    st.session_state['analysis_result'] = analysis_result
-                    
-                    if analysis_result['status'] == 'success':
-                        st.success("🎉 Face Analysis Complete!")
-                        
-                        col1, col2, col3 = st.columns(3)
-                        
-                        with col1:
-                            st.metric("Face Shape", analysis_result["face_shape"])
-                        
-                        with col2:
-                            st.metric("Confidence", f"{analysis_result['confidence']:.1f}%")
-                        
-                        with col3:
-                            st.metric("Recommendations", len(analysis_result["recommended_spectacles"]))
-                        
-                        # Show recommended spectacles
-                        st.markdown("### 👓 Recommended Spectacles")
-                        
-                        cols = st.columns(3)
-                        
-                        for i, spec_name in enumerate(analysis_result["recommended_spectacles"][:6]):
-                            with cols[i % 3]:
-                                COMPREHENSIVE_SPECTACLE_DATABASE = get_spectacle_database()
-                                if spec_name in COMPREHENSIVE_SPECTACLE_DATABASE:
-                                    spec_data = COMPREHENSIVE_SPECTACLE_DATABASE[spec_name]
-                                    try:
-                                        from modules.real_spectacle_images import load_spectacle_image
-                                        spec_image = load_spectacle_image(spec_name)
-                                    except:
-                                        spec_image = "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=200&h=150&fit=crop"
-                                    
-                                    st.image(spec_image, width=200)
-                                    st.markdown(f"**{spec_data['brand']} {spec_data['model']}**")
-                                    
-                                    total_price = spec_data['price'] + spec_data['lens_price']
-                                    st.markdown(f"**₹{total_price:,}**")
-                                    
-                                    if st.button(f"➕ Add to Prescription", key=f"rec_add_{i}"):
-                                        if 'selected_spectacles' not in st.session_state:
-                                            st.session_state['selected_spectacles'] = []
-                                        
-                                        if spec_name not in st.session_state['selected_spectacles']:
-                                            st.session_state['selected_spectacles'].append(spec_name)
-                                            st.success(f"Added {spec_data['brand']} {spec_data['model']}")
-                    else:
-                        st.error(f"❌ Analysis Failed: {analysis_result['message']}")
-        else:
-            st.warning("⚠️ **Patient Required**")
-            st.info("Please go to the **'Patient Registration'** tab first and enter patient information.")
-
-    # --- Prescription Generator Tab ---
-    with tab4:
         st.header("📋 Patient History & Records")
         
         try:
@@ -677,7 +595,96 @@ def main():
                     })
                     st.success(f"Selected patient: {p[1]}")
 
-    # --- Inventory Management Tab ---
+    # --- Prescription Generator Tab ---
+    with tab4:
+        st.header("📄 Prescription Generator")
+        
+        if 'patient_name' in st.session_state:
+            patient_name = st.session_state['patient_name']
+            
+            st.success(f"👤 **Patient:** {patient_name}")
+            
+            # Show selected items
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("### 👓 Selected Spectacles")
+                selected_spectacles = st.session_state.get('selected_spectacles', [])
+                
+                if selected_spectacles:
+                    COMPREHENSIVE_SPECTACLE_DATABASE = get_spectacle_database()
+                    for spec_name in selected_spectacles:
+                        if spec_name in COMPREHENSIVE_SPECTACLE_DATABASE:
+                            spec_data = COMPREHENSIVE_SPECTACLE_DATABASE[spec_name]
+                            total_price = spec_data['price'] + spec_data['lens_price']
+                            st.write(f"• {spec_data['brand']} {spec_data['model']} - ₹{total_price:,}")
+                else:
+                    st.info("No spectacles selected")
+            
+            with col2:
+                st.markdown("### 💊 Selected Medicines")
+                medicine_details = st.session_state.get('medicine_details', {})
+                
+                if medicine_details:
+                    for med_name, details in medicine_details.items():
+                        st.write(f"• {med_name} (Qty: {details['quantity']}) - ₹{details['total_cost']}")
+                        st.write(f"  Dosage: {details['dosage']} | Duration: {details['duration']}")
+                else:
+                    st.info("No medicines selected")
+            
+            # Generate prescription
+            st.markdown("---")
+            
+            if st.button("📤 Generate Prescription", type="primary"):
+                if selected_spectacles or medicine_details:
+                    # Create simple prescription text
+                    current_time = datetime.datetime.now(timezone(timedelta(hours=5, minutes=30)))
+                    prescription_text = f"""MauEyeCare Prescription
+
+Patient: {patient_name}
+Age: {st.session_state.get('age', 'N/A')}
+Gender: {st.session_state.get('gender', 'N/A')}
+Mobile: {st.session_state.get('patient_mobile', 'N/A')}
+Date: {current_time.strftime('%d/%m/%Y %I:%M %p IST')}
+
+Prescribed Items:
+{'-'*40}
+"""
+                    
+                    if selected_spectacles:
+                        prescription_text += "\nSPECTACLES:\n"
+                        for spec_name in selected_spectacles:
+                            if spec_name in COMPREHENSIVE_SPECTACLE_DATABASE:
+                                spec_data = COMPREHENSIVE_SPECTACLE_DATABASE[spec_name]
+                                total_price = spec_data['price'] + spec_data['lens_price']
+                                prescription_text += f"- {spec_data['brand']} {spec_data['model']} - Rs.{total_price:,}\n"
+                    
+                    if medicine_details:
+                        prescription_text += "\nMEDICINES:\n"
+                        for med_name, details in medicine_details.items():
+                            prescription_text += f"- {med_name} (Qty: {details['quantity']}) - Rs.{details['total_cost']}\n"
+                            prescription_text += f"  Dosage: {details['dosage']}\n"
+                            prescription_text += f"  Duration: {details['duration']}\n"
+                    
+                    prescription_text += f"\n{'-'*40}\nDr. Danish\nEye Care Specialist\nMauEyeCare Optical Center\nPhone: +91 92356-47410\nEmail: maueyecare@gmail.com"
+                    
+                    # Download prescription
+                    timestamp = current_time.strftime("%Y%m%d_%H%M")
+                    st.download_button(
+                        "💾 Download Prescription",
+                        data=prescription_text.encode('utf-8'),
+                        file_name=f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.txt",
+                        mime="text/plain",
+                        type="primary"
+                    )
+                    
+                    st.success("✅ Prescription generated successfully!")
+                else:
+                    st.warning("⚠️ Please select at least one spectacle or medicine")
+        else:
+            st.warning("⚠️ Please select a patient first")
+
+    # --- Google Sheets Setup Tab ---
     with tab5:
         st.header("📄 Prescription Generator")
         
@@ -1334,8 +1341,7 @@ Prescribed Items:
         else:
             st.warning("⚠️ Please select a patient first")
 
-    # --- Hospital Analytics Tab ---
-    with tab6:
+
         st.header("📦 Inventory Management")
         
         try:
@@ -1726,8 +1732,7 @@ Prescribed Items:
             st.error("😱 Inventory system not available")
             st.info("Please load the database first using the sidebar button.")
     
-    # --- Google Sheets Setup Tab ---
-    with tab7:
+
         st.header("📊 Google Sheets Integration")
         
         sheets_manager.show_sheet_instructions()
