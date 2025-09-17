@@ -7,8 +7,7 @@ Google Sheets Integration for Real-time Data Management
 import streamlit as st
 import pandas as pd
 import sys, os
-import datetime
-from datetime import timezone, timedelta
+from datetime import datetime, timezone, timedelta
 import json
 from io import BytesIO
 
@@ -104,11 +103,12 @@ def main():
             st.error("❌ Google Sheets: Connection Error")
 
     # Main tabs
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "👥 Patient Registration", 
         "👓 Spectacle Gallery", 
         "📋 Patient History",
         "📤 Prescription Generator",
+        "📊 Hospital Analytics",
         "📊 Google Sheets Setup"
     ])
 
@@ -388,7 +388,7 @@ def main():
                             'age': age,
                             'gender': gender,
                             'mobile': contact,
-                            'registration_date': datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat()
+                            'registration_date': datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat()
                         })
                 except Exception as e:
                     # Fallback to session-based patient management
@@ -396,7 +396,7 @@ def main():
                     found = False
                 
                 # Track visit data for analytics
-                current_time = datetime.datetime.now(timezone(timedelta(hours=5, minutes=30)))
+                current_time = datetime.now(timezone(timedelta(hours=5, minutes=30)))
                 visit_data = {
                     'patient_id': patient_id,
                     'visit_date': current_time.isoformat(),
@@ -638,7 +638,7 @@ def main():
             if st.button("📤 Generate Prescription", type="primary"):
                 if selected_spectacles or medicine_details:
                     # Create simple prescription text
-                    current_time = datetime.datetime.now(timezone(timedelta(hours=5, minutes=30)))
+                    current_time = datetime.now(timezone(timedelta(hours=5, minutes=30)))
                     prescription_text = f"""MauEyeCare Prescription
 
 Patient: {patient_name}
@@ -684,8 +684,126 @@ Prescribed Items:
         else:
             st.warning("⚠️ Please select a patient first")
 
-    # --- Google Sheets Setup Tab ---
+    # --- Hospital Analytics Tab ---
     with tab5:
+        st.header("📊 Hospital Analytics")
+        
+        visit_data = st.session_state.get('visit_analytics', [])
+        
+        if visit_data:
+            # Key Metrics
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                total_visits = len(visit_data)
+                st.metric("Total Visits", total_visits)
+            
+            with col2:
+                new_patients = len([v for v in visit_data if v['visit_type'] == 'New'])
+                st.metric("New Patients", new_patients)
+            
+            with col3:
+                return_visits = len([v for v in visit_data if v['visit_type'] == 'Return'])
+                st.metric("Return Visits", return_visits)
+            
+            with col4:
+                if visit_data:
+                    ages = [v.get('patient_age', 30) if isinstance(v.get('patient_age'), int) else 30 for v in visit_data]
+                    avg_age = sum(ages) / len(ages)
+                    st.metric("Avg Age", f"{avg_age:.1f}")
+                else:
+                    st.metric("Avg Age", "0")
+            
+            # Visit Analysis
+            st.subheader("📈 Visit Analysis")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("**Most Common Issues:**")
+                issues = [v['issue'] for v in visit_data]
+                issue_counts = {}
+                for issue in issues:
+                    issue_counts[issue] = issue_counts.get(issue, 0) + 1
+                
+                for issue, count in sorted(issue_counts.items(), key=lambda x: x[1], reverse=True)[:5]:
+                    st.write(f"• {issue}: {count} patients")
+            
+            with col2:
+                st.markdown("**Age Distribution:**")
+                age_groups = [v['age_group'] for v in visit_data]
+                age_counts = {}
+                for group in age_groups:
+                    age_counts[group] = age_counts.get(group, 0) + 1
+                
+                for group, count in age_counts.items():
+                    st.write(f"• {group}: {count} patients")
+            
+            # Patient Retention
+            st.subheader("🔄 Patient Retention")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                retention_rate = (return_visits / total_visits * 100) if total_visits > 0 else 0
+                st.metric("Retention Rate", f"{retention_rate:.1f}%")
+                
+                if retention_rate > 30:
+                    st.success("✅ Good patient retention!")
+                else:
+                    st.warning("⚠️ Focus on patient follow-up")
+            
+            with col2:
+                st.markdown("**Growth Insights:**")
+                if new_patients > return_visits:
+                    st.info("📈 Strong new patient acquisition")
+                    st.write("• Focus on retention programs")
+                    st.write("• Implement follow-up reminders")
+                else:
+                    st.info("🔄 Good patient loyalty")
+                    st.write("• Expand marketing reach")
+                    st.write("• Referral programs")
+            
+            # Export Analytics
+            st.markdown("---")
+            st.subheader("📤 Export Analytics")
+            
+            if st.button("💾 Download Analytics Report"):
+                # Create analytics report
+                current_time = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+                report_data = {
+                    'report_date': current_time.isoformat(),
+                    'total_visits': total_visits,
+                    'new_patients': new_patients,
+                    'return_visits': return_visits,
+                    'retention_rate': retention_rate,
+                    'avg_age': avg_age,
+                    'common_issues': issue_counts,
+                    'age_distribution': age_counts,
+                    'visit_details': visit_data
+                }
+                
+                report_json = json.dumps(report_data, indent=2)
+                timestamp = current_time.strftime("%Y%m%d_%H%M")
+                
+                st.download_button(
+                    "💾 Download JSON Report",
+                    data=report_json.encode('utf-8'),
+                    file_name=f"hospital_analytics_{timestamp}.json",
+                    mime="application/json"
+                )
+        
+        else:
+            st.info("📈 No visit data yet. Register patients to see analytics.")
+            st.markdown("**Analytics will track:**")
+            st.markdown("• Patient demographics and trends")
+            st.markdown("• Common eye issues and treatments")
+            st.markdown("• Return visit patterns")
+            st.markdown("• Patient retention rates")
+            st.markdown("• Age distribution analysis")
+    
+    # --- Google Sheets Setup Tab ---
+    with tab6:
         st.header("📄 Prescription Generator")
         
         if 'patient_name' in st.session_state:
@@ -787,7 +905,7 @@ Prescribed Items:
         <p><strong>Age:</strong> {st.session_state.get('age', 'N/A')} | <strong>Gender:</strong> {st.session_state.get('gender', 'N/A')}</p>
         <p><strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')}</p>
         <p><strong>Issue:</strong> {st.session_state.get('patient_issue', 'N/A')}</p>
-        <p><strong>Date & Time:</strong> {(datetime.datetime.now(timezone(timedelta(hours=5, minutes=30)))).strftime('%d/%m/%Y %I:%M %p IST')}</p>
+        <p><strong>Date & Time:</strong> {datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%d/%m/%Y %I:%M %p IST')}</p>
     </div>"""
                     
                     # Add eye prescription
@@ -936,7 +1054,7 @@ Prescribed Items:
                             st.markdown("**📄 File Information**")
                             st.info(f"**Filename:** {result['filename']}")
                             st.info(f"**File ID:** {result.get('file_id', 'N/A')}")
-                            st.info(f"**Upload Time:** {datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%d/%m/%Y %H:%M IST')}")
+                            st.info(f"**Upload Time:** {datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%d/%m/%Y %H:%M IST')}")
                         
                         with col2:
                             st.markdown("**📂 Storage Location**")
@@ -964,8 +1082,7 @@ Prescribed Items:
                         
                         with col_dl1:
                             # HTML Download
-                            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-                            timestamp = datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime("%Y%m%d_%H%M")
+                            timestamp = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime("%Y%m%d_%H%M")
                             html_filename = f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html"
                             
                             st.download_button(
@@ -985,7 +1102,7 @@ Patient: {patient_name}
 Age: {st.session_state.get('age', 'N/A')}
 Gender: {st.session_state.get('gender', 'N/A')}
 Mobile: {st.session_state.get('patient_mobile', 'N/A')}
-Date: {datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%d/%m/%Y %H:%M IST')}
+Date: {datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%d/%m/%Y %H:%M IST')}
 
 Prescribed Items:
 {'-'*40}
@@ -1043,7 +1160,7 @@ Prescribed Items:
                                 'patient_age': st.session_state.get('age'),
                                 'patient_gender': st.session_state.get('gender'),
                                 'patient_mobile': st.session_state.get('patient_mobile'),
-                                'prescription_date': datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat(),
+                                'prescription_date': datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat(),
                                 'doctor': 'Dr. Danish',
                                 'clinic': 'MauEyeCare Optical Center',
                                 'selected_spectacles': selected_spectacles,
@@ -1086,7 +1203,7 @@ Your eye care prescription has been prepared by Dr. Danish.
 
 📋 *Prescription Details:*
 • Patient: {patient_name}
-• Date: {datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%d/%m/%Y')}
+• Date: {datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%d/%m/%Y')}
 • Doctor: Dr. Danish (Reg: UPS 2908)
 
 📞 *For queries:* +91 92356-47410
@@ -1281,7 +1398,7 @@ Your eye care prescription has been prepared by Dr. Danish.
                         
                         with col1:
                             # Save as HTML file
-                            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+                            timestamp = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime("%Y%m%d_%H%M")
                             filename = f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html"
                             
                             st.download_button(
@@ -1299,7 +1416,7 @@ Your eye care prescription has been prepared by Dr. Danish.
 
 Patient: {patient_name}
 Age: {st.session_state.get('age', 'N/A')}
-Date: {datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%d/%m/%Y')}
+Date: {datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%d/%m/%Y')}
 
 Prescribed Items:
 {'-'*30}
@@ -1539,13 +1656,12 @@ Prescribed Items:
                     
                     # Excel export with proper buffer handling
                     try:
-                        import datetime
                         output = BytesIO()
                         with pd.ExcelWriter(output, engine='openpyxl') as writer:
                             df.to_excel(writer, sheet_name='Inventory', index=False)
                         output.seek(0)
                         
-                        timestamp = datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')
+                        timestamp = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')
                         st.download_button(
                             "📤 Download Excel",
                             data=output.getvalue(),
@@ -1556,9 +1672,8 @@ Prescribed Items:
                     except Exception as e:
                         st.error(f"Excel export failed: {str(e)}")
                         # Fallback to CSV
-                        import datetime
                         csv = df.to_csv(index=False)
-                        timestamp = datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')
+                        timestamp = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')
                         st.download_button(
                             "📤 Download CSV (Fallback)",
                             csv,
@@ -1641,9 +1756,8 @@ Prescribed Items:
                         export_data.append(row)
                     
                     df = pd.DataFrame(export_data)
-                    import datetime
                     csv = df.to_csv(index=False)
-                    timestamp = datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')
+                    timestamp = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')
                     st.download_button(
                         "📤 Download CSV",
                         data=csv,
@@ -1828,9 +1942,8 @@ Prescribed Items:
             
             if patients:
                 # Create backup data
-                import datetime
                 backup_data = {
-                    'backup_date': datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat(),
+                    'backup_date': datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat(),
                     'total_patients': len(patients),
                     'patients': [],
                     'visit_analytics': st.session_state.get('visit_analytics', [])
@@ -1852,7 +1965,7 @@ Prescribed Items:
                 st.download_button(
                     "💾 Download Patient Backup",
                     backup_json,
-                    f"patient_backup_{datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')}.json",
+                    f"patient_backup_{datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y%m%d_%H%M')}.json",
                     "application/json",
                     help="Secure backup of all patient data",
                     use_container_width=True
@@ -1915,7 +2028,7 @@ Prescribed Items:
                                         'age': patient['age'],
                                         'gender': patient['gender'],
                                         'mobile': patient['mobile'],
-                                        'registration_date': patient.get('registration_date', datetime.datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat())
+                                        'registration_date': patient.get('registration_date', datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat())
                                     })
                                     restored_count += 1
                             
