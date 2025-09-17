@@ -804,48 +804,163 @@ Prescribed Items:
     
     # --- Google Sheets Setup Tab ---
     with tab6:
-        st.header("📄 Prescription Generator")
+        st.header("📊 Google Sheets Integration Setup")
+        st.markdown("*Professional Eye Care Hospital Data Management*")
         
-        if 'patient_name' in st.session_state:
-            patient_name = st.session_state['patient_name']
-            
-            st.success(f"👤 **Patient:** {patient_name}")
-            
-            # Show selected items
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("### 👓 Selected Spectacles")
-                selected_spectacles = st.session_state.get('selected_spectacles', [])
-                
-                if selected_spectacles:
-                    COMPREHENSIVE_SPECTACLE_DATABASE = get_spectacle_database()
-                    for spec_name in selected_spectacles:
-                        if spec_name in COMPREHENSIVE_SPECTACLE_DATABASE:
-                            spec_data = COMPREHENSIVE_SPECTACLE_DATABASE[spec_name]
-                            total_price = spec_data['price'] + spec_data['lens_price']
-                            st.write(f"• {spec_data['brand']} {spec_data['model']} - ₹{total_price:,}")
+        # Connection Status
+        st.subheader("🔗 Connection Status")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            try:
+                medicines, spectacles, patients = get_sheet_data()
+                if medicines or spectacles or patients:
+                    st.success("✅ Google Sheets Connected")
+                    st.info(f"Sheet ID: ...{sheets_manager.sheet_id[-8:]}")
                 else:
-                    st.info("No spectacles selected")
+                    st.warning("⚠️ No Data Found")
+            except Exception as e:
+                st.error("❌ Connection Failed")
+                st.caption(f"Error: {str(e)[:50]}...")
+        
+        with col2:
+            if st.button("🔄 Test Connection"):
+                with st.spinner("Testing Google Sheets connection..."):
+                    try:
+                        test_data = sheets_manager.get_medicines()
+                        if test_data:
+                            st.success(f"✅ Connected! Found {len(test_data)} medicines")
+                        else:
+                            st.warning("⚠️ Connected but no data found")
+                    except Exception as e:
+                        st.error(f"❌ Connection failed: {str(e)}")
+        
+        with col3:
+            if st.button("📥 Sync All Data"):
+                with st.spinner("Syncing all data from Google Sheets..."):
+                    get_sheet_data.clear()
+                    medicines, spectacles, patients = get_sheet_data()
+                    st.success(f"✅ Synced: {len(medicines)} medicines, {len(spectacles)} spectacles, {len(patients)} patients")
+        
+        st.markdown("---")
+        
+        # Sheet Configuration
+        st.subheader("⚙️ Sheet Configuration")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**📋 Current Sheet ID:**")
+            current_sheet_id = getattr(sheets_manager, 'sheet_id', '1Ju6luR74A_emPUWThUYO9iNDXkPMblwNFt-Ql92fyPQ')
+            st.code(current_sheet_id)
             
-            with col2:
-                st.markdown("### 💊 Selected Medicines")
-                medicine_details = st.session_state.get('medicine_details', {})
-                selected_medicines = st.session_state.get('selected_medicines', {})
-                
-                if medicine_details:
-                    for med_name, details in medicine_details.items():
-                        st.write(f"• {med_name} (Qty: {details['quantity']}) - ₹{details['total_cost']}")
-                        st.write(f"  Dosage: {details['dosage']} | Duration: {details['duration']}")
-                elif selected_medicines:
-                    COMPREHENSIVE_MEDICINE_DATABASE = get_medicine_database()
-                    for med_name, quantity in selected_medicines.items():
-                        if med_name in COMPREHENSIVE_MEDICINE_DATABASE:
-                            med_data = COMPREHENSIVE_MEDICINE_DATABASE[med_name]
-                            total_price = med_data['price'] * quantity
-                            st.write(f"• {med_name} (Qty: {quantity}) - ₹{total_price}")
-                else:
-                    st.info("No medicines selected")
+            new_sheet_id = st.text_input(
+                "🔄 Update Sheet ID (Optional):",
+                placeholder="Enter new Google Sheet ID",
+                help="Leave empty to use default sheet"
+            )
+            
+            if st.button("💾 Update Sheet ID") and new_sheet_id:
+                try:
+                    sheets_manager.sheet_id = new_sheet_id
+                    st.success("✅ Sheet ID updated successfully!")
+                    st.info("🔄 Please test connection to verify")
+                except Exception as e:
+                    st.error(f"❌ Failed to update: {str(e)}")
+        
+        with col2:
+            st.markdown("**📊 Required Sheets:**")
+            required_sheets = [
+                "📋 Medicines - Medicine inventory data",
+                "👓 Spectacles - Spectacle inventory data", 
+                "👥 Patients - Patient records",
+                "📄 Prescriptions - Prescription history",
+                "📈 Analytics - Hospital analytics data"
+            ]
+            
+            for sheet in required_sheets:
+                st.info(sheet)
+        
+        st.markdown("---")
+        
+        # Data Templates
+        st.subheader("📋 Data Templates & Setup")
+        
+        tab_med, tab_spec, tab_pat = st.tabs(["💊 Medicines", "👓 Spectacles", "👥 Patients"])
+        
+        with tab_med:
+            st.markdown("**Medicine Sheet Template:**")
+            medicine_template = pd.DataFrame({
+                'name': ['Refresh Tears Eye Drops', 'Tobramycin Eye Drops', 'Prednisolone Eye Drops'],
+                'category': ['Lubricant', 'Antibiotic', 'Steroid'],
+                'type': ['Eye Drops', 'Eye Drops', 'Eye Drops'],
+                'price': [150, 200, 180],
+                'quantity': [50, 30, 25],
+                'prescription_required': [False, True, True],
+                'indication': ['Dry eyes', 'Bacterial infection', 'Inflammation'],
+                'dosage': ['1-2 drops as needed', '1 drop 4 times daily', '1 drop twice daily']
+            })
+            
+            st.dataframe(medicine_template, use_container_width=True)
+            
+            csv_med = medicine_template.to_csv(index=False)
+            st.download_button(
+                "📥 Download Medicine Template",
+                csv_med,
+                "medicine_template.csv",
+                "text/csv",
+                use_container_width=True
+            )
+        
+        with tab_spec:
+            st.markdown("**Spectacle Sheet Template:**")
+            spectacle_template = pd.DataFrame({
+                'name': ['Ray-Ban Aviator Classic', 'Oakley Holbrook', 'Titan Rimless'],
+                'brand': ['Ray-Ban', 'Oakley', 'Titan'],
+                'model': ['Aviator Classic', 'Holbrook', 'Rimless'],
+                'category': ['Luxury', 'Mid-Range', 'Budget'],
+                'price': [8000, 12000, 3500],
+                'lens_price': [2000, 2500, 1500],
+                'material': ['Metal', 'Plastic', 'Metal'],
+                'shape': ['Aviator', 'Square', 'Rimless'],
+                'image_path': ['images/rayban_aviator.jpg', 'images/oakley_holbrook.jpg', 'images/titan_rimless.jpg']
+            })
+            
+            st.dataframe(spectacle_template, use_container_width=True)
+            
+            csv_spec = spectacle_template.to_csv(index=False)
+            st.download_button(
+                "📥 Download Spectacle Template",
+                csv_spec,
+                "spectacle_template.csv",
+                "text/csv",
+                use_container_width=True
+            )
+        
+        with tab_pat:
+            st.markdown("**Patient Sheet Template:**")
+            patient_template = pd.DataFrame({
+                'id': [1, 2, 3],
+                'name': ['John Doe', 'Jane Smith', 'Raj Kumar'],
+                'age': [35, 28, 45],
+                'gender': ['Male', 'Female', 'Male'],
+                'mobile': ['9876543210', '9876543211', '9876543212'],
+                'registration_date': ['2024-01-15', '2024-01-16', '2024-01-17'],
+                'issue': ['Blurry Vision', 'Eye Pain', 'Dry Eyes'],
+                'advice': ['Spectacle Prescription', 'Eye Drops', 'Regular Checkup']
+            })
+            
+            st.dataframe(patient_template, use_container_width=True)
+            
+            csv_pat = patient_template.to_csv(index=False)
+            st.download_button(
+                "📥 Download Patient Template",
+                csv_pat,
+                "patient_template.csv",
+                "text/csv",
+                use_container_width=True
+            )
             
             # Generate prescription
             st.markdown("---")
@@ -1455,9 +1570,170 @@ Prescribed Items:
                     
                 else:
                     st.warning("⚠️ Please select at least one spectacle or medicine")
-        else:
-            st.warning("⚠️ Please select a patient first")
-
+        
+        st.markdown("---")
+        
+        # Setup Instructions
+        st.subheader("📖 Setup Instructions")
+        
+        with st.expander("🚀 Quick Setup Guide", expanded=False):
+            st.markdown("""
+            **Step 1: Create Google Sheet**
+            1. Go to [Google Sheets](https://sheets.google.com)
+            2. Create a new spreadsheet
+            3. Name it "MauEyeCare Hospital Data"
+            
+            **Step 2: Create Required Sheets**
+            1. Create 5 sheets: Medicines, Spectacles, Patients, Prescriptions, Analytics
+            2. Download templates above and copy data to respective sheets
+            3. Make sure column headers match exactly
+            
+            **Step 3: Make Sheet Public**
+            1. Click "Share" button in Google Sheets
+            2. Change access to "Anyone with the link can view"
+            3. Copy the sheet ID from URL
+            
+            **Step 4: Update Application**
+            1. Paste sheet ID in the "Update Sheet ID" field above
+            2. Click "Update Sheet ID"
+            3. Test connection to verify
+            
+            **Sheet ID Location:**
+            From URL: `https://docs.google.com/spreadsheets/d/SHEET_ID_HERE/edit`
+            """)
+        
+        # Data Management
+        st.subheader("📊 Data Management")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown("**📤 Export Data**")
+            
+            # Export pending patients
+            pending_patients = st.session_state.get('pending_patients', [])
+            if pending_patients:
+                df_patients = pd.DataFrame(pending_patients)
+                csv_patients = df_patients.to_csv(index=False)
+                st.download_button(
+                    f"📥 Export {len(pending_patients)} Patients",
+                    csv_patients,
+                    f"pending_patients_{datetime.now().strftime('%Y%m%d')}.csv",
+                    "text/csv"
+                )
+            else:
+                st.info("No pending patients")
+            
+            # Export analytics
+            visit_data = st.session_state.get('visit_analytics', [])
+            if visit_data:
+                df_analytics = pd.DataFrame(visit_data)
+                csv_analytics = df_analytics.to_csv(index=False)
+                st.download_button(
+                    f"📥 Export {len(visit_data)} Visits",
+                    csv_analytics,
+                    f"visit_analytics_{datetime.now().strftime('%Y%m%d')}.csv",
+                    "text/csv"
+                )
+            else:
+                st.info("No analytics data")
+        
+        with col2:
+            st.markdown("**🔄 Sync Status**")
+            
+            # Show sync statistics
+            try:
+                medicines, spectacles, patients = get_sheet_data()
+                st.metric("Medicines", len(medicines))
+                st.metric("Spectacles", len(spectacles))
+                st.metric("Patients", len(patients))
+            except:
+                st.metric("Medicines", 0)
+                st.metric("Spectacles", 0)
+                st.metric("Patients", 0)
+        
+        with col3:
+            st.markdown("**⚙️ Advanced Options**")
+            
+            if st.button("🗑️ Clear Cache"):
+                get_sheet_data.clear()
+                st.success("✅ Cache cleared")
+            
+            if st.button("🔄 Reset Session"):
+                for key in ['pending_patients', 'visit_analytics', 'selected_spectacles', 'selected_medicines']:
+                    if key in st.session_state:
+                        del st.session_state[key]
+                st.success("✅ Session reset")
+        
+        st.markdown("---")
+        
+        # Troubleshooting
+        st.subheader("🔧 Troubleshooting")
+        
+        with st.expander("❓ Common Issues & Solutions"):
+            st.markdown("""
+            **Issue: "Connection Failed"**
+            - Check if Google Sheet is publicly accessible
+            - Verify Sheet ID is correct
+            - Ensure sheet has required tabs (Medicines, Spectacles, etc.)
+            
+            **Issue: "No Data Found"**
+            - Check if sheets have data in correct format
+            - Verify column headers match template exactly
+            - Make sure data starts from row 2 (row 1 should be headers)
+            
+            **Issue: "Sync Problems"**
+            - Try clearing cache and syncing again
+            - Check internet connection
+            - Verify Google Sheets service is accessible
+            
+            **Issue: "Template Not Working"**
+            - Download fresh templates from above
+            - Copy data exactly as shown
+            - Don't modify column names or order
+            """)
+        
+        # Professional Support
+        st.markdown("---")
+        st.subheader("🏥 Professional Support")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**📞 Technical Support:**")
+            st.info("📧 Email: tech@maueyecare.com")
+            st.info("📱 Phone: +91 92356-47410")
+            st.info("🕘 Hours: Mon-Sat 9AM-8PM")
+        
+        with col2:
+            st.markdown("**🏥 Eye Care Consultation:**")
+            st.info("👨‍⚕️ Dr. Danish - Eye Specialist")
+            st.info("📍 Azamgarh, Uttar Pradesh")
+            st.info("🩺 Registration: UPS 2908")
+        
+        # Quick Actions
+        st.markdown("---")
+        st.subheader("⚡ Quick Actions")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            if st.button("🔗 Open Google Sheets", use_container_width=True):
+                sheet_url = f"https://docs.google.com/spreadsheets/d/{current_sheet_id}/edit"
+                st.markdown(f"**[📊 Open Sheet]({sheet_url})**")
+        
+        with col2:
+            if st.button("📋 Copy Sheet ID", use_container_width=True):
+                st.code(current_sheet_id)
+                st.success("Sheet ID ready to copy!")
+        
+        with col3:
+            if st.button("📖 View Documentation", use_container_width=True):
+                st.info("📚 Check README.md for detailed setup guide")
+        
+        with col4:
+            if st.button("🏠 Back to Dashboard", use_container_width=True):
+                st.info("🏥 Use sidebar to navigate to other sections")
 
         st.header("📦 Inventory Management")
         
