@@ -127,10 +127,55 @@ def main():
             
             with col2:
                 contact = st.text_input("Mobile Number", placeholder="Enter mobile number")
-                issue_options = ["Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Other"]
+                issue_options = ["Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Floaters", "Night Blindness", "Other"]
                 patient_issue = st.selectbox("Patient Issue/Complaint", issue_options)
-                advice_options = ["Spectacle Prescription", "Regular Eye Checkup", "Dry Eye Treatment", "Other"]
+                advice_options = ["Spectacle Prescription", "Regular Eye Checkup", "Dry Eye Treatment", "Glaucoma Screening", "Diabetic Eye Exam", "Other"]
                 advice = st.selectbox("Advice/Notes", advice_options)
+            
+            # Eye Care Demographics Section
+            st.markdown("**👁️ Eye Care Demographics & History**")
+            
+            col_demo1, col_demo2, col_demo3 = st.columns(3)
+            
+            with col_demo1:
+                occupation = st.selectbox("Occupation", [
+                    "Student", "Office Worker", "Driver", "Teacher", "Doctor", "Engineer", 
+                    "Farmer", "Homemaker", "Retired", "Other"
+                ])
+                screen_time = st.selectbox("Daily Screen Time", [
+                    "<2 hours", "2-4 hours", "4-6 hours", "6-8 hours", ">8 hours"
+                ])
+            
+            with col_demo2:
+                family_history = st.selectbox("Family Eye History", [
+                    "None", "Diabetes", "Glaucoma", "Cataract", "Myopia", "Other"
+                ])
+                previous_surgery = st.selectbox("Previous Eye Surgery", [
+                    "None", "Cataract", "LASIK", "Retinal", "Glaucoma", "Other"
+                ])
+            
+            with col_demo3:
+                diabetes = st.selectbox("Diabetes Status", ["No", "Type 1", "Type 2", "Pre-diabetic"])
+                hypertension = st.selectbox("Blood Pressure", ["Normal", "High", "Low", "Controlled"])
+            
+            # Additional Eye Care Fields
+            col_eye1, col_eye2 = st.columns(2)
+            
+            with col_eye1:
+                last_eye_exam = st.selectbox("Last Eye Exam", [
+                    "<6 months", "6-12 months", "1-2 years", ">2 years", "Never"
+                ])
+                current_glasses = st.selectbox("Current Glasses/Contacts", [
+                    "None", "Reading Glasses", "Distance Glasses", "Bifocals", "Contact Lenses"
+                ])
+            
+            with col_eye2:
+                eye_strain = st.selectbox("Eye Strain Frequency", [
+                    "Never", "Rarely", "Sometimes", "Often", "Always"
+                ])
+                referral_source = st.selectbox("How did you hear about us?", [
+                    "Walk-in", "Friend/Family", "Doctor Referral", "Online", "Advertisement", "Other"
+                ])
             
             patient_name = f"{first_name} {last_name}".strip()
             
@@ -388,14 +433,25 @@ def main():
                             'age': age,
                             'gender': gender,
                             'mobile': contact,
-                            'registration_date': datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat()
+                            'registration_date': datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat(),
+                            'issue': patient_issue,
+                            'advice': advice,
+                            'occupation': occupation,
+                            'screen_time': screen_time,
+                            'family_history': family_history,
+                            'diabetes': diabetes,
+                            'hypertension': hypertension,
+                            'last_eye_exam': last_eye_exam,
+                            'current_glasses': current_glasses,
+                            'eye_strain': eye_strain,
+                            'referral_source': referral_source
                         })
                 except Exception as e:
                     # Fallback to session-based patient management
                     patient_id = len(st.session_state.get('pending_patients', [])) + 1
                     found = False
                 
-                # Track visit data for analytics
+                # Track visit data for analytics with demographics
                 current_time = datetime.now(timezone(timedelta(hours=5, minutes=30)))
                 visit_data = {
                     'patient_id': patient_id,
@@ -405,8 +461,16 @@ def main():
                     'rx_data': rx_table,
                     'age_group': 'Child' if age < 18 else 'Adult' if age < 60 else 'Senior',
                     'visit_type': 'Return' if found else 'New',
-                    'referral_source': 'Direct',
-                    'season': current_time.strftime('%B')
+                    'referral_source': referral_source,
+                    'season': current_time.strftime('%B'),
+                    'occupation': occupation,
+                    'screen_time': screen_time,
+                    'family_history': family_history,
+                    'diabetes': diabetes,
+                    'hypertension': hypertension,
+                    'last_eye_exam': last_eye_exam,
+                    'current_glasses': current_glasses,
+                    'eye_strain': eye_strain
                 }
                 
                 # Store visit data in session for analytics
@@ -739,6 +803,41 @@ Prescribed Items:
                 for group, count in age_counts.items():
                     st.write(f"• {group}: {count} patients")
             
+            # Eye Care Demographics Analysis
+            st.subheader("👁️ Eye Care Demographics")
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.markdown("**Occupation Analysis:**")
+                occupations = [v.get('occupation', 'Unknown') for v in visit_data]
+                occ_counts = {}
+                for occ in occupations:
+                    occ_counts[occ] = occ_counts.get(occ, 0) + 1
+                
+                for occ, count in sorted(occ_counts.items(), key=lambda x: x[1], reverse=True)[:3]:
+                    st.write(f"• {occ}: {count}")
+            
+            with col2:
+                st.markdown("**Screen Time Impact:**")
+                screen_times = [v.get('screen_time', 'Unknown') for v in visit_data]
+                screen_counts = {}
+                for screen in screen_times:
+                    screen_counts[screen] = screen_counts.get(screen, 0) + 1
+                
+                for screen, count in sorted(screen_counts.items(), key=lambda x: x[1], reverse=True)[:3]:
+                    st.write(f"• {screen}: {count}")
+            
+            with col3:
+                st.markdown("**Family History:**")
+                family_hist = [v.get('family_history', 'None') for v in visit_data]
+                family_counts = {}
+                for hist in family_hist:
+                    family_counts[hist] = family_counts.get(hist, 0) + 1
+                
+                for hist, count in sorted(family_counts.items(), key=lambda x: x[1], reverse=True)[:3]:
+                    st.write(f"• {hist}: {count}")
+            
             # Patient Retention
             st.subheader("🔄 Patient Retention")
             
@@ -780,6 +879,9 @@ Prescribed Items:
                     'avg_age': avg_age,
                     'common_issues': issue_counts,
                     'age_distribution': age_counts,
+                    'occupation_analysis': {occ: occ_counts.get(occ, 0) for occ in set(occupations)},
+                    'screen_time_analysis': {screen: screen_counts.get(screen, 0) for screen in set(screen_times)},
+                    'family_history_analysis': {hist: family_counts.get(hist, 0) for hist in set(family_hist)},
                     'visit_details': visit_data
                 }
                 
@@ -870,13 +972,13 @@ Prescribed Items:
                     st.error(f"❌ Failed to update: {str(e)}")
         
         with col2:
-            st.markdown("**📊 Required Sheets:**")
+            st.markdown("**📊 Required Tabs (Same Spreadsheet):**")
             required_sheets = [
-                "📋 Medicines - Medicine inventory data",
-                "👓 Spectacles - Spectacle inventory data", 
-                "👥 Patients - Patient records",
-                "📄 Prescriptions - Prescription history",
-                "📈 Analytics - Hospital analytics data"
+                "📋 Medicines - Tab for medicine inventory",
+                "👓 Spectacles - Tab for spectacle inventory", 
+                "👥 Patients - Tab for patient records with demographics",
+                "📄 Prescriptions - Tab for prescription history",
+                "📈 Analytics - Tab for hospital analytics data"
             ]
             
             for sheet in required_sheets:
@@ -885,12 +987,14 @@ Prescribed Items:
         st.markdown("---")
         
         # Data Templates
-        st.subheader("📋 Data Templates & Setup")
+        st.subheader("📋 Tab Templates & Setup")
+        st.info("📊 Each template below should be copied to a separate tab in your Google Sheet")
         
-        tab_med, tab_spec, tab_pat = st.tabs(["💊 Medicines", "👓 Spectacles", "👥 Patients"])
+        tab_med, tab_spec, tab_pat, tab_presc, tab_anal = st.tabs(["💊 Medicines", "👓 Spectacles", "👥 Patients", "📄 Prescriptions", "📈 Analytics"])
         
         with tab_med:
-            st.markdown("**Medicine Sheet Template:**")
+            st.markdown("**Medicines Tab Template:**")
+            st.info("📋 Create a tab named 'Medicines' with this data")
             medicine_template = pd.DataFrame({
                 'name': ['Refresh Tears Eye Drops', 'Tobramycin Eye Drops', 'Prednisolone Eye Drops'],
                 'category': ['Lubricant', 'Antibiotic', 'Steroid'],
@@ -906,15 +1010,16 @@ Prescribed Items:
             
             csv_med = medicine_template.to_csv(index=False)
             st.download_button(
-                "📥 Download Medicine Template",
+                "📥 Download Medicines Tab Template",
                 csv_med,
-                "medicine_template.csv",
+                "medicines_tab_template.csv",
                 "text/csv",
                 use_container_width=True
             )
         
         with tab_spec:
-            st.markdown("**Spectacle Sheet Template:**")
+            st.markdown("**Spectacles Tab Template:**")
+            st.info("👓 Create a tab named 'Spectacles' with this data")
             spectacle_template = pd.DataFrame({
                 'name': ['Ray-Ban Aviator Classic', 'Oakley Holbrook', 'Titan Rimless'],
                 'brand': ['Ray-Ban', 'Oakley', 'Titan'],
@@ -931,15 +1036,16 @@ Prescribed Items:
             
             csv_spec = spectacle_template.to_csv(index=False)
             st.download_button(
-                "📥 Download Spectacle Template",
+                "📥 Download Spectacles Tab Template",
                 csv_spec,
-                "spectacle_template.csv",
+                "spectacles_tab_template.csv",
                 "text/csv",
                 use_container_width=True
             )
         
         with tab_pat:
-            st.markdown("**Patient Sheet Template:**")
+            st.markdown("**Patients Tab Template:**")
+            st.info("👥 Create a tab named 'Patients' with this data")
             patient_template = pd.DataFrame({
                 'id': [1, 2, 3],
                 'name': ['John Doe', 'Jane Smith', 'Raj Kumar'],
@@ -948,16 +1054,25 @@ Prescribed Items:
                 'mobile': ['9876543210', '9876543211', '9876543212'],
                 'registration_date': ['2024-01-15', '2024-01-16', '2024-01-17'],
                 'issue': ['Blurry Vision', 'Eye Pain', 'Dry Eyes'],
-                'advice': ['Spectacle Prescription', 'Eye Drops', 'Regular Checkup']
+                'advice': ['Spectacle Prescription', 'Eye Drops', 'Regular Checkup'],
+                'occupation': ['Office Worker', 'Teacher', 'Driver'],
+                'screen_time': ['6-8 hours', '4-6 hours', '2-4 hours'],
+                'family_history': ['Diabetes', 'None', 'Myopia'],
+                'diabetes': ['No', 'Type 2', 'No'],
+                'hypertension': ['Normal', 'High', 'Controlled'],
+                'last_eye_exam': ['1-2 years', '<6 months', '>2 years'],
+                'current_glasses': ['Distance Glasses', 'Reading Glasses', 'None'],
+                'eye_strain': ['Often', 'Sometimes', 'Always'],
+                'referral_source': ['Online', 'Doctor Referral', 'Friend/Family']
             })
             
             st.dataframe(patient_template, use_container_width=True)
             
             csv_pat = patient_template.to_csv(index=False)
             st.download_button(
-                "📥 Download Patient Template",
+                "📥 Download Patients Tab Template",
                 csv_pat,
-                "patient_template.csv",
+                "patients_tab_template.csv",
                 "text/csv",
                 use_container_width=True
             )
@@ -1583,23 +1698,29 @@ Prescribed Items:
             2. Create a new spreadsheet
             3. Name it "MauEyeCare Hospital Data"
             
-            **Step 2: Create Required Sheets**
-            1. Create 5 sheets: Medicines, Spectacles, Patients, Prescriptions, Analytics
-            2. Download templates above and copy data to respective sheets
-            3. Make sure column headers match exactly
+            **Step 2: Create Required Tabs**
+            1. Create 5 separate tabs: Medicines, Spectacles, Patients, Prescriptions, Analytics
+            2. Right-click on sheet tab at bottom and select "Insert sheet"
+            3. Download templates above and copy data to respective tabs
+            4. Make sure column headers match exactly
             
-            **Step 3: Make Sheet Public**
+            **Step 3: Make Spreadsheet Public**
             1. Click "Share" button in Google Sheets
             2. Change access to "Anyone with the link can view"
-            3. Copy the sheet ID from URL
+            3. Copy the spreadsheet ID from URL
             
             **Step 4: Update Application**
             1. Paste sheet ID in the "Update Sheet ID" field above
             2. Click "Update Sheet ID"
             3. Test connection to verify
             
-            **Sheet ID Location:**
-            From URL: `https://docs.google.com/spreadsheets/d/SHEET_ID_HERE/edit`
+            **Spreadsheet ID Location:**
+            From URL: `https://docs.google.com/spreadsheets/d/SPREADSHEET_ID_HERE/edit`
+            
+            **Tab Structure:**
+            - Each tab should be named exactly: Medicines, Spectacles, Patients, Prescriptions, Analytics
+            - Tab names are case-sensitive
+            - Use templates provided above for each tab
             """)
         
         # Data Management
@@ -1675,11 +1796,12 @@ Prescribed Items:
             **Issue: "Connection Failed"**
             - Check if Google Sheet is publicly accessible
             - Verify Sheet ID is correct
-            - Ensure sheet has required tabs (Medicines, Spectacles, etc.)
+            - Ensure spreadsheet has required tabs (Medicines, Spectacles, Patients, Prescriptions, Analytics)
             
             **Issue: "No Data Found"**
-            - Check if sheets have data in correct format
+            - Check if tabs have data in correct format
             - Verify column headers match template exactly
+            - Ensure each tab is named correctly (Medicines, Spectacles, etc.)
             - Make sure data starts from row 2 (row 1 should be headers)
             
             **Issue: "Sync Problems"**
@@ -1734,6 +1856,64 @@ Prescribed Items:
         with col4:
             if st.button("🏠 Back to Dashboard", use_container_width=True):
                 st.info("🏥 Use sidebar to navigate to other sections")
+        
+        with tab_presc:
+            st.markdown("**Prescriptions Tab Template:**")
+            st.info("📄 Create a tab named 'Prescriptions' with this data")
+            prescription_template = pd.DataFrame({
+                'id': [1, 2, 3],
+                'patient_id': [1, 2, 3],
+                'patient_name': ['John Doe', 'Jane Smith', 'Raj Kumar'],
+                'prescription_date': ['2024-01-15', '2024-01-16', '2024-01-17'],
+                'spectacles': ['Ray-Ban Aviator', '', 'Titan Rimless'],
+                'medicines': ['Refresh Tears', 'Tobramycin Drops', 'Prednisolone'],
+                'od_sphere': ['-1.25', '+0.75', '-2.00'],
+                'od_cylinder': ['-0.50', '', '-0.25'],
+                'od_axis': ['90', '', '180'],
+                'os_sphere': ['-1.50', '+0.50', '-1.75'],
+                'os_cylinder': ['-0.25', '', ''],
+                'os_axis': ['85', '', ''],
+                'total_cost': [8500, 200, 4200]
+            })
+            
+            st.dataframe(prescription_template, use_container_width=True)
+            
+            csv_presc = prescription_template.to_csv(index=False)
+            st.download_button(
+                "📥 Download Prescriptions Tab Template",
+                csv_presc,
+                "prescriptions_tab_template.csv",
+                "text/csv",
+                use_container_width=True
+            )
+        
+        with tab_anal:
+            st.markdown("**Analytics Tab Template:**")
+            st.info("📈 Create a tab named 'Analytics' with this data")
+            analytics_template = pd.DataFrame({
+                'date': ['2024-01-15', '2024-01-16', '2024-01-17'],
+                'total_patients': [5, 8, 12],
+                'new_patients': [3, 5, 7],
+                'return_patients': [2, 3, 5],
+                'revenue': [15000, 22000, 18000],
+                'common_issue': ['Blurry Vision', 'Eye Pain', 'Dry Eyes'],
+                'avg_age': [35, 42, 38],
+                'referral_source': ['Online', 'Doctor', 'Family'],
+                'screen_time_high': [3, 4, 6],
+                'diabetes_patients': [1, 2, 2],
+                'family_history_cases': [2, 3, 4]
+            })
+            
+            st.dataframe(analytics_template, use_container_width=True)
+            
+            csv_anal = analytics_template.to_csv(index=False)
+            st.download_button(
+                "📥 Download Analytics Tab Template",
+                csv_anal,
+                "analytics_tab_template.csv",
+                "text/csv",
+                use_container_width=True
+            )
 
         st.header("📦 Inventory Management")
         
