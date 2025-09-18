@@ -18,6 +18,7 @@ sys.path.append(os.path.dirname(__file__))
 from modules.google_sheets_manager import sheets_manager
 from modules.image_manager import image_manager
 from modules.local_data_manager import local_data_manager
+from modules.google_sheets_api import google_sheets_api
 
 # Lazy imports for better performance
 @st.cache_data
