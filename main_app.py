@@ -19,6 +19,7 @@ from modules.google_sheets_manager import sheets_manager
 from modules.image_manager import image_manager
 from modules.local_data_manager import local_data_manager
 from modules.google_sheets_api import google_sheets_api
+from modules.sync_manager import sync_manager
 
 # Lazy imports for better performance
 @st.cache_data
@@ -60,9 +61,27 @@ def main():
         
         if st.button("🔄 Sync Google Sheets"):
             with st.spinner("Syncing with Google Sheets..."):
-                get_sheet_data.clear()
-                medicines, spectacles, patients = get_sheet_data()
-            st.success(f"✅ Synced: {len(medicines)} medicines, {len(spectacles)} spectacles, {len(patients)} patients!")
+                # Use the new sync manager
+                success = sync_manager.sync_google_sheets_to_local()
+                if success:
+                    get_sheet_data.clear()
+                    medicines, spectacles, patients = get_sheet_data()
+                    st.success(f"✅ Synced: {len(medicines)} medicines, {len(spectacles)} spectacles, {len(patients)} patients!")
+                else:
+                    st.error("❌ Sync failed! Check connection and try again.")
+        
+        # Quick sync status
+        sync_status = sync_manager.get_sync_status()
+        if sync_status['pending_patients'] > 0 or sync_status['pending_prescriptions'] > 0:
+            st.warning(f"⚠️ {sync_status['pending_patients']} patients, {sync_status['pending_prescriptions']} prescriptions pending sync")
+            if st.button("📤 Sync Pending Data"):
+                with st.spinner("Syncing pending data to Google Sheets..."):
+                    result = sync_manager.sync_local_to_google_sheets()
+                    if result['success']:
+                        st.success("✅ Pending data synced successfully!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Sync failed! Check the Google Sheets Setup tab for details.")
         
         st.markdown("---")
         st.markdown("**📊 Database Stats:**")
@@ -114,24 +133,29 @@ def main():
         st.markdown("---")
         st.markdown("**📊 Google Sheets Status:**")
         
-        try:
-            medicines, spectacles, patients = get_sheet_data()
-            if medicines or spectacles or patients:
-                st.success("✅ Google Sheets: Connected")
-                st.info(f"Sheet ID: ...{sheets_manager.sheet_id[-8:]}")
-            else:
-                st.warning("⚠️ Google Sheets: No Data")
-        except:
+        # Test connection using sync manager
+        connection_result = sync_manager.test_google_sheets_connection()
+        if connection_result['success']:
+            st.success("✅ Google Sheets: Connected")
+            st.info(f"Sheet ID: ...{google_sheets_api.sheet_id[-8:]}")
+            st.caption(connection_result['message'])
+        else:
             st.error("❌ Google Sheets: Connection Error")
+            st.caption(connection_result['message'])
+        
+        # Show last sync info
+        if sync_status['last_sync'] != 'Never':
+            st.info(f"🕒 Last sync: {sync_status['last_sync'][:16]}")
 
     # Main tabs
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "👥 Patient Registration", 
         "👓 Spectacle Gallery", 
         "📋 Patient History",
         "📤 Prescription Generator",
         "📊 Hospital Analytics",
-        "📊 Google Sheets Setup"
+        "📊 Google Sheets Setup",
+        "🔄 Data Sync"
     ])
 
     # --- Patient Registration Tab ---
@@ -2896,6 +2920,208 @@ Prescribed Items:
             st.markdown("- ✅ Inventory management")
             st.markdown("- ✅ Prescription generation")
             st.markdown("- ✅ Download options")
+    
+    # --- Data Sync Tab ---
+    with tab7:
+        st.header("🔄 Data Synchronization")
+        st.markdown("*Manage data sync between local storage and Google Sheets*")
+        
+        # Show sync dashboard
+        sync_manager.show_sync_dashboard()
+        
+        st.markdown("---")
+        
+        # Manual data export/import
+        st.subheader("📤 Manual Data Export/Import")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**📤 Export for Google Sheets**")
+            
+            # Export pending patients
+            pending_patients = st.session_state.get('pending_patients', [])
+            if pending_patients:
+                import pandas as pd
+                df_patients = pd.DataFrame(pending_patients)
+                csv_patients = df_patients.to_csv(index=False)
+                
+                st.download_button(
+                    f"📥 Export {len(pending_patients)} Patients",
+                    csv_patients,
+                    f"patients_for_google_sheets_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                    "text/csv",
+                    help="Download and manually add to Google Sheets Patients tab",
+                    use_container_width=True
+                )
+                
+                st.info(f"📊 {len(pending_patients)} patients ready for manual upload")
+                
+                # Clear after export
+                if st.button("🗑️ Clear After Manual Upload"):
+                    st.session_state['pending_patients'] = []
+                    st.success("✅ Pending patients cleared!")
+                    st.rerun()
+            else:
+                st.info("📊 No pending patients to export")
+            
+            # Export complete data
+            if st.button("📦 Export Complete Data", use_container_width=True):
+                excel_data = local_data_manager.export_complete_excel()
+                if excel_data:
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+                    st.download_button(
+                        "📥 Download Complete Hospital Data",
+                        data=excel_data,
+                        file_name=f"maueyecare_complete_data_{timestamp}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True
+                    )
+                    st.success("✅ Complete data export ready!")
+        
+        with col2:
+            st.markdown("**📥 Import from Google Sheets**")
+            
+            uploaded_file = st.file_uploader(
+                "Upload CSV from Google Sheets",
+                type=['csv'],
+                help="Export data from Google Sheets and upload here"
+            )
+            
+            if uploaded_file:
+                import_type = st.selectbox(
+                    "Data Type:",
+                    ["Patients", "Medicines", "Spectacles", "Prescriptions", "Analytics"]
+                )
+                
+                if st.button("📤 Import Data", type="primary"):
+                    try:
+                        import pandas as pd
+                        df = pd.read_csv(uploaded_file)
+                        
+                        if import_type == "Patients":
+                            # Import patients
+                            imported_count = 0
+                            for _, row in df.iterrows():
+                                patient_data = {
+                                    'id': row.get('id', ''),
+                                    'name': row.get('name', ''),
+                                    'age': row.get('age', 0),
+                                    'gender': row.get('gender', ''),
+                                    'mobile': row.get('mobile', ''),
+                                    'email': row.get('email', ''),
+                                    'address': row.get('address', ''),
+                                    'city': row.get('city', ''),
+                                    'state': row.get('state', ''),
+                                    'pincode': row.get('pincode', ''),
+                                    'registration_date': row.get('registration_date', ''),
+                                    'issue': row.get('issue', ''),
+                                    'advice': row.get('advice', '')
+                                }
+                                
+                                # Add to pending patients
+                                if 'pending_patients' not in st.session_state:
+                                    st.session_state['pending_patients'] = []
+                                st.session_state['pending_patients'].append(patient_data)
+                                imported_count += 1
+                            
+                            st.success(f"✅ Imported {imported_count} patients successfully!")
+                        
+                        elif import_type == "Medicines":
+                            # Import medicines to local database
+                            imported_count = 0
+                            medicines = local_data_manager.get_medicines()
+                            
+                            for _, row in df.iterrows():
+                                med_name = row.get('name', '')
+                                if med_name:
+                                    medicines[med_name] = {
+                                        'category': row.get('category', 'General'),
+                                        'type': row.get('type', 'Medicine'),
+                                        'price': row.get('price', 100),
+                                        'quantity': row.get('quantity', 0),
+                                        'prescription_required': row.get('prescription_required', True),
+                                        'indication': row.get('indication', 'As prescribed'),
+                                        'dosage': row.get('dosage', 'As prescribed'),
+                                        'source': 'imported',
+                                        'last_updated': datetime.now().isoformat()
+                                    }
+                                    imported_count += 1
+                            
+                            local_data_manager.save_json_data('medicines.json', medicines)
+                            st.success(f"✅ Imported {imported_count} medicines successfully!")
+                        
+                        else:
+                            st.info(f"📊 Import for {import_type} coming soon!")
+                        
+                        st.rerun()
+                        
+                    except Exception as e:
+                        st.error(f"❌ Import failed: {str(e)}")
+        
+        st.markdown("---")
+        
+        # Sync troubleshooting
+        st.subheader("🔧 Sync Troubleshooting")
+        
+        with st.expander("🔍 Common Sync Issues & Solutions"):
+            st.markdown("""
+            **Issue: "Connection Failed"**
+            - Check internet connection
+            - Verify Google Sheets API key is valid
+            - Ensure Google Sheet is publicly accessible
+            - Check if Sheet ID is correct
+            
+            **Issue: "Sync Partially Failed"**
+            - Some data may have synced successfully
+            - Check Google Sheets for partial data
+            - Retry sync for remaining items
+            - Use manual export/import as backup
+            
+            **Issue: "Data Not Appearing"**
+            - Refresh the Google Sheet
+            - Check if data was added to correct tab
+            - Verify column headers match template
+            - Clear cache and re-sync
+            
+            **Issue: "Duplicate Data"**
+            - System prevents duplicate patients by name+mobile
+            - Check for slight variations in names
+            - Use manual cleanup if needed
+            
+            **Best Practices:**
+            - Sync regularly to avoid large data batches
+            - Always test connection before major operations
+            - Keep local backups using export feature
+            - Monitor sync status in sidebar
+            """)
+        
+        # Advanced sync options
+        st.subheader("⚙️ Advanced Sync Options")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("🗑️ Clear All Pending Data", help="Clear all local pending data"):
+                st.warning("⚠️ This will clear all unsaved local data!")
+                if st.button("Confirm Clear All", type="secondary"):
+                    for key in ['pending_patients', 'pending_prescriptions', 'visit_analytics']:
+                        if key in st.session_state:
+                            st.session_state[key] = []
+                    st.success("✅ All pending data cleared!")
+                    st.rerun()
+        
+        with col2:
+            if st.button("🔄 Reset Sync Status", help="Reset sync timestamps and status"):
+                local_data_manager.save_json_data('last_sync.json', {})
+                st.success("✅ Sync status reset!")
+                st.rerun()
+        
+        with col3:
+            if st.button("📊 Force Refresh Cache", help="Clear all cached data"):
+                get_sheet_data.clear()
+                st.success("✅ Cache cleared!")
+                st.rerun()
     
 
         st.header("📊 Professional Analytics")
