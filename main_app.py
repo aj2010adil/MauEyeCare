@@ -17,6 +17,7 @@ sys.path.append(os.path.dirname(__file__))
 # Core imports
 from modules.google_sheets_manager import sheets_manager
 from modules.image_manager import image_manager
+from modules.local_data_manager import local_data_manager
 
 # Lazy imports for better performance
 @st.cache_data
@@ -864,6 +865,23 @@ def main():
             
             if st.button("📤 Generate Prescription", type="primary"):
                 if selected_spectacles or medicine_details:
+                    # Update inventory for used items
+                    for spec_name in selected_spectacles:
+                        local_data_manager.update_spectacle_quantity(spec_name, 1)
+                    
+                    for med_name, details in medicine_details.items():
+                        local_data_manager.update_medicine_quantity(med_name, details['quantity'])
+                    
+                    # Add prescription record
+                    prescription_data = {
+                        'patient_name': patient_name,
+                        'patient_mobile': st.session_state.get('patient_mobile', ''),
+                        'spectacles': selected_spectacles,
+                        'medicines': medicine_details,
+                        'rx_table': st.session_state.get('rx_table', {}),
+                        'total_cost': sum([details['total_cost'] for details in medicine_details.values()])
+                    }
+                    local_data_manager.add_prescription(prescription_data)
                     # Create professional HTML prescription
                     current_time = datetime.now(timezone(timedelta(hours=5, minutes=30)))
                     prescription_html = f"""
@@ -1003,20 +1021,15 @@ def main():
     with tab5:
         st.header("📊 Hospital Analytics")
         
-        # Load analytics from Google Sheets first
-        try:
-            analytics_data = sheets_manager.get_analytics_data()
-            if analytics_data:
-                st.success(f"✅ Loaded {len(analytics_data)} analytics records from Google Sheets")
-            else:
-                st.info("📊 No analytics data in Google Sheets, using local data")
-        except Exception as e:
-            st.warning(f"⚠️ Could not load from Google Sheets: {str(e)}")
-            analytics_data = []
-        
-        # Combine with local visit data
+        # Load analytics from local data manager
+        analytics_data = local_data_manager.load_json_data('analytics.json', [])
         visit_data = st.session_state.get('visit_analytics', [])
         all_data = visit_data + analytics_data if analytics_data else visit_data
+        
+        if analytics_data:
+            st.success(f"✅ Loaded {len(analytics_data)} analytics records from synced data")
+        else:
+            st.info("📊 Using local visit data only")
         
         if all_data:
             # Key Metrics
