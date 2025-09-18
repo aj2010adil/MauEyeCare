@@ -67,14 +67,22 @@ def main():
         
         col1, col2 = st.columns(2)
         with col1:
-            st.metric("👓 Spectacles", len(get_spectacle_database()))
-            st.metric("💊 Medicines", len(get_medicine_database()))
+            # Show Google Sheets data first
+            try:
+                medicines, spectacles, _ = get_sheet_data()
+                st.metric("👓 Google Sheets Spectacles", len(spectacles))
+                st.metric("💊 Google Sheets Medicines", len(medicines))
+            except:
+                st.metric("👓 Local Spectacles", len(get_spectacle_database()))
+                st.metric("💊 Local Medicines", len(get_medicine_database()))
+                st.caption("Google Sheets: Not connected")
         
         with col2:
             try:
                 medicines, spectacles, patients = get_sheet_data()
                 total_items = len(medicines) + len(spectacles)
-                st.metric("📦 Inventory Items", total_items)
+                st.metric("📦 Google Sheets Items", total_items)
+                st.caption(f"{len(medicines)} medicines + {len(spectacles)} spectacles")
                 
                 # Show Google Sheets patients + pending patients
                 pending_patients = len(st.session_state.get('pending_patients', []))
@@ -82,12 +90,15 @@ def main():
                 st.metric("👥 Total Patients", total_patients)
                 if pending_patients > 0:
                     st.caption(f"{len(patients)} in Google Sheets + {pending_patients} pending")
-            except:
+                else:
+                    st.caption(f"{len(patients)} in Google Sheets")
+            except Exception as e:
                 pending_patients = len(st.session_state.get('pending_patients', []))
-                st.metric("📦 Inventory Items", 0)
+                st.metric("📦 Google Sheets Items", 0)
                 st.metric("👥 Total Patients", pending_patients)
+                st.caption("Google Sheets: Connection Error")
                 if pending_patients > 0:
-                    st.caption(f"0 in Google Sheets + {pending_patients} pending")
+                    st.caption(f"Local: {pending_patients} pending patients")
         
         # Current patient info
         if 'patient_name' in st.session_state and st.session_state['patient_name']:
@@ -269,9 +280,30 @@ def main():
             with col_med3:
                 prescription_req = st.selectbox("Prescription Required", ["All", "Yes", "No"], key="rx_prescription_req")
             
-            # Filter medicines for prescription (include custom medicines)
-            COMPREHENSIVE_MEDICINE_DATABASE = get_medicine_database()
-            filtered_rx_medicines = COMPREHENSIVE_MEDICINE_DATABASE.copy()
+            # Filter medicines for prescription - Load from Google Sheets first
+            filtered_rx_medicines = {}
+            
+            # Load medicines from Google Sheets
+            try:
+                medicines, _, _ = get_sheet_data()
+                for med in medicines:
+                    if isinstance(med, dict) and 'name' in med:
+                        filtered_rx_medicines[med['name']] = {
+                            'category': med.get('category', 'General'),
+                            'type': med.get('type', 'Medicine'),
+                            'price': med.get('price', 100),
+                            'prescription_required': med.get('prescription_required', True),
+                            'indication': med.get('indication', 'As prescribed'),
+                            'dosage': med.get('dosage', 'As prescribed'),
+                            'quantity': med.get('quantity', 0)
+                        }
+            except Exception as e:
+                st.warning(f"⚠️ Could not load medicines from Google Sheets: {str(e)}")
+            
+            # Fallback to local database if Google Sheets fails
+            if not filtered_rx_medicines:
+                COMPREHENSIVE_MEDICINE_DATABASE = get_medicine_database()
+                filtered_rx_medicines = COMPREHENSIVE_MEDICINE_DATABASE.copy()
             
             # Add custom medicines from session state
             if 'custom_medicines' in st.session_state:
