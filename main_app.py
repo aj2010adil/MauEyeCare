@@ -448,12 +448,33 @@ def main():
                     total_med_cost = sum([details['total_cost'] for details in medicine_details.values()])
                     st.success(f"**Total Medicine Cost: ₹{total_med_cost:,}**")
                     
-                    # Quick summary
-                    with st.expander("📋 Prescription Summary"):
+                    # Quick summary with stock updates
+                    with st.expander("📋 Prescription Summary & Stock Status"):
                         for med_name, details in medicine_details.items():
                             st.write(f"• **{med_name}**: {details['dosage']} | {details.get('timing', '')} | {details['duration']}")
                             if details.get('notes'):
                                 st.write(f"  📝 *{details['notes']}*")
+                            
+                            # Get current stock and calculate remaining
+                            current_stock = 0
+                            try:
+                                medicines, _, _ = get_sheet_data()
+                                for med in medicines:
+                                    if isinstance(med, dict) and med.get('name') == med_name:
+                                        current_stock = med.get('quantity', 0)
+                                        break
+                            except:
+                                current_stock = 10  # Default stock
+                            
+                            new_stock = current_stock - details['quantity']
+                            
+                            # Show stock alerts
+                            if new_stock <= 0:
+                                st.error(f"  ❌ OUT OF STOCK after prescription! (Current: {current_stock})")
+                            elif new_stock < 5:
+                                st.warning(f"  ⚠️ LOW STOCK: {new_stock} remaining (Current: {current_stock})")
+                            else:
+                                st.success(f"  ✅ Stock OK: {new_stock} remaining (Current: {current_stock})")
             
 
             
@@ -643,8 +664,33 @@ def main():
             brands = sorted(list(set([spec['brand'] for spec in COMPREHENSIVE_SPECTACLE_DATABASE.values()])))
             brand_filter = st.selectbox("Brand", ["All"] + brands)
         
-        # Apply filters
-        filtered_specs = COMPREHENSIVE_SPECTACLE_DATABASE.copy()
+        # Load spectacles from Google Sheets first
+        try:
+            _, spectacles, _ = get_sheet_data()
+            if spectacles:
+                # Convert Google Sheets spectacles to database format
+                filtered_specs = {}
+                for spec in spectacles:
+                    if isinstance(spec, dict) and 'name' in spec:
+                        filtered_specs[spec['name']] = {
+                            'brand': spec.get('brand', 'Generic'),
+                            'model': spec.get('model', 'Standard'),
+                            'category': spec.get('category', 'Mid-Range'),
+                            'price': spec.get('price', 5000),
+                            'lens_price': spec.get('lens_price', 2000),
+                            'material': spec.get('material', 'Plastic'),
+                            'shape': spec.get('shape', 'Square'),
+                            'quantity': spec.get('quantity', 0)
+                        }
+                st.success(f"✅ Loaded {len(filtered_specs)} spectacles from Google Sheets")
+            else:
+                # Fallback to local database
+                filtered_specs = COMPREHENSIVE_SPECTACLE_DATABASE.copy()
+                st.info("📦 Using local spectacle database")
+        except Exception as e:
+            # Fallback to local database
+            filtered_specs = COMPREHENSIVE_SPECTACLE_DATABASE.copy()
+            st.warning(f"⚠️ Google Sheets error, using local database: {str(e)}")
         
         if category_filter != "All":
             filtered_specs = {k: v for k, v in filtered_specs.items() if v['category'] == category_filter}
@@ -683,14 +729,32 @@ def main():
                 st.markdown(f"**₹{total_price:,}**")
                 st.markdown(f"{spec_data['material']} | {spec_data['shape']}")
                 
+                # Show stock status
+                stock = spec_data.get('quantity', 0)
+                if stock == 0:
+                    st.error("❌ OUT OF STOCK")
+                elif stock < 5:
+                    st.warning(f"⚠️ LOW STOCK: {stock}")
+                else:
+                    st.success(f"✅ In Stock: {stock}")
+                
                 # Add to prescription button
-                if st.button(f"➕ Add to Prescription", key=f"add_spec_{i}"):
+                if st.button(f"➕ Add to Prescription", key=f"add_spec_{i}", disabled=(stock == 0)):
                     if 'selected_spectacles' not in st.session_state:
                         st.session_state['selected_spectacles'] = []
                     
                     if spec_name not in st.session_state['selected_spectacles']:
                         st.session_state['selected_spectacles'].append(spec_name)
                         st.success(f"Added {spec_data['brand']} {spec_data['model']}")
+                        
+                        # Update inventory count locally
+                        if 'inventory_updates' not in st.session_state:
+                            st.session_state['inventory_updates'] = {}
+                        st.session_state['inventory_updates'][spec_name] = stock - 1
+                        
+                        # Show low stock warning
+                        if stock - 1 < 5:
+                            st.warning(f"⚠️ LOW STOCK ALERT: {spec_name} now has {stock - 1} units left!")
                     else:
                         st.warning("Already added to prescription")
 
@@ -751,12 +815,36 @@ def main():
                 selected_spectacles = st.session_state.get('selected_spectacles', [])
                 
                 if selected_spectacles:
-                    COMPREHENSIVE_SPECTACLE_DATABASE = get_spectacle_database()
+                    # Load from Google Sheets first
+                    try:
+                        _, spectacles, _ = get_sheet_data()
+                        spectacle_data = {}
+                        for spec in spectacles:
+                            if isinstance(spec, dict) and 'name' in spec:
+                                spectacle_data[spec['name']] = spec
+                    except:
+                        spectacle_data = {}
+                    
+                    # Fallback to local database
+                    if not spectacle_data:
+                        COMPREHENSIVE_SPECTACLE_DATABASE = get_spectacle_database()
+                        spectacle_data = COMPREHENSIVE_SPECTACLE_DATABASE
+                    
                     for spec_name in selected_spectacles:
-                        if spec_name in COMPREHENSIVE_SPECTACLE_DATABASE:
-                            spec_data = COMPREHENSIVE_SPECTACLE_DATABASE[spec_name]
-                            total_price = spec_data['price'] + spec_data['lens_price']
-                            st.write(f"• {spec_data['brand']} {spec_data['model']} - ₹{total_price:,}")
+                        if spec_name in spectacle_data:
+                            spec_data = spectacle_data[spec_name]
+                            if isinstance(spec_data, dict):
+                                total_price = spec_data.get('price', 5000) + spec_data.get('lens_price', 2000)
+                                current_stock = spec_data.get('quantity', 0)
+                                st.write(f"• {spec_data.get('brand', 'Generic')} {spec_data.get('model', 'Standard')} - ₹{total_price:,}")
+                                
+                                # Show stock status
+                                if current_stock <= 1:
+                                    st.error(f"  ❌ Will be OUT OF STOCK after sale!")
+                                elif current_stock <= 5:
+                                    st.warning(f"  ⚠️ LOW STOCK: {current_stock - 1} will remain")
+                                else:
+                                    st.success(f"  ✅ Stock OK: {current_stock - 1} will remain")
                 else:
                     st.info("No spectacles selected")
             
