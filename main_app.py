@@ -147,8 +147,20 @@ def main():
             
             with col2:
                 contact = st.text_input("Mobile Number", placeholder="Enter mobile number")
+                email = st.text_input("Email (Optional)", placeholder="Enter email address")
+                address = st.text_area("Address", placeholder="Enter full address", height=60)
+                city = st.text_input("City", placeholder="Enter city")
+                state = st.selectbox("State", ["Uttar Pradesh", "Bihar", "Jharkhand", "West Bengal", "Delhi", "Maharashtra", "Gujarat", "Rajasthan", "Punjab", "Haryana", "Madhya Pradesh", "Other"])
+                pincode = st.text_input("Pincode", placeholder="Enter pincode")
+                
+            # Move issue and advice to new row
+            col_issue1, col_issue2 = st.columns(2)
+            
+            with col_issue1:
                 issue_options = ["Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Floaters", "Night Blindness", "Other"]
                 patient_issue = st.selectbox("Patient Issue/Complaint", issue_options)
+                
+            with col_issue2:
                 advice_options = ["Spectacle Prescription", "Regular Eye Checkup", "Dry Eye Treatment", "Glaucoma Screening", "Diabetic Eye Exam", "Other"]
                 advice = st.selectbox("Advice/Notes", advice_options)
             
@@ -472,6 +484,11 @@ def main():
                             'age': age,
                             'gender': gender,
                             'mobile': contact,
+                            'email': email,
+                            'address': address,
+                            'city': city,
+                            'state': state,
+                            'pincode': pincode,
                             'registration_date': datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y-%m-%d %H:%M:%S'),
                             'issue': patient_issue,
                             'advice': advice,
@@ -531,6 +548,11 @@ def main():
                     'patient_id': patient_id,
                     'patient_name': patient_name,
                     'patient_mobile': contact,
+                    'patient_email': email,
+                    'patient_address': address,
+                    'patient_city': city,
+                    'patient_state': state,
+                    'patient_pincode': pincode,
                     'age': age,
                     'gender': gender,
                     'advice': advice,
@@ -754,48 +776,136 @@ def main():
             
             if st.button("📤 Generate Prescription", type="primary"):
                 if selected_spectacles or medicine_details:
-                    # Create simple prescription text
+                    # Create professional HTML prescription
                     current_time = datetime.now(timezone(timedelta(hours=5, minutes=30)))
-                    prescription_text = f"""MauEyeCare Prescription
-
-Patient: {patient_name}
-Age: {st.session_state.get('age', 'N/A')}
-Gender: {st.session_state.get('gender', 'N/A')}
-Mobile: {st.session_state.get('patient_mobile', 'N/A')}
-Date: {current_time.strftime('%d/%m/%Y %I:%M %p IST')}
-
-Prescribed Items:
-{'-'*40}
-"""
+                    prescription_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MauEyeCare Prescription - {patient_name}</title>
+    <style>
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, rgba(46, 134, 171, 0.95) 0%, rgba(30, 95, 139, 0.95) 100%); }}
+        .prescription-container {{ max-width: 800px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; }}
+        .header {{ text-align: center; background: #2E86AB; color: white; padding: 40px 30px; }}
+        .logo {{ width: 80px; height: 80px; background: white; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #2E86AB; }}
+        .clinic-name {{ font-size: 36px; font-weight: 900; margin: 15px 0; }}
+        .doctor-info {{ font-size: 18px; margin: 8px 0; font-weight: 600; }}
+        .patient-info {{ background: #f8f9ff; padding: 25px; border-left: 5px solid #2E86AB; }}
+        .prescription {{ background: white; padding: 25px; border-bottom: 1px solid #eee; }}
+        .item {{ background: linear-gradient(135deg, #f0f8ff, #e6f3ff); padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #2E86AB; }}
+        .total {{ background: linear-gradient(135deg, #e8f5e8, #d4f4d4); padding: 20px; border-radius: 10px; font-weight: bold; text-align: center; margin: 15px 0; }}
+        .footer {{ background: #f8f9fa; padding: 20px; text-align: center; color: #666; border-top: 2px solid #2E86AB; }}
+        .section-title {{ color: #2E86AB; font-size: 20px; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid #2E86AB; padding-bottom: 5px; }}
+    </style>
+</head>
+<body>
+    <div class="prescription-container">
+        <div class="header">
+            <div class="logo">👁️</div>
+            <div class="clinic-name">MauEyeCare Optical Center</div>
+            <div class="doctor-info">Dr. Danish - Eye Care Specialist</div>
+            <div class="doctor-info">Registration No: UPS 2908</div>
+            <div class="doctor-info">📞 +91 92356-47410 | 📧 maueyecare@gmail.com</div>
+        </div>
+    
+        <div class="patient-info">
+            <div class="section-title">👤 Patient Information</div>
+            <p><strong>Name:</strong> {patient_name}</p>
+            <p><strong>Age:</strong> {st.session_state.get('age', 'N/A')} | <strong>Gender:</strong> {st.session_state.get('gender', 'N/A')}</p>
+            <p><strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')}</p>
+            <p><strong>Address:</strong> {st.session_state.get('patient_address', 'N/A')}</p>
+            <p><strong>City:</strong> {st.session_state.get('patient_city', 'N/A')}, {st.session_state.get('patient_state', 'N/A')} - {st.session_state.get('patient_pincode', 'N/A')}</p>
+            <p><strong>Date:</strong> {current_time.strftime('%d/%m/%Y %I:%M %p IST')}</p>
+        </div>"""
                     
+                    # Add eye prescription if available
+                    rx_table = st.session_state.get('rx_table', {})
+                    if rx_table and (rx_table.get('OD', {}).get('Sphere') or rx_table.get('OS', {}).get('Sphere')):
+                        prescription_html += """
+        <div class="prescription">
+            <div class="section-title">👁️ Eye Prescription (RX)</div>"""
+                        
+                        for eye in ['OD', 'OS']:
+                            eye_data = rx_table.get(eye, {})
+                            if eye_data.get('Sphere'):
+                                eye_name = "Right Eye" if eye == "OD" else "Left Eye"
+                                prescription_html += f"""
+        <div class="item">
+            <strong>{eye} ({eye_name}):</strong> 
+            SPH {eye_data.get('Sphere', '')} 
+            CYL {eye_data.get('Cylinder', '')} 
+            AXIS {eye_data.get('Axis', '')}
+        </div>"""
+                        
+                        prescription_html += "</div>"
+                    
+                    # Add spectacles
                     if selected_spectacles:
-                        prescription_text += "\nSPECTACLES:\n"
+                        prescription_html += """
+        <div class="prescription">
+            <div class="section-title">👓 Recommended Spectacles</div>"""
+                        
+                        total_spec_cost = 0
                         for spec_name in selected_spectacles:
                             if spec_name in COMPREHENSIVE_SPECTACLE_DATABASE:
                                 spec_data = COMPREHENSIVE_SPECTACLE_DATABASE[spec_name]
                                 total_price = spec_data['price'] + spec_data['lens_price']
-                                prescription_text += f"- {spec_data['brand']} {spec_data['model']} - Rs.{total_price:,}\n"
+                                total_spec_cost += total_price
+                                
+                                prescription_html += f"""
+        <div class="item">
+            <strong>{spec_data['brand']} {spec_data['model']}</strong><br>
+            Material: {spec_data['material']} | Shape: {spec_data['shape']}<br>
+            Frame: ₹{spec_data['price']:,} + Lens: ₹{spec_data['lens_price']:,} = <strong>₹{total_price:,}</strong>
+        </div>"""
+                        
+                        prescription_html += f"""
+        <div class="total">Total Spectacle Cost: ₹{total_spec_cost:,}</div>
+    </div>"""
                     
+                    # Add medicines
                     if medicine_details:
-                        prescription_text += "\nMEDICINES:\n"
+                        prescription_html += """
+        <div class="prescription">
+            <div class="section-title">💊 Prescribed Medicines</div>"""
+                        
+                        total_med_cost = 0
                         for med_name, details in medicine_details.items():
-                            prescription_text += f"- {med_name} (Qty: {details['quantity']}) - Rs.{details['total_cost']}\n"
-                            prescription_text += f"  Dosage: {details['dosage']}\n"
-                            prescription_text += f"  Duration: {details['duration']}\n"
+                            total_med_cost += details['total_cost']
+                            prescription_html += f"""
+        <div class="item">
+            <strong>{med_name}</strong><br>
+            Quantity: {details['quantity']} | Dosage: {details['dosage']}<br>
+            Duration: {details['duration']}<br>
+            Price: ₹{details['price']} x {details['quantity']} = <strong>₹{details['total_cost']}</strong>
+        </div>"""
+                        
+                        prescription_html += f"""
+        <div class="total">Total Medicine Cost: ₹{total_med_cost:,}</div>
+    </div>"""
                     
-                    prescription_text += f"\n{'-'*40}\nDr. Danish\nEye Care Specialist\nMauEyeCare Optical Center\nPhone: +91 92356-47410\nEmail: maueyecare@gmail.com"
+                    # Add footer
+                    prescription_html += f"""
+        <div class="footer">
+            <p><strong>Dr. Danish</strong> - Eye Care Specialist</p>
+            <p>MauEyeCare Optical Center</p>
+            <p>📞 +91 92356-47410 | 📧 maueyecare@gmail.com</p>
+        </div>
+    </div>
+</body>
+</html>"""
                     
-                    # Download prescription
+                    # Download HTML prescription
                     timestamp = current_time.strftime("%Y%m%d_%H%M")
                     st.download_button(
-                        "💾 Download Prescription",
-                        data=prescription_text.encode('utf-8'),
-                        file_name=f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.txt",
-                        mime="text/plain",
+                        "💾 Download HTML Prescription",
+                        data=prescription_html.encode('utf-8'),
+                        file_name=f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html",
+                        mime="text/html",
                         type="primary"
                     )
                     
-                    st.success("✅ Prescription generated successfully!")
+                    st.success("✅ Professional HTML prescription generated!")
                 else:
                     st.warning("⚠️ Please select at least one spectacle or medicine")
         else:
@@ -805,27 +915,40 @@ Prescribed Items:
     with tab5:
         st.header("📊 Hospital Analytics")
         
-        visit_data = st.session_state.get('visit_analytics', [])
+        # Load analytics from Google Sheets first
+        try:
+            analytics_data = sheets_manager.get_analytics_data()
+            if analytics_data:
+                st.success(f"✅ Loaded {len(analytics_data)} analytics records from Google Sheets")
+            else:
+                st.info("📊 No analytics data in Google Sheets, using local data")
+        except Exception as e:
+            st.warning(f"⚠️ Could not load from Google Sheets: {str(e)}")
+            analytics_data = []
         
-        if visit_data:
+        # Combine with local visit data
+        visit_data = st.session_state.get('visit_analytics', [])
+        all_data = visit_data + analytics_data if analytics_data else visit_data
+        
+        if all_data:
             # Key Metrics
             col1, col2, col3, col4 = st.columns(4)
             
             with col1:
-                total_visits = len(visit_data)
+                total_visits = len(all_data)
                 st.metric("Total Visits", total_visits)
             
             with col2:
-                new_patients = len([v for v in visit_data if v['visit_type'] == 'New'])
+                new_patients = len([v for v in all_data if v.get('visit_type') == 'New'])
                 st.metric("New Patients", new_patients)
             
             with col3:
-                return_visits = len([v for v in visit_data if v['visit_type'] == 'Return'])
+                return_visits = len([v for v in all_data if v.get('visit_type') == 'Return'])
                 st.metric("Return Visits", return_visits)
             
             with col4:
-                if visit_data:
-                    ages = [v.get('patient_age', 30) if isinstance(v.get('patient_age'), int) else 30 for v in visit_data]
+                if all_data:
+                    ages = [v.get('patient_age', 30) if isinstance(v.get('patient_age'), int) else 30 for v in all_data]
                     avg_age = sum(ages) / len(ages)
                     st.metric("Avg Age", f"{avg_age:.1f}")
                 else:
@@ -838,7 +961,7 @@ Prescribed Items:
             
             with col1:
                 st.markdown("**Most Common Issues:**")
-                issues = [v['issue'] for v in visit_data]
+                issues = [v.get('issue', 'Unknown') for v in all_data if v.get('issue')]
                 issue_counts = {}
                 for issue in issues:
                     issue_counts[issue] = issue_counts.get(issue, 0) + 1
@@ -848,7 +971,7 @@ Prescribed Items:
             
             with col2:
                 st.markdown("**Age Distribution:**")
-                age_groups = [v['age_group'] for v in visit_data]
+                age_groups = [v.get('age_group', 'Adult') for v in all_data if v.get('age_group')]
                 age_counts = {}
                 for group in age_groups:
                     age_counts[group] = age_counts.get(group, 0) + 1
