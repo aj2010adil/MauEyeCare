@@ -63,54 +63,27 @@ def main():
         
         if st.button("🔄 Sync Google Sheets"):
             with st.spinner("Syncing with Google Sheets..."):
-                try:
+                # Use the new sync manager
+                success = sync_manager.sync_google_sheets_to_local()
+                if success:
                     get_sheet_data.clear()
                     medicines, spectacles, patients = get_sheet_data()
                     st.success(f"✅ Synced: {len(medicines)} medicines, {len(spectacles)} spectacles, {len(patients)} patients!")
-                except Exception as e:
-                    st.error(f"❌ Sync failed: {str(e)}")
-        
-        if st.button("📦 Load Sample Inventory"):
-            with st.spinner("Loading sample inventory..."):
-                try:
-                    from modules.separate_inventory import initialize_sample_inventory
-                    initialize_sample_inventory()
-                    st.success("✅ Sample inventory loaded!")
-                except Exception as e:
-                    st.error(f"❌ Failed to load inventory: {str(e)}")
-        
-        # Show pending data status
-        pending_patients = len(st.session_state.get('pending_patients', []))
-        pending_prescriptions = len(st.session_state.get('pending_prescriptions', []))
-        
-        if pending_patients > 0 or pending_prescriptions > 0:
-            st.warning(f"⚠️ {pending_patients} patients, {pending_prescriptions} prescriptions pending sync")
-            if st.button("📤 Sync to Google Sheets"):
-                if oauth_sheets_api.is_authenticated():
-                    with st.spinner("Syncing to Google Sheets..."):
-                        success_count = 0
-                        # Sync patients
-                        for patient in st.session_state.get('pending_patients', []):
-                            result = oauth_sheets_api.add_patient(patient)
-                            if result['success']:
-                                success_count += 1
-                        
-                        # Sync prescriptions
-                        for prescription in st.session_state.get('pending_prescriptions', []):
-                            result = oauth_sheets_api.add_prescription(prescription)
-                            if result['success']:
-                                success_count += 1
-                        
-                        if success_count > 0:
-                            st.success(f"✅ Synced {success_count} records!")
-                            # Clear synced data
-                            st.session_state['pending_patients'] = []
-                            st.session_state['pending_prescriptions'] = []
-                            st.rerun()
-                        else:
-                            st.error("❌ Sync failed!")
                 else:
-                    st.error("❌ Please authenticate first!")
+                    st.error("❌ Sync failed! Check connection and try again.")
+        
+        # Quick sync status
+        sync_status = sync_manager.get_sync_status()
+        if sync_status['pending_patients'] > 0 or sync_status['pending_prescriptions'] > 0:
+            st.warning(f"⚠️ {sync_status['pending_patients']} patients, {sync_status['pending_prescriptions']} prescriptions pending sync")
+            if st.button("📤 Sync Pending Data"):
+                with st.spinner("Syncing pending data to Google Sheets..."):
+                    result = sync_manager.sync_local_to_google_sheets()
+                    if result['success']:
+                        st.success("✅ Pending data synced successfully!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Sync failed! Check the Google Sheets Setup tab for details.")
         
         st.markdown("---")
         st.markdown("**📊 Database Stats:**")
@@ -182,15 +155,9 @@ def main():
         else:
             st.error("❌ Reading: Connection Error")
         
-        # Show inventory status
-        try:
-            from modules.separate_inventory import get_medicine_list, get_spectacle_list
-            medicines = get_medicine_list()
-            spectacles = get_spectacle_list()
-            if medicines or spectacles:
-                st.info(f"📦 Local inventory: {len(medicines)} medicines, {len(spectacles)} spectacles")
-        except:
-            pass
+        # Show last sync info
+        if sync_status['last_sync'] != 'Never':
+            st.info(f"🕒 Last sync: {sync_status['last_sync'][:16]}")
 
     # Handle OAuth callback
     query_params = st.experimental_get_query_params()
@@ -380,42 +347,14 @@ def main():
             with col_med3:
                 prescription_req = st.selectbox("Prescription Required", ["All", "Yes", "No"], key="rx_prescription_req")
             
-            # Load medicines from multiple sources
+            # Filter medicines for prescription - Load from Google Sheets first
             filtered_rx_medicines = {}
             
-            # 1. Load from separate inventory (primary)
-            try:
-                from modules.separate_inventory import load_medicine_inventory
-                medicine_inventory = load_medicine_inventory()
-                for med_name, med_data in medicine_inventory.items():
-                    if isinstance(med_data, dict):
-                        filtered_rx_medicines[med_name] = {
-                            'category': med_data.get('category', 'Medicine'),
-                            'type': med_data.get('type', 'Medicine'),
-                            'price': med_data.get('price', 100),
-                            'prescription_required': True,
-                            'indication': 'As prescribed',
-                            'dosage': 'As prescribed',
-                            'quantity': med_data.get('quantity', 0)
-                        }
-                    else:
-                        filtered_rx_medicines[med_name] = {
-                            'category': 'Medicine',
-                            'type': 'Medicine',
-                            'price': 100,
-                            'prescription_required': True,
-                            'indication': 'As prescribed',
-                            'dosage': 'As prescribed',
-                            'quantity': med_data if isinstance(med_data, int) else 0
-                        }
-            except:
-                pass
-            
-            # 2. Load from Google Sheets (secondary)
+            # Load medicines from Google Sheets
             try:
                 medicines, _, _ = get_sheet_data()
                 for med in medicines:
-                    if isinstance(med, dict) and 'name' in med and med['name'] not in filtered_rx_medicines:
+                    if isinstance(med, dict) and 'name' in med:
                         filtered_rx_medicines[med['name']] = {
                             'category': med.get('category', 'General'),
                             'type': med.get('type', 'Medicine'),
@@ -425,17 +364,35 @@ def main():
                             'dosage': med.get('dosage', 'As prescribed'),
                             'quantity': med.get('quantity', 0)
                         }
-            except:
-                pass
+            except Exception as e:
+                st.warning(f"⚠️ Could not load medicines from Google Sheets: {str(e)}")
             
-            # 3. Fallback to comprehensive database
+            # Fallback to local database if Google Sheets fails
             if not filtered_rx_medicines:
                 COMPREHENSIVE_MEDICINE_DATABASE = get_medicine_database()
                 filtered_rx_medicines = COMPREHENSIVE_MEDICINE_DATABASE.copy()
             
-            # 4. Add custom medicines from session
+            # Add custom medicines from session state
             if 'custom_medicines' in st.session_state:
                 filtered_rx_medicines.update(st.session_state['custom_medicines'])
+            
+            # Add medicines from separate inventory
+            try:
+                from modules.separate_inventory import get_medicine_list
+                medicine_inventory = get_medicine_list()
+                for med_name, stock in medicine_inventory.items():
+                    if med_name not in filtered_rx_medicines:
+                        filtered_rx_medicines[med_name] = {
+                            'category': 'Inventory',
+                            'type': 'Medicine',
+                            'price': 100,
+                            'prescription_required': True,
+                            'indication': f'Stock: {stock}',
+                            'dosage': 'As prescribed',
+                            'custom': True
+                        }
+            except:
+                pass
             
             # Apply filters
             if med_usage == "External":
@@ -553,8 +510,17 @@ def main():
                             if details.get('notes'):
                                 st.write(f"  📝 *{details['notes']}*")
                             
-                            # Get current stock from inventory
-                            current_stock = filtered_rx_medicines.get(med_name, {}).get('quantity', 0)
+                            # Get current stock and calculate remaining
+                            current_stock = 0
+                            try:
+                                medicines, _, _ = get_sheet_data()
+                                for med in medicines:
+                                    if isinstance(med, dict) and med.get('name') == med_name:
+                                        current_stock = med.get('quantity', 0)
+                                        break
+                            except:
+                                current_stock = 10  # Default stock
+                            
                             new_stock = current_stock - details['quantity']
                             
                             # Show stock alerts
@@ -696,13 +662,27 @@ def main():
             
             if st.button("➕ Add Custom Medicine", key="add_custom_med_outside"):
                 if custom_med_name:
-                    try:
-                        from modules.separate_inventory import add_medicine_inventory
-                        add_medicine_inventory(custom_med_name, custom_med_qty, custom_med_price, custom_med_usage, custom_med_type)
-                        st.success(f"✅ Added: {custom_med_name} (Qty: {custom_med_qty}, ₹{custom_med_price})")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Failed to add medicine: {str(e)}")
+                    # Add to separate medicine inventory with detailed info
+                    from modules.separate_inventory import add_medicine_inventory
+                    add_medicine_inventory(custom_med_name, custom_med_qty, custom_med_price, 'Custom', custom_med_type)
+                    
+                    # Add to custom medicine database
+                    if 'custom_medicines' not in st.session_state:
+                        st.session_state['custom_medicines'] = {}
+                    
+                    st.session_state['custom_medicines'][custom_med_name] = {
+                        'category': 'Custom',
+                        'type': custom_med_type,
+                        'price': custom_med_price,
+                        'prescription_required': True,
+                        'indication': 'Custom medicine added by doctor',
+                        'dosage': custom_med_dosage,
+                        'usage': custom_med_usage,
+                        'custom': True
+                    }
+                    
+                    st.success(f"✅ Added to inventory: {custom_med_name} (Qty: {custom_med_qty}, Price: ₹{custom_med_price}, Type: {custom_med_type})")
+                    st.rerun()
                 else:
                     st.warning("⚠️ Please enter medicine name")
         
@@ -947,32 +927,11 @@ def main():
             if st.button("📤 Generate Prescription", type="primary"):
                 if selected_spectacles or medicine_details:
                     # Update inventory for used items
-                    inventory_updated = False
-                    try:
-                        from modules.separate_inventory import reduce_spectacle_stock, reduce_medicine_stock
-                        
-                        # Update spectacle inventory
-                        for spec_name in selected_spectacles:
-                            reduce_spectacle_stock(spec_name, 1)
-                        
-                        # Update medicine inventory
-                        for med_name, details in medicine_details.items():
-                            reduce_medicine_stock(med_name, details['quantity'])
-                        
-                        inventory_updated = True
-                        
-                        # Also update Google Sheets inventory if OAuth available
-                        if oauth_sheets_api.is_authenticated():
-                            for spec_name in selected_spectacles:
-                                oauth_sheets_api.update_inventory(spec_name, -1, "spectacle")
-                            for med_name, details in medicine_details.items():
-                                oauth_sheets_api.update_inventory(med_name, -details['quantity'], "medicine")
-                        
-                    except ImportError:
-                        st.warning("⚠️ Inventory module not available - stock not updated")
+                    for spec_name in selected_spectacles:
+                        local_data_manager.update_spectacle_quantity(spec_name, 1)
                     
-                    if inventory_updated:
-                        st.success("✅ Inventory updated successfully!")
+                    for med_name, details in medicine_details.items():
+                        local_data_manager.update_medicine_quantity(med_name, details['quantity'])
                     
                     # Add prescription record
                     prescription_data = {
@@ -983,15 +942,7 @@ def main():
                         'rx_table': st.session_state.get('rx_table', {}),
                         'total_cost': sum([details['total_cost'] for details in medicine_details.values()])
                     }
-                    
-                    # Save prescription using OAuth if available
-                    if oauth_sheets_api.is_authenticated():
-                        oauth_sheets_api.add_prescription(prescription_data)
-                    else:
-                        # Store locally for later sync
-                        if 'pending_prescriptions' not in st.session_state:
-                            st.session_state['pending_prescriptions'] = []
-                        st.session_state['pending_prescriptions'].append(prescription_data)
+                    local_data_manager.add_prescription(prescription_data)
                     # Create professional HTML prescription
                     current_time = datetime.now(timezone(timedelta(hours=5, minutes=30)))
                     prescription_html = f"""
@@ -1112,45 +1063,17 @@ def main():
 </body>
 </html>"""
                     
-                    # Download and sharing options
+                    # Download HTML prescription
                     timestamp = current_time.strftime("%Y%m%d_%H%M")
+                    st.download_button(
+                        "💾 Download HTML Prescription",
+                        data=prescription_html.encode('utf-8'),
+                        file_name=f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html",
+                        mime="text/html",
+                        type="primary"
+                    )
                     
-                    col1, col2 = st.columns(2)
-                    
-                    with col1:
-                        st.download_button(
-                            "💾 Download HTML Prescription",
-                            data=prescription_html.encode('utf-8'),
-                            file_name=f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html",
-                            mime="text/html",
-                            type="primary",
-                            use_container_width=True
-                        )
-                    
-                    with col2:
-                        # WhatsApp sharing
-                        patient_mobile = st.session_state.get('patient_mobile')
-                        if patient_mobile and st.button("📱 Share via WhatsApp", use_container_width=True):
-                            from modules.whatsapp_utils import format_prescription_message, send_via_whatsapp_web
-                            
-                            # Create a simple prescription link (demo)
-                            prescription_link = f"https://maueyecare.streamlit.app/prescription/{timestamp}"
-                            message = format_prescription_message(patient_name, prescription_link)
-                            whatsapp_url = send_via_whatsapp_web(patient_mobile, message)
-                            
-                            st.markdown(f"**[🌐 Send via WhatsApp Web]({whatsapp_url})**")
-                            st.success("📱 WhatsApp message ready!")
-                    
-                    st.success("✅ Professional prescription generated!")
-                    
-                    # Clear selections for next prescription
-                    if st.button("🔄 New Prescription", type="secondary"):
-                        keys_to_clear = ['selected_spectacles', 'selected_medicines', 'medicine_details']
-                        for key in keys_to_clear:
-                            if key in st.session_state:
-                                del st.session_state[key]
-                        st.success("🎆 Ready for new prescription!")
-                        st.rerun()
+                    st.success("✅ Professional HTML prescription generated!")
                 else:
                     st.warning("⚠️ Please select at least one spectacle or medicine")
         else:
@@ -1724,11 +1647,11 @@ def main():
                                 st.code(result['link'], language=None)
                                 st.success("Link copied! Share this with the patient.")
                         
-                        # Download options
+                        # Always show download options regardless of Google Drive status
                         st.markdown("---")
-                        st.markdown("### 💾 Download Options")
+                        st.markdown("### 💾 Download Prescription Files")
                         
-                        col_dl1, col_dl2 = st.columns(2)
+                        col_dl1, col_dl2, col_dl3 = st.columns(3)
                         
                         with col_dl1:
                             # HTML Download
@@ -1740,68 +1663,265 @@ def main():
                                 data=prescription_html.encode('utf-8'),
                                 file_name=html_filename,
                                 mime="text/html",
+                                help="Download as HTML file",
                                 use_container_width=True
                             )
                         
                         with col_dl2:
-                            # Simple text version
+                            # Text Download
                             text_prescription = f"""MauEyeCare Prescription
 
 Patient: {patient_name}
-Date: {datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%d/%m/%Y')}
+Age: {st.session_state.get('age', 'N/A')}
+Gender: {st.session_state.get('gender', 'N/A')}
+Mobile: {st.session_state.get('patient_mobile', 'N/A')}
+Date: {datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%d/%m/%Y %H:%M IST')}
 
 Prescribed Items:
-{'-'*30}
+{'-'*40}
 """
                             
                             if selected_spectacles:
-                                text_prescription += "\nSpectacles:\n"
+                                text_prescription += "\nSPECTACLES:\n"
+                                COMPREHENSIVE_SPECTACLE_DATABASE = get_spectacle_database()
                                 for spec_name in selected_spectacles:
-                                    text_prescription += f"- {spec_name}\n"
+                                    if spec_name in COMPREHENSIVE_SPECTACLE_DATABASE:
+                                        spec_data = COMPREHENSIVE_SPECTACLE_DATABASE[spec_name]
+                                        total_price = spec_data['price'] + spec_data['lens_price']
+                                        text_prescription += f"- {spec_data['brand']} {spec_data['model']} - Rs.{total_price:,}\n"
                             
-                            if medicine_details:
-                                text_prescription += "\nMedicines:\n"
-                                for med_name, details in medicine_details.items():
-                                    text_prescription += f"- {med_name} (Qty: {details['quantity']})\n"
+                            medicine_details = st.session_state.get('medicine_details', {})
+                            if selected_medicines or medicine_details:
+                                text_prescription += "\nMEDICINES:\n"
+                                
+                                if medicine_details:
+                                    for med_name, details in medicine_details.items():
+                                        text_prescription += f"- {med_name} (Qty: {details['quantity']}) - Rs.{details['total_cost']}\n"
+                                        text_prescription += f"  Dosage: {details['dosage']}\n"
+                                        text_prescription += f"  Duration: {details['duration']}\n"
+                                else:
+                                    COMPREHENSIVE_MEDICINE_DATABASE = get_medicine_database()
+                                    for med_name, qty in selected_medicines.items():
+                                        if med_name in COMPREHENSIVE_MEDICINE_DATABASE:
+                                            med_data = COMPREHENSIVE_MEDICINE_DATABASE[med_name]
+                                            total_price = med_data['price'] * qty
+                                            text_prescription += f"- {med_name} (Qty: {qty}) - Rs.{total_price}\n"
                             
-                            text_prescription += f"\nDr. Danish\nMauEyeCare Optical Center"
+                            # Add RX details if available
+                            rx_table = st.session_state.get('rx_table', {})
+                            if rx_table and (rx_table.get('OD', {}).get('Sphere') or rx_table.get('OS', {}).get('Sphere')):
+                                text_prescription += "\nEYE PRESCRIPTION:\n"
+                                for eye in ['OD', 'OS']:
+                                    eye_data = rx_table.get(eye, {})
+                                    if eye_data.get('Sphere'):
+                                        eye_name = "Right Eye" if eye == "OD" else "Left Eye"
+                                        text_prescription += f"{eye} ({eye_name}): SPH {eye_data.get('Sphere', '')} CYL {eye_data.get('Cylinder', '')} AXIS {eye_data.get('Axis', '')}\n"
+                            
+                            text_prescription += f"\n{'-'*40}\nDr. Danish\nEye Care Specialist\nMauEyeCare Optical Center\nPhone: +91 92356-47410\nEmail: maueyecare@gmail.com"
                             
                             st.download_button(
                                 label="📝 Download Text",
                                 data=text_prescription.encode('utf-8'),
                                 file_name=f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.txt",
                                 mime="text/plain",
+                                help="Download as text file",
                                 use_container_width=True
                             )
                         
-
+                        with col_dl3:
+                            # JSON Download (for data backup)
+                            prescription_data = {
+                                'patient_name': patient_name,
+                                'patient_age': st.session_state.get('age'),
+                                'patient_gender': st.session_state.get('gender'),
+                                'patient_mobile': st.session_state.get('patient_mobile'),
+                                'prescription_date': datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat(),
+                                'doctor': 'Dr. Danish',
+                                'clinic': 'MauEyeCare Optical Center',
+                                'selected_spectacles': selected_spectacles,
+                                'selected_medicines': selected_medicines,
+                                'medicine_details': st.session_state.get('medicine_details', {}),
+                                'rx_table': st.session_state.get('rx_table', {}),
+                                'advice': st.session_state.get('advice', ''),
+                                'patient_issue': st.session_state.get('patient_issue', ''),
+                                'visit_analytics': st.session_state.get('visit_analytics', [])
+                            }
+                            
+                            st.download_button(
+                                label="📋 Download JSON",
+                                data=json.dumps(prescription_data, indent=2).encode('utf-8'),
+                                file_name=f"Prescription_Data_{patient_name.replace(' ', '_')}_{timestamp}.json",
+                                mime="application/json",
+                                help="Download as JSON data file",
+                                use_container_width=True
+                            )
                         
-                        # Patient Communication
+                        # Professional patient communication section
                         patient_mobile = st.session_state.get('patient_mobile')
                         if patient_mobile:
                             st.markdown("---")
-                            st.markdown("### 📱 Share Prescription")
+                            st.markdown("### 📱 Patient Communication")
                             
-                            col1, col2 = st.columns(2)
+                            # Patient info display
+                            st.markdown(f"**👤 Patient:** {patient_name}")
+                            st.markdown(f"**📞 Mobile:** +91 {patient_mobile}")
+                            st.markdown(f"**🔗 Prescription Link:** {result['link']}")
+                            
+                            # Professional WhatsApp message
+                            whatsapp_message = f"""🏥 *MauEyeCare Prescription Ready*
+
+Dear {patient_name},
+
+Your eye care prescription has been prepared by Dr. Danish.
+
+📄 *View Prescription:* {result['link']}
+
+📋 *Prescription Details:*
+• Patient: {patient_name}
+• Date: {datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%d/%m/%Y')}
+• Doctor: Dr. Danish (Reg: UPS 2908)
+
+📞 *For queries:* +91 92356-47410
+📧 *Email:* maueyecare@gmail.com
+
+*Thank you for choosing MauEyeCare!*
+
+---
+🏥 MauEyeCare Optical Center
+👁️ Complete AI-Powered Eye Care"""
+                            
+                            # Professional communication options
+                            col1, col2, col3 = st.columns(3)
                             
                             with col1:
-                                if st.button("📱 Send WhatsApp", type="primary"):
-                                    from modules.whatsapp_utils import send_prescription_link
-                                    result_wa = send_prescription_link(patient_name, patient_mobile, result['link'])
-                                    
-                                    if result_wa['api_result']['success']:
-                                        st.success("✅ WhatsApp message prepared!")
-                                        st.info("📱 Demo mode - message ready to send")
-                                    
-                                    st.markdown(f"**[🌐 Send via WhatsApp Web]({result_wa['web_url']})**")
+                                st.markdown("**📱 WhatsApp API**")
+                                if st.button("🚀 Send via API", type="primary", key="whatsapp_api"):
+                                    with st.spinner("Sending WhatsApp message..."):
+                                        try:
+                                            # Format mobile number
+                                            mobile = patient_mobile.replace("+91", "").replace(" ", "").replace("-", "")
+                                            if not mobile.startswith("91"):
+                                                mobile = "91" + mobile
+                                            
+                                            # Send WhatsApp message
+                                            from modules.whatsapp_utils import send_text_message
+                                            whatsapp_result = send_text_message(mobile, whatsapp_message)
+                                            
+                                            if whatsapp_result.get('success'):
+                                                if whatsapp_result.get('demo'):
+                                                    st.info(f"📱 **Demo Mode:** Message prepared for +91 {patient_mobile}")
+                                                    st.success("✅ WhatsApp API integration working!")
+                                                else:
+                                                    st.success(f"✅ **Message sent** to +91 {patient_mobile}")
+                                                    st.balloons()
+                                            else:
+                                                st.error(f"❌ **Send failed:** {whatsapp_result.get('error')}")
+                                                
+                                        except Exception as e:
+                                            st.error(f"❌ **Error:** {str(e)}")
                             
                             with col2:
-                                st.text_input("📋 Copy link to share:", value=result['link'])
-                        else:
-                            st.markdown("### 🔗 Prescription Link")
-                            st.text_input("Share this link:", value=result['link'])
+                                st.markdown("**🌐 WhatsApp Web**")
+                                if st.button("🔗 Open Web App", key="whatsapp_web"):
+                                    from modules.whatsapp_utils import send_via_whatsapp_web
+                                    
+                                    whatsapp_url = send_via_whatsapp_web(patient_mobile, whatsapp_message)
+                                    st.markdown(f"**[🚀 Send via WhatsApp Web]({whatsapp_url})**")
+                                    st.success("📱 WhatsApp Web will open in new tab")
+                                    st.info("💡 Click the link above to send message")
+                            
+                            with col3:
+                                st.markdown("**📲 SMS/Manual**")
+                                if st.button("📋 Copy Message", key="copy_message"):
+                                    st.text_area(
+                                        "Copy this message:",
+                                        value=whatsapp_message,
+                                        height=150,
+                                        help="Copy and send manually via SMS or any messaging app"
+                                    )
+                                    st.success("📋 Message ready to copy!")
+                            
+                            with col2:
+                                # Copy message button
+                                st.text_area("📋 Copy this message to send manually:", 
+                                           value=whatsapp_message, 
+                                           height=120)
+                                
+                                # Direct link
+                                st.text_input("🔗 Prescription Link:", 
+                                            value=result['link'], 
+                                            help="Copy this link to share directly")
                         
-                        # Inventory updates are handled automatically in prescription generation
+                        else:
+                            st.warning("⚠️ **Patient mobile number required for direct communication**")
+                            st.info("💡 **Tip:** Add patient mobile number in the registration form to enable WhatsApp sharing")
+                            
+                            # Still show the prescription link for manual sharing
+                            st.markdown("### 🔗 Manual Sharing")
+                            st.text_input("Share this link with patient:", value=result['link'], help="Copy this link to share manually")
+                        
+                        # Professional inventory management
+                        st.markdown("---")
+                        st.markdown("### 📦 Inventory Management")
+                        
+                        with st.spinner("🔄 Updating inventory levels..."):
+                            inventory_updates = []
+                            
+                            # Update medicine inventory
+                            from modules.separate_inventory import load_medicine_inventory, reduce_medicine_stock
+                            for med_name, quantity in selected_medicines.items():
+                                med_inv = load_medicine_inventory()
+                                old_stock = med_inv.get(med_name, {}).get('quantity', 0) if isinstance(med_inv.get(med_name), dict) else med_inv.get(med_name, 0)
+                                reduce_medicine_stock(med_name, quantity)
+                                med_inv = load_medicine_inventory()
+                                new_stock = med_inv.get(med_name, {}).get('quantity', 0) if isinstance(med_inv.get(med_name), dict) else med_inv.get(med_name, 0)
+                                inventory_updates.append({
+                                    'item': med_name,
+                                    'type': 'Medicine',
+                                    'quantity_used': quantity,
+                                    'old_stock': old_stock,
+                                    'new_stock': new_stock
+                                })
+                            
+                            # Update spectacle inventory
+                            from modules.separate_inventory import load_spectacle_inventory, reduce_spectacle_stock
+                            for spec_name in selected_spectacles:
+                                spec_inv = load_spectacle_inventory()
+                                old_stock = spec_inv.get(spec_name, 0)
+                                reduce_spectacle_stock(spec_name, 1)
+                                spec_inv = load_spectacle_inventory()
+                                new_stock = spec_inv.get(spec_name, 0)
+                                inventory_updates.append({
+                                    'item': spec_name,
+                                    'type': 'Spectacle',
+                                    'quantity_used': 1,
+                                    'old_stock': old_stock,
+                                    'new_stock': new_stock
+                                })
+                        
+                        # Display inventory updates
+                        if inventory_updates:
+                            st.success("✅ **Inventory updated successfully!**")
+                            
+                            with st.expander("📈 View Inventory Changes"):
+                                for update in inventory_updates:
+                                    col1, col2, col3, col4 = st.columns(4)
+                                    
+                                    with col1:
+                                        st.write(f"**{update['type']}**")
+                                        st.write(update['item'])
+                                    
+                                    with col2:
+                                        st.metric("Used", update['quantity_used'])
+                                    
+                                    with col3:
+                                        st.metric("Previous Stock", update['old_stock'])
+                                    
+                                    with col4:
+                                        st.metric("Current Stock", update['new_stock'], 
+                                                delta=update['new_stock'] - update['old_stock'])
+                        else:
+                            st.info("📈 No inventory changes (no items selected)")
                         
                         # Professional prescription completion
                         st.markdown("---")

@@ -1,49 +1,31 @@
 #!/usr/bin/env python3
 """
-Separate Inventory Management for MauEyeCare
-Handles medicine and spectacle inventory with detailed tracking
+Separate Inventory Management for Spectacles and Medicines
 """
 
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
-INVENTORY_DIR = "inventory_data"
-MEDICINE_FILE = os.path.join(INVENTORY_DIR, "medicines.json")
-SPECTACLE_FILE = os.path.join(INVENTORY_DIR, "spectacles.json")
+# Separate inventory files
+SPECTACLE_INVENTORY_FILE = "spectacle_inventory.json"
+MEDICINE_INVENTORY_FILE = "medicine_inventory.json"
 
-def ensure_inventory_dir():
-    """Ensure inventory directory exists"""
-    if not os.path.exists(INVENTORY_DIR):
-        os.makedirs(INVENTORY_DIR)
-
-def load_medicine_inventory():
-    """Load medicine inventory from file"""
-    ensure_inventory_dir()
+def load_spectacle_inventory():
+    """Load spectacle inventory from file"""
     try:
-        if os.path.exists(MEDICINE_FILE):
-            with open(MEDICINE_FILE, 'r') as f:
+        if os.path.exists(SPECTACLE_INVENTORY_FILE):
+            with open(SPECTACLE_INVENTORY_FILE, 'r') as f:
                 return json.load(f)
     except:
         pass
     return {}
 
-def save_medicine_inventory(inventory):
-    """Save medicine inventory to file"""
-    ensure_inventory_dir()
+def load_medicine_inventory():
+    """Load medicine inventory from file"""
     try:
-        with open(MEDICINE_FILE, 'w') as f:
-            json.dump(inventory, f, indent=2)
-        return True
-    except:
-        return False
-
-def load_spectacle_inventory():
-    """Load spectacle inventory from file"""
-    ensure_inventory_dir()
-    try:
-        if os.path.exists(SPECTACLE_FILE):
-            with open(SPECTACLE_FILE, 'r') as f:
+        if os.path.exists(MEDICINE_INVENTORY_FILE):
+            with open(MEDICINE_INVENTORY_FILE, 'r') as f:
                 return json.load(f)
     except:
         pass
@@ -51,32 +33,26 @@ def load_spectacle_inventory():
 
 def save_spectacle_inventory(inventory):
     """Save spectacle inventory to file"""
-    ensure_inventory_dir()
     try:
-        with open(SPECTACLE_FILE, 'w') as f:
+        with open(SPECTACLE_INVENTORY_FILE, 'w') as f:
             json.dump(inventory, f, indent=2)
-        return True
     except:
-        return False
+        pass
 
-def add_medicine_inventory(name, quantity, price=100, category="Medicine", med_type="Tablet"):
-    """Add or update medicine in inventory"""
-    inventory = load_medicine_inventory()
-    inventory[name] = {
-        'quantity': quantity,
-        'price': price,
-        'category': category,
-        'type': med_type,
-        'last_updated': datetime.now().isoformat()
-    }
-    return save_medicine_inventory(inventory)
+def save_medicine_inventory(inventory):
+    """Save medicine inventory to file"""
+    try:
+        with open(MEDICINE_INVENTORY_FILE, 'w') as f:
+            json.dump(inventory, f, indent=2)
+    except:
+        pass
 
-def add_spectacle_inventory(name, quantity, price=5000, brand="Generic", model="Standard", 
-                          frame_type="Full Rim", material="Plastic", color="Black", 
-                          size="Medium", image_url=""):
-    """Add or update spectacle in inventory"""
+def add_spectacle_inventory(item_name, quantity, price=5000, brand="Generic", model="Standard", frame_type="Full Rim", material="Plastic", color="Black", size="Medium", image_url=""):
+    """Add or update spectacle inventory with detailed information"""
     inventory = load_spectacle_inventory()
-    inventory[name] = {
+    # Generate simple QR code (SKU format)
+    qr_code = f"SP{len(inventory)+1:04d}"
+    inventory[item_name] = {
         'quantity': quantity,
         'price': price,
         'brand': brand,
@@ -85,124 +61,68 @@ def add_spectacle_inventory(name, quantity, price=5000, brand="Generic", model="
         'material': material,
         'color': color,
         'size': size,
+        'qr_code': qr_code,
         'image_url': image_url,
-        'qr_code': f"SP{len(inventory)+1:04d}",
-        'last_updated': datetime.now().isoformat()
+        'date_added': datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat(),
+        'last_updated': datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat()
     }
-    return save_spectacle_inventory(inventory)
+    save_spectacle_inventory(inventory)
 
-def reduce_medicine_stock(name, quantity):
-    """Reduce medicine stock by quantity"""
+def add_medicine_inventory(item_name, quantity, price=100, category="Medicine", medicine_type="Tablet"):
+    """Add or update medicine inventory with detailed information"""
     inventory = load_medicine_inventory()
-    if name in inventory:
-        if isinstance(inventory[name], dict):
-            current_qty = inventory[name].get('quantity', 0)
-            inventory[name]['quantity'] = max(0, current_qty - quantity)
-        else:
-            # Handle old format
-            current_qty = inventory[name] if isinstance(inventory[name], int) else 0
-            inventory[name] = max(0, current_qty - quantity)
-        
-        inventory[name]['last_updated'] = datetime.now().isoformat()
-        return save_medicine_inventory(inventory)
-    return False
-
-def reduce_spectacle_stock(name, quantity):
-    """Reduce spectacle stock by quantity"""
-    inventory = load_spectacle_inventory()
-    if name in inventory:
-        if isinstance(inventory[name], dict):
-            current_qty = inventory[name].get('quantity', 0)
-            inventory[name]['quantity'] = max(0, current_qty - quantity)
-        else:
-            # Handle old format
-            current_qty = inventory[name] if isinstance(inventory[name], int) else 0
-            inventory[name] = max(0, current_qty - quantity)
-        
-        if isinstance(inventory[name], dict):
-            inventory[name]['last_updated'] = datetime.now().isoformat()
-        return save_spectacle_inventory(inventory)
-    return False
+    inventory[item_name] = {
+        'quantity': quantity,
+        'price': price,
+        'category': category,
+        'type': medicine_type,
+        'date_added': datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat(),
+        'last_updated': datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat()
+    }
+    save_medicine_inventory(inventory)
 
 def get_medicine_list():
-    """Get list of medicines with stock"""
+    """Get list of available medicines from inventory"""
     inventory = load_medicine_inventory()
-    medicine_list = {}
+    result = {}
     for name, data in inventory.items():
         if isinstance(data, dict):
-            medicine_list[name] = data.get('quantity', 0)
+            if data.get('quantity', 0) > 0:
+                result[name] = data['quantity']
+        elif isinstance(data, int) and data > 0:
+            result[name] = data
+    return result
+
+def reduce_medicine_stock(item_name, quantity):
+    """Reduce medicine stock"""
+    inventory = load_medicine_inventory()
+    if item_name in inventory:
+        if isinstance(inventory[item_name], dict):
+            inventory[item_name]['quantity'] = max(0, inventory[item_name]['quantity'] - quantity)
+            inventory[item_name]['last_updated'] = datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat()
         else:
-            medicine_list[name] = data if isinstance(data, int) else 0
-    return medicine_list
+            inventory[item_name] = max(0, inventory[item_name] - quantity)
+        save_medicine_inventory(inventory)
+
+def reduce_spectacle_stock(item_name, quantity):
+    """Reduce spectacle stock"""
+    inventory = load_spectacle_inventory()
+    if item_name in inventory:
+        if isinstance(inventory[item_name], dict):
+            inventory[item_name]['quantity'] = max(0, inventory[item_name]['quantity'] - quantity)
+            inventory[item_name]['last_updated'] = datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat()
+        else:
+            inventory[item_name] = max(0, inventory[item_name] - quantity)
+        save_spectacle_inventory(inventory)
 
 def get_spectacle_list():
-    """Get list of spectacles with stock"""
+    """Get list of available spectacles from inventory"""
     inventory = load_spectacle_inventory()
-    spectacle_list = {}
+    result = {}
     for name, data in inventory.items():
         if isinstance(data, dict):
-            spectacle_list[name] = data.get('quantity', 0)
-        else:
-            spectacle_list[name] = data if isinstance(data, int) else 0
-    return spectacle_list
-
-def initialize_sample_inventory():
-    """Initialize with sample inventory data"""
-    # Sample medicines
-    medicines = {
-        "Refresh Tears Eye Drops": {
-            "quantity": 50,
-            "price": 150,
-            "category": "Lubricant",
-            "type": "Eye Drops",
-            "last_updated": datetime.now().isoformat()
-        },
-        "Tobramycin Eye Drops": {
-            "quantity": 30,
-            "price": 200,
-            "category": "Antibiotic", 
-            "type": "Eye Drops",
-            "last_updated": datetime.now().isoformat()
-        },
-        "Prednisolone Eye Drops": {
-            "quantity": 25,
-            "price": 180,
-            "category": "Steroid",
-            "type": "Eye Drops", 
-            "last_updated": datetime.now().isoformat()
-        }
-    }
-    
-    # Sample spectacles
-    spectacles = {
-        "Ray-Ban Aviator Classic": {
-            "quantity": 15,
-            "price": 8000,
-            "brand": "Ray-Ban",
-            "model": "Aviator Classic",
-            "frame_type": "Aviator",
-            "material": "Metal",
-            "color": "Gold",
-            "size": "Medium",
-            "qr_code": "SP0001",
-            "image_url": "",
-            "last_updated": datetime.now().isoformat()
-        },
-        "Oakley Holbrook": {
-            "quantity": 10,
-            "price": 12000,
-            "brand": "Oakley", 
-            "model": "Holbrook",
-            "frame_type": "Square",
-            "material": "Plastic",
-            "color": "Black",
-            "size": "Large",
-            "qr_code": "SP0002",
-            "image_url": "",
-            "last_updated": datetime.now().isoformat()
-        }
-    }
-    
-    save_medicine_inventory(medicines)
-    save_spectacle_inventory(spectacles)
-    return True
+            if data.get('quantity', 0) > 0:
+                result[name] = data['quantity']
+        elif isinstance(data, int) and data > 0:
+            result[name] = data
+    return result
