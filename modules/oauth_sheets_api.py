@@ -100,11 +100,10 @@ class OAuthSheetsAPI:
             'Content-Type': 'application/json'
         }
         
-        url = f"https://sheets.googleapis.com/v4/spreadsheets/{self.sheet_id}/values/{sheet_name}!{range_start}:append"
+        url = f"https://sheets.googleapis.com/v4/spreadsheets/{self.sheet_id}/values/{sheet_name}!{range_start}:append?valueInputOption=RAW"
         
         payload = {
-            'values': data,
-            'valueInputOption': 'RAW'
+            'values': data
         }
         
         try:
