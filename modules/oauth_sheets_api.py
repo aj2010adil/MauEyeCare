@@ -19,20 +19,16 @@ class OAuthSheetsAPI:
         try:
             self.client_id = st.secrets["google_oauth"]["client_id"]
             self.client_secret = st.secrets["google_oauth"]["client_secret"]
-            self.redirect_uri = st.secrets["google_oauth"].get("redirect_uri", "https://maueyecare.streamlit.app")
         except:
-            # Fallback for demo mode - disable OAuth
-            self.client_id = None
-            self.client_secret = None
-            self.redirect_uri = None
+            # Fallback for demo mode
+            self.client_id = "demo_client_id"
+            self.client_secret = "demo_client_secret"
+        self.redirect_uri = "https://maueyecare.streamlit.app"
         self.sheet_id = "1Ju6luR74A_emPUWThUYO9iNDXkPMblwNFt-Ql92fyPQ"
         self.scopes = "https://www.googleapis.com/auth/spreadsheets"
         
     def get_auth_url(self):
         """Generate OAuth2 authorization URL"""
-        if not self.client_id or not self.redirect_uri:
-            return None
-            
         state = secrets.token_urlsafe(32)
         st.session_state['oauth_state'] = state
         
@@ -50,9 +46,6 @@ class OAuthSheetsAPI:
     
     def exchange_code_for_token(self, code, state):
         """Exchange authorization code for access token"""
-        if not self.client_id or not self.client_secret:
-            return {'success': False, 'error': 'OAuth credentials not configured'}
-            
         # Skip state validation for Streamlit Cloud compatibility
         # if state != st.session_state.get('oauth_state'):
         #     return {'success': False, 'error': 'Invalid state parameter'}
@@ -73,10 +66,9 @@ class OAuthSheetsAPI:
                 st.session_state['refresh_token'] = token_data.get('refresh_token')
                 return {'success': True, 'token': token_data}
             else:
-                error_details = response.json() if response.headers.get('content-type', '').startswith('application/json') else response.text
-                return {'success': False, 'error': f'Token exchange failed: {error_details}'}
+                return {'success': False, 'error': f'Token exchange failed: {response.text}'}
         except Exception as e:
-            return {'success': False, 'error': f'Network error: {str(e)}'}
+            return {'success': False, 'error': str(e)}
     
     def refresh_access_token(self):
         """Refresh expired access token"""
@@ -102,7 +94,7 @@ class OAuthSheetsAPI:
     
     def is_authenticated(self):
         """Check if user is authenticated"""
-        return 'access_token' in st.session_state and self.client_id is not None
+        return 'access_token' in st.session_state
     
     def write_to_sheet(self, sheet_name, data, range_start="A1"):
         """Write data to Google Sheets"""
