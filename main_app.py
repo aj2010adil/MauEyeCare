@@ -20,6 +20,8 @@ from modules.image_manager import image_manager
 from modules.local_data_manager import local_data_manager
 from modules.google_sheets_api import google_sheets_api
 from modules.sync_manager import sync_manager
+from modules.oauth_sheets_api import oauth_sheets_api
+from modules.patient_manager import patient_manager
 
 # Lazy imports for better performance
 @st.cache_data
@@ -129,24 +131,46 @@ def main():
             st.info(f"Age: {st.session_state.get('age', 'N/A')}")
             st.info(f"Gender: {st.session_state.get('gender', 'N/A')}")
         
-        # Google Sheets Status
+        # OAuth Authentication Status
         st.markdown("---")
+        st.markdown("**🔐 Authentication Status:**")
+        
+        if oauth_sheets_api.is_authenticated():
+            st.success("✅ OAuth: Authenticated")
+            st.info("📝 Real-time writing enabled")
+        else:
+            st.warning("⚠️ OAuth: Not authenticated")
+            auth_url = oauth_sheets_api.get_auth_url()
+            st.markdown(f"**[🔐 Authenticate with Google]({auth_url})**")
+            st.caption("Click to enable real-time sync")
+        
+        # Google Sheets Status
         st.markdown("**📊 Google Sheets Status:**")
         
         # Test connection using sync manager
         connection_result = sync_manager.test_google_sheets_connection()
         if connection_result['success']:
-            st.success("✅ Google Sheets: Connected")
+            st.success("✅ Reading: Connected")
             st.info(f"Sheet ID: ...{google_sheets_api.sheet_id[-8:]}")
-            st.caption(connection_result['message'])
         else:
-            st.error("❌ Google Sheets: Connection Error")
-            st.caption(connection_result['message'])
+            st.error("❌ Reading: Connection Error")
         
         # Show last sync info
         if sync_status['last_sync'] != 'Never':
             st.info(f"🕒 Last sync: {sync_status['last_sync'][:16]}")
 
+    # Handle OAuth callback
+    query_params = st.experimental_get_query_params()
+    if 'code' in query_params and 'state' in query_params:
+        code = query_params['code'][0]
+        state = query_params['state'][0]
+        result = oauth_sheets_api.exchange_code_for_token(code, state)
+        if result['success']:
+            st.success("✅ Authentication successful! Real-time sync enabled.")
+            st.experimental_set_query_params()
+        else:
+            st.error(f"❌ Authentication failed: {result['error']}")
+    
     # Main tabs
     tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "👥 Patient Registration", 
@@ -509,70 +533,69 @@ def main():
                 "OS": {"Sphere": os_sphere, "Cylinder": os_cylinder, "Axis": os_axis}
             }
             
-            submitted = st.form_submit_button("💾 Save Patient", type="primary")
+            submitted = st.form_submit_button("💾 Register Patient", type="primary")
             
             if submitted and patient_name:
-                # Save patient with visit tracking
-                try:
-                    patients = sheets_manager.get_patients()
-                    found = False
-                    patient_id = None
-                    for p in patients:
-                        if isinstance(p, dict) and p.get('name', '').lower() == patient_name.lower() and p.get('mobile', '') == contact:
-                            patient_id = p.get('id', len(patients) + 1)
-                            found = True
-                            break
-                    if not found:
-                        patient_id = len(patients) + 1
-                        # Create patient record with all demographics
-                        patient_record = {
-                            'id': patient_id,
-                            'name': patient_name,
-                            'age': age,
-                            'gender': gender,
-                            'mobile': contact,
-                            'email': email,
-                            'address': address,
-                            'city': city,
-                            'state': state,
-                            'pincode': pincode,
-                            'registration_date': datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y-%m-%d %H:%M:%S'),
-                            'issue': patient_issue,
-                            'advice': advice,
-                            'occupation': occupation,
-                            'screen_time': screen_time,
-                            'family_history': family_history,
-                            'diabetes': diabetes,
-                            'hypertension': hypertension,
-                            'last_eye_exam': last_eye_exam,
-                            'current_glasses': current_glasses,
-                            'eye_strain': eye_strain,
-                            'referral_source': referral_source
-                        }
-                        
-                        # Add to pending patients (since we can't write directly to Google Sheets)
-                        if 'pending_patients' not in st.session_state:
-                            st.session_state['pending_patients'] = []
-                        st.session_state['pending_patients'].append(patient_record)
-                        
-                        # Show instructions for manual Google Sheets update
-                        st.info("📊 **Patient data saved locally.** To sync with Google Sheets, go to 'Google Sheets Setup' tab and export patient data.")
-                        
-                except Exception as e:
-                    # Fallback to session-based patient management
-                    patient_id = len(st.session_state.get('pending_patients', [])) + 1
-                    found = False
+                # Create patient record with all demographics
+                patient_record = {
+                    'name': patient_name,
+                    'age': age,
+                    'gender': gender,
+                    'mobile': contact,
+                    'email': email,
+                    'address': address,
+                    'city': city,
+                    'state': state,
+                    'pincode': pincode,
+                    'issue': patient_issue,
+                    'advice': advice,
+                    'occupation': occupation,
+                    'screen_time': screen_time,
+                    'family_history': family_history,
+                    'diabetes': diabetes,
+                    'hypertension': hypertension,
+                    'last_eye_exam': last_eye_exam,
+                    'current_glasses': current_glasses,
+                    'eye_strain': eye_strain,
+                    'referral_source': referral_source
+                }
                 
-                # Track visit data for analytics with demographics
+                # Register patient using patient manager
+                result = patient_manager.register_patient(patient_record)
+                
+                if result['success']:
+                    if result['new_patient']:
+                        st.success(f"✅ **New Patient Registered!** {patient_name} - Visit #1")
+                        st.balloons()
+                    else:
+                        st.success(f"🔄 **Return Visit Recorded!** {patient_name} - Visit #{result['visits']}")
+                    
+                    # Show patient summary
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Patient ID", result['patient_id'])
+                    with col2:
+                        st.metric("Total Visits", result['visits'])
+                    with col3:
+                        st.metric("Status", "New" if result['new_patient'] else "Return")
+                    
+                    if oauth_sheets_api.is_authenticated():
+                        st.info("✅ **Real-time sync enabled** - Data saved to Google Sheets instantly!")
+                    else:
+                        st.info("📊 **Data saved locally** - Authenticate for real-time sync")
+                else:
+                    st.error(f"❌ Registration failed: {result['error']}")
+                
+                # Track visit data for analytics
                 current_time = datetime.now(timezone(timedelta(hours=5, minutes=30)))
                 visit_data = {
-                    'patient_id': patient_id,
+                    'patient_id': st.session_state.get('patient_id'),
                     'visit_date': current_time.isoformat(),
                     'issue': patient_issue,
                     'advice': advice,
                     'rx_data': rx_table,
                     'age_group': 'Child' if age < 18 else 'Adult' if age < 60 else 'Senior',
-                    'visit_type': 'Return' if found else 'New',
+                    'visit_type': 'New' if result.get('new_patient') else 'Return',
                     'referral_source': referral_source,
                     'season': current_time.strftime('%B'),
                     'occupation': occupation,
@@ -590,38 +613,31 @@ def main():
                     st.session_state['visit_analytics'] = []
                 st.session_state['visit_analytics'].append(visit_data)
                 
-                # Store in session
-                st.session_state.update({
-                    'patient_id': patient_id,
-                    'patient_name': patient_name,
-                    'patient_mobile': contact,
-                    'patient_email': email,
-                    'patient_address': address,
-                    'patient_city': city,
-                    'patient_state': state,
-                    'patient_pincode': pincode,
-                    'age': age,
-                    'gender': gender,
-                    'advice': advice,
-                    'patient_issue': patient_issue,
-                    'rx_table': rx_table
-                })
+                # Store RX table for prescription generation
+                st.session_state['rx_table'] = rx_table
                 
-                visit_type = "New Patient" if not found else "Return Visit"
-                st.success(f"✅ {visit_type}: {patient_name} saved successfully!")
+                st.info("🎯 Ready for prescription! Go to 'Spectacle Gallery' or 'Prescription Generator' tab.")
                 
-                # Show current database stats
-                pending_count = len(st.session_state.get('pending_patients', []))
-                if pending_count > 0:
-                    st.info(f"📊 **Database Stats:** {pending_count} patients pending Google Sheets sync")
-                
-                # Show visit analytics
-                if found:
-                    st.info(f"🔄 **Return Visit** - Welcome back! Previous visits help us provide better care.")
-                else:
-                    st.info(f"🎆 **New Patient** - Welcome to MauEyeCare! We're excited to help with your eye care needs.")
-                
-                st.info("🎯 Now go to 'Spectacle Gallery' tab to select spectacles and generate prescription!")
+                # Auto-advance option
+                if st.button("➡️ Continue to Prescription", type="secondary"):
+                    st.info("👓 Switch to 'Spectacle Gallery' tab to select spectacles")
+        
+        # Patient Process Management
+        st.markdown("---")
+        st.subheader("🔄 Patient Process Control")
+        
+        current_patient = patient_manager.get_patient_summary()
+        if current_patient:
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.info(f"**Current Patient:** {current_patient['name']}")
+            with col2:
+                st.info(f"**Visit #{current_patient['visits']}** ({'New' if current_patient['is_new'] else 'Return'})")
+            with col3:
+                if st.button("✅ Complete & Next Patient", type="primary"):
+                    patient_manager.complete_patient_process()
+                    st.success("✅ Patient process completed! Ready for next patient.")
+                    st.rerun()
         
         # Custom Medicine Addition (Outside Form)
         st.markdown("---")
@@ -668,6 +684,25 @@ def main():
                     st.rerun()
                 else:
                     st.warning("⚠️ Please enter medicine name")
+        
+        # Quick Patient Actions
+        if current_patient:
+            st.markdown("---")
+            st.subheader("⚡ Quick Actions")
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                if st.button("👓 Select Spectacles", use_container_width=True):
+                    st.info("👓 Switch to 'Spectacle Gallery' tab")
+            
+            with col2:
+                if st.button("📤 Generate Prescription", use_container_width=True):
+                    st.info("📤 Switch to 'Prescription Generator' tab")
+            
+            with col3:
+                if st.button("🔄 New Patient", use_container_width=True):
+                    patient_manager.complete_patient_process()
+                    st.rerun()
 
     # --- Spectacle Gallery Tab ---
     with tab2:
@@ -977,6 +1012,7 @@ def main():
             <div class="section-title">👓 Recommended Spectacles</div>"""
                         
                         total_spec_cost = 0
+                        COMPREHENSIVE_SPECTACLE_DATABASE = get_spectacle_database()
                         for spec_name in selected_spectacles:
                             if spec_name in COMPREHENSIVE_SPECTACLE_DATABASE:
                                 spec_data = COMPREHENSIVE_SPECTACLE_DATABASE[spec_name]
@@ -1384,6 +1420,8 @@ def main():
             
             if st.button("📤 Generate & Share Prescription", type="primary"):
                 medicine_details = st.session_state.get('medicine_details', {})
+                selected_spectacles = st.session_state.get('selected_spectacles', [])
+                selected_medicines = st.session_state.get('selected_medicines', {})
                 if selected_spectacles or selected_medicines or medicine_details:
                     # Create prescription HTML
                     prescription_html = f"""
@@ -1511,6 +1549,7 @@ def main():
         </div>"""
                                 else:
                                     # Regular medicine from database
+                                    COMPREHENSIVE_MEDICINE_DATABASE = get_medicine_database()
                                     if med_name in COMPREHENSIVE_MEDICINE_DATABASE:
                                         med_data = COMPREHENSIVE_MEDICINE_DATABASE[med_name]
                                         prescription_html += f"""
@@ -1525,6 +1564,7 @@ def main():
         </div>"""
                         else:
                             # Fallback for old format
+                            COMPREHENSIVE_MEDICINE_DATABASE = get_medicine_database()
                             for med_name, quantity in selected_medicines.items():
                                 if med_name in COMPREHENSIVE_MEDICINE_DATABASE:
                                     med_data = COMPREHENSIVE_MEDICINE_DATABASE[med_name]
@@ -1642,6 +1682,7 @@ Prescribed Items:
                             
                             if selected_spectacles:
                                 text_prescription += "\nSPECTACLES:\n"
+                                COMPREHENSIVE_SPECTACLE_DATABASE = get_spectacle_database()
                                 for spec_name in selected_spectacles:
                                     if spec_name in COMPREHENSIVE_SPECTACLE_DATABASE:
                                         spec_data = COMPREHENSIVE_SPECTACLE_DATABASE[spec_name]
@@ -1658,6 +1699,7 @@ Prescribed Items:
                                         text_prescription += f"  Dosage: {details['dosage']}\n"
                                         text_prescription += f"  Duration: {details['duration']}\n"
                                 else:
+                                    COMPREHENSIVE_MEDICINE_DATABASE = get_medicine_database()
                                     for med_name, qty in selected_medicines.items():
                                         if med_name in COMPREHENSIVE_MEDICINE_DATABASE:
                                             med_data = COMPREHENSIVE_MEDICINE_DATABASE[med_name]
@@ -1954,6 +1996,7 @@ Prescribed Items:
 {'-'*30}
 """
                             
+                            COMPREHENSIVE_SPECTACLE_DATABASE = get_spectacle_database()
                             for spec_name in selected_spectacles:
                                 if spec_name in COMPREHENSIVE_SPECTACLE_DATABASE:
                                     spec_data = COMPREHENSIVE_SPECTACLE_DATABASE[spec_name]
