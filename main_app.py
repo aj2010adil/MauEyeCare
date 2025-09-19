@@ -168,8 +168,12 @@ def main():
         else:
             st.warning("⚠️ OAuth: Not authenticated")
             auth_url = oauth_sheets_api.get_auth_url()
-            st.markdown(f"**[🔐 Authenticate with Google]({auth_url})**")
-            st.caption("Click to enable real-time sync")
+            if auth_url:
+                st.markdown(f"**[🔐 Authenticate with Google]({auth_url})**")
+                st.caption("Click to enable real-time sync")
+            else:
+                st.error("❌ OAuth not configured")
+                st.caption("Add Google OAuth credentials to secrets.toml")
         
         # Google Sheets Status
         st.markdown("**📊 Google Sheets Status:**")
@@ -194,20 +198,21 @@ def main():
 
     # Handle OAuth callback
     query_params = st.experimental_get_query_params()
-    if 'code' in query_params:
+    if 'code' in query_params and oauth_sheets_api.client_id:
         code = query_params['code'][0]
         state = query_params.get('state', [None])[0]
         
-        # Skip state validation for now to fix authentication
-        result = oauth_sheets_api.exchange_code_for_token(code, state)
-        if result['success']:
-            st.success("✅ Authentication successful! Real-time sync enabled.")
-            st.experimental_set_query_params()
-            st.rerun()
-        else:
-            st.error(f"❌ Authentication failed: {result['error']}")
-            # Clear query params on error
-            st.experimental_set_query_params()
+        with st.spinner("Authenticating with Google..."):
+            result = oauth_sheets_api.exchange_code_for_token(code, state)
+            if result['success']:
+                st.success("✅ Authentication successful! Real-time sync enabled.")
+                st.experimental_set_query_params()
+                st.rerun()
+            else:
+                st.error(f"❌ Authentication failed: {result['error']}")
+                st.info("💡 Check your OAuth credentials in secrets.toml")
+                # Clear query params on error
+                st.experimental_set_query_params()
     
     # Main tabs
     tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
