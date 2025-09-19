@@ -1334,6 +1334,7 @@ def main():
         with tab_med:
             st.markdown("**Medicines Tab Template:**")
             st.info("📋 Create a tab named 'Medicines' with this data")
+            import pandas as pd
             medicine_template = pd.DataFrame({
                 'name': ['Refresh Tears Eye Drops', 'Tobramycin Eye Drops', 'Prednisolone Eye Drops'],
                 'category': ['Lubricant', 'Antibiotic', 'Steroid'],

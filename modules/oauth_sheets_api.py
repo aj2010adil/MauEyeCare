@@ -200,7 +200,7 @@ class OAuthSheetsAPI:
             visits
         ]
         
-        return self.write_to_sheet("PatientVisits", [visit_row])
+        return self.write_to_sheet("Patients", [visit_row])
     
     def add_prescription(self, prescription_data):
         """Add prescription to Google Sheets"""
