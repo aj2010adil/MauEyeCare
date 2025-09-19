@@ -15,8 +15,14 @@ from urllib.parse import urlencode, parse_qs
 
 class OAuthSheetsAPI:
     def __init__(self):
-        self.client_id = "641133812410-phlnghc1fau2gjt3e7m73sm5ec7n0s6v.apps.googleusercontent.com"
-        self.client_secret = "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"
+        # Use Streamlit secrets for security
+        try:
+            self.client_id = st.secrets["google_oauth"]["client_id"]
+            self.client_secret = st.secrets["google_oauth"]["client_secret"]
+        except:
+            # Fallback for demo mode
+            self.client_id = "demo_client_id"
+            self.client_secret = "demo_client_secret"
         self.redirect_uri = "https://maueyecare.streamlit.app"
         self.sheet_id = "1Ju6luR74A_emPUWThUYO9iNDXkPMblwNFt-Ql92fyPQ"
         self.scopes = "https://www.googleapis.com/auth/spreadsheets"
@@ -189,18 +195,34 @@ class OAuthSheetsAPI:
     
     def update_patient_visits(self, patient_id, visits, patient_data):
         """Update patient visit count and latest visit info"""
-        # This would require finding the specific row and updating it
-        # For now, we'll add a new visit record
+        # Add visit record to main Patients sheet instead of separate PatientVisits sheet
         visit_row = [
             patient_id,
             patient_data.get('name', ''),
+            patient_data.get('age', ''),
+            patient_data.get('gender', ''),
+            patient_data.get('mobile', ''),
+            patient_data.get('email', ''),
+            patient_data.get('address', ''),
+            patient_data.get('city', ''),
+            patient_data.get('state', ''),
+            patient_data.get('pincode', ''),
             datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             patient_data.get('issue', ''),
             patient_data.get('advice', ''),
+            patient_data.get('occupation', ''),
+            patient_data.get('screen_time', ''),
+            patient_data.get('family_history', ''),
+            patient_data.get('diabetes', ''),
+            patient_data.get('hypertension', ''),
+            patient_data.get('last_eye_exam', ''),
+            patient_data.get('current_glasses', ''),
+            patient_data.get('eye_strain', ''),
+            patient_data.get('referral_source', ''),
             visits
         ]
         
-        return self.write_to_sheet("PatientVisits", [visit_row])
+        return self.write_to_sheet("Patients", [visit_row])
     
     def add_prescription(self, prescription_data):
         """Add prescription to Google Sheets"""

@@ -1,74 +1,42 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
-WhatsApp integration utilities for MauEyeCare
+WhatsApp Integration for MauEyeCare
+Handles prescription sharing via WhatsApp API and Web
 """
+
 import streamlit as st
 import requests
-import urllib.parse
+from urllib.parse import quote
 
-def test_whatsapp_connection():
-    """Test WhatsApp API connection"""
+def send_text_message(mobile, message):
+    """Send WhatsApp message via API (demo mode)"""
     try:
-        # Check if WhatsApp credentials are configured
-        access_token = st.secrets.get("WHATSAPP_ACCESS_TOKEN", "")
-        phone_number_id = st.secrets.get("WHATSAPP_PHONE_NUMBER_ID", "")
-        
-        if access_token and phone_number_id:
-            return {"success": True, "demo": False}
-        else:
-            return {"success": True, "demo": True}
-    except:
-        return {"success": True, "demo": True}
-
-def send_text_message(phone_number, message):
-    """Send text message via WhatsApp API"""
-    try:
-        # Check if WhatsApp credentials are configured
-        access_token = st.secrets.get("WHATSAPP_ACCESS_TOKEN", "")
-        phone_number_id = st.secrets.get("WHATSAPP_PHONE_NUMBER_ID", "")
-        
-        if not access_token or not phone_number_id:
-            return {
-                "success": True,
-                "demo": True,
-                "message": f"Demo mode: Would send message to {phone_number}"
-            }
-        
-        # WhatsApp API endpoint
-        url = f"https://graph.facebook.com/v17.0/{phone_number_id}/messages"
-        
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json"
+        # Demo mode - simulate API call
+        return {
+            'success': True,
+            'demo': True,
+            'message': f'Message prepared for {mobile}',
+            'mobile': mobile,
+            'content': message[:100] + '...' if len(message) > 100 else message
         }
-        
-        data = {
-            "messaging_product": "whatsapp",
-            "to": phone_number,
-            "type": "text",
-            "text": {"body": message}
-        }
-        
-        response = requests.post(url, headers=headers, json=data, timeout=10)
-        
-        if response.status_code == 200:
-            return {"success": True, "response": response.json()}
-        else:
-            return {"success": False, "error": f"API Error: {response.status_code}"}
-            
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        return {
+            'success': False,
+            'error': str(e)
+        }
 
-def send_via_whatsapp_web(phone_number, message):
-    """Generate WhatsApp Web URL for sending message"""
-    # Clean phone number
-    clean_number = phone_number.replace("+", "").replace(" ", "").replace("-", "")
+def send_via_whatsapp_web(mobile, message):
+    """Generate WhatsApp Web URL for manual sending"""
+    # Clean mobile number
+    clean_mobile = mobile.replace('+', '').replace(' ', '').replace('-', '')
+    if not clean_mobile.startswith('91'):
+        clean_mobile = '91' + clean_mobile
     
     # Encode message for URL
-    encoded_message = urllib.parse.quote(message)
+    encoded_message = quote(message)
     
     # Generate WhatsApp Web URL
-    whatsapp_url = f"https://wa.me/{clean_number}?text={encoded_message}"
+    whatsapp_url = f"https://wa.me/{clean_mobile}?text={encoded_message}"
     
     return whatsapp_url
 
@@ -85,7 +53,6 @@ Your eye care prescription has been prepared by {doctor_name}.
 📋 *Prescription Details:*
 • Patient: {patient_name}
 • Doctor: {doctor_name} (Reg: UPS 2908)
-• Clinic: MauEyeCare Optical Center
 
 📞 *For queries:* +91 92356-47410
 📧 *Email:* maueyecare@gmail.com
@@ -97,3 +64,19 @@ Your eye care prescription has been prepared by {doctor_name}.
 👁️ Complete AI-Powered Eye Care"""
     
     return message
+
+def send_prescription_link(patient_name, mobile, prescription_link):
+    """Send prescription link to patient"""
+    message = format_prescription_message(patient_name, prescription_link)
+    
+    # Try API first (demo mode)
+    api_result = send_text_message(mobile, message)
+    
+    # Also generate web URL as backup
+    web_url = send_via_whatsapp_web(mobile, message)
+    
+    return {
+        'api_result': api_result,
+        'web_url': web_url,
+        'message': message
+    }
