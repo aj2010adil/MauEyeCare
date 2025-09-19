@@ -617,10 +617,6 @@ def main():
                 st.session_state['rx_table'] = rx_table
                 
                 st.info("🎯 Ready for prescription! Go to 'Spectacle Gallery' or 'Prescription Generator' tab.")
-                
-                # Auto-advance option
-                if st.button("➡️ Continue to Prescription", type="secondary"):
-                    st.info("👓 Switch to 'Spectacle Gallery' tab to select spectacles")
         
         # Patient Process Management
         st.markdown("---")
