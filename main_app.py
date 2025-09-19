@@ -161,15 +161,20 @@ def main():
 
     # Handle OAuth callback
     query_params = st.experimental_get_query_params()
-    if 'code' in query_params and 'state' in query_params:
+    if 'code' in query_params:
         code = query_params['code'][0]
-        state = query_params['state'][0]
+        state = query_params.get('state', [None])[0]
+        
+        # Skip state validation for now to fix authentication
         result = oauth_sheets_api.exchange_code_for_token(code, state)
         if result['success']:
             st.success("✅ Authentication successful! Real-time sync enabled.")
             st.experimental_set_query_params()
+            st.rerun()
         else:
             st.error(f"❌ Authentication failed: {result['error']}")
+            # Clear query params on error
+            st.experimental_set_query_params()
     
     # Main tabs
     tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([

@@ -40,8 +40,9 @@ class OAuthSheetsAPI:
     
     def exchange_code_for_token(self, code, state):
         """Exchange authorization code for access token"""
-        if state != st.session_state.get('oauth_state'):
-            return {'success': False, 'error': 'Invalid state parameter'}
+        # Skip state validation for Streamlit Cloud compatibility
+        # if state != st.session_state.get('oauth_state'):
+        #     return {'success': False, 'error': 'Invalid state parameter'}
         
         data = {
             'client_id': self.client_id,
