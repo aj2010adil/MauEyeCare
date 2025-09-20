@@ -801,7 +801,7 @@ def main():
                     st.success(f"✅ In Stock: {stock}")
                 
                 # Add to prescription button
-                if st.button(f"➕ Add to Prescription", key=f"add_spec_{i}", disabled=(stock == 0)):
+                if st.button(f"➕ Add to Prescription", key=f"add_spec_{i}_{hash(spec_name)}", disabled=(stock == 0)):
                     if 'selected_spectacles' not in st.session_state:
                         st.session_state['selected_spectacles'] = []
                     
@@ -844,13 +844,13 @@ def main():
         
         st.write(f"📊 Found {len(filtered)} patient(s)")
         
-        for p in filtered:
+        for idx, p in enumerate(filtered):
             with st.expander(f"👤 {p[1]} | Age: {p[2]} | Mobile: {p[4]}"):
                 st.write(f"**Patient ID:** {p[0]}")
                 st.write(f"**Gender:** {p[3]}")
                 st.write(f"**Registration Date:** {p[5] if len(p) > 5 else 'N/A'}")
                 
-                if st.button(f"Select Patient", key=f"select_patient_{p[0]}_{hash(str(p))}"):
+                if st.button(f"Select Patient", key=f"select_patient_{idx}_{p[0]}"):
                     st.session_state.update({
                         'patient_id': p[0],
                         'patient_name': p[1],
