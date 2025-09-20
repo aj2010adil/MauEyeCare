@@ -191,24 +191,42 @@ def main():
     with tab1:
         st.header("👥 Patient Registration & Information")
         
+        # Get existing patients for suggestions
+        try:
+            existing_patients = sheets_manager.get_patients()
+            patient_names = [p.get('name', '') for p in existing_patients if isinstance(p, dict)]
+            patient_mobiles = [p.get('mobile', '') for p in existing_patients if isinstance(p, dict)]
+        except:
+            patient_names = []
+            patient_mobiles = []
+        
         with st.form("patient_form"):
             col1, col2 = st.columns(2)
             
             with col1:
-                first_name = st.text_input("First Name", placeholder="Enter first name")
-                last_name = st.text_input("Last Name", placeholder="Enter last name")
+                patient_name = st.text_input("Full Name", placeholder="Enter patient full name")
+                if patient_names:
+                    suggested_name = st.selectbox("Or select existing:", [""] + patient_names[:10], key="name_suggest")
+                    if suggested_name:
+                        patient_name = suggested_name
+                
                 age = st.number_input("Age", min_value=0, max_value=120, value=30)
                 gender = st.selectbox("Gender", ["Male", "Female", "Other"])
             
             with col2:
                 contact = st.text_input("Mobile Number", placeholder="Enter mobile number")
+                if patient_mobiles:
+                    suggested_mobile = st.selectbox("Or select existing:", [""] + patient_mobiles[:10], key="mobile_suggest")
+                    if suggested_mobile:
+                        contact = suggested_mobile
+                
                 email = st.text_input("Email (Optional)", placeholder="Enter email address")
                 address = st.text_area("Address", placeholder="Enter full address", height=60)
                 city = st.text_input("City", placeholder="Enter city")
                 state = st.selectbox("State", ["Uttar Pradesh", "Bihar", "Jharkhand", "West Bengal", "Delhi", "Maharashtra", "Gujarat", "Rajasthan", "Punjab", "Haryana", "Madhya Pradesh", "Other"])
                 pincode = st.text_input("Pincode", placeholder="Enter pincode")
                 
-            # Move issue and advice to new row
+            # Basic patient info only
             col_issue1, col_issue2 = st.columns(2)
             
             with col_issue1:
@@ -264,7 +282,7 @@ def main():
                     "Walk-in", "Friend/Family", "Doctor Referral", "Online", "Advertisement", "Other"
                 ])
             
-            patient_name = f"{first_name} {last_name}".strip()
+            # patient_name already set above
             
             # Eye Prescription Section
             st.markdown("**👁️ Eye Prescription (RX)**")
@@ -618,10 +636,108 @@ def main():
                     st.session_state['visit_analytics'] = []
                 st.session_state['visit_analytics'].append(visit_data)
                 
-                # Store RX table for prescription generation
-                st.session_state['rx_table'] = rx_table
+                st.info("🎯 Patient registered! Now add medicines and spectacles below.")
+        
+        # Post-registration: Medicine and Spectacle Selection
+        if 'patient_name' in st.session_state and st.session_state['patient_name']:
+            st.markdown("---")
+            st.subheader(f"📋 Prescription for {st.session_state['patient_name']}")
+            
+            # Medicine Selection Section
+            st.markdown("### 💊 Medicine Selection")
+            
+            # Load medicines from Google Sheets
+            try:
+                medicines, _, _ = get_sheet_data()
+                medicine_options = {med['name']: med for med in medicines if isinstance(med, dict) and 'name' in med}
+            except:
+                medicine_options = {}
+            
+            if medicine_options:
+                selected_medicines = st.multiselect(
+                    "Select Medicines:",
+                    options=list(medicine_options.keys()),
+                    key="post_reg_medicines"
+                )
                 
-                st.info("🎯 Ready for prescription! Go to 'Spectacle Gallery' or 'Prescription Generator' tab.")
+                if selected_medicines:
+                    medicine_details = {}
+                    for med_name in selected_medicines:
+                        med_data = medicine_options[med_name]
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            qty = st.number_input(f"Quantity for {med_name}", min_value=1, value=1, key=f"qty_{med_name}")
+                        with col2:
+                            current_stock = med_data.get('quantity', 0)
+                            if current_stock >= qty:
+                                st.success(f"✅ Stock: {current_stock}")
+                            else:
+                                st.error(f"❌ Insufficient stock: {current_stock}")
+                        
+                        medicine_details[med_name] = {
+                            'quantity': qty,
+                            'price': med_data.get('price', 100),
+                            'current_stock': current_stock
+                        }
+                    
+                    st.session_state['medicine_details'] = medicine_details
+            
+            # Spectacle Selection Section
+            st.markdown("### 👓 Spectacle Selection")
+            
+            try:
+                _, spectacles, _ = get_sheet_data()
+                spectacle_options = {spec['name']: spec for spec in spectacles if isinstance(spec, dict) and 'name' in spec}
+            except:
+                spectacle_options = {}
+            
+            if spectacle_options:
+                selected_spectacle = st.selectbox(
+                    "Select Spectacle:",
+                    options=[""] + list(spectacle_options.keys()),
+                    key="post_reg_spectacle"
+                )
+                
+                if selected_spectacle:
+                    spec_data = spectacle_options[selected_spectacle]
+                    st.info(f"Price: ₹{spec_data.get('price', 0)} | Stock: {spec_data.get('quantity', 0)}")
+                    st.session_state['selected_spectacles'] = [selected_spectacle]
+            
+            # Eye Prescription Section (separate from registration)
+            st.markdown("### 👁️ Eye Prescription")
+            
+            # Get last prescription for returning patient
+            last_rx = {}
+            if not st.session_state.get('new_patient', True):
+                # Load last prescription from Google Sheets for returning patient
+                try:
+                    prescriptions = sheets_manager.get_prescriptions()
+                    patient_prescriptions = [p for p in prescriptions if p.get('patient_name') == st.session_state['patient_name']]
+                    if patient_prescriptions:
+                        last_prescription = patient_prescriptions[-1]
+                        last_rx = json.loads(last_prescription.get('rx_table', '{}')) if last_prescription.get('rx_table') else {}
+                except:
+                    pass
+            
+            col_od, col_os = st.columns(2)
+            
+            with col_od:
+                st.markdown("**OD (Right Eye)**")
+                od_sphere = st.text_input("Sphere OD", value=last_rx.get('OD', {}).get('Sphere', ''), key="od_sphere")
+                od_cylinder = st.text_input("Cylinder OD", value=last_rx.get('OD', {}).get('Cylinder', ''), key="od_cylinder")
+                od_axis = st.text_input("Axis OD", value=last_rx.get('OD', {}).get('Axis', ''), key="od_axis")
+            
+            with col_os:
+                st.markdown("**OS (Left Eye)**")
+                os_sphere = st.text_input("Sphere OS", value=last_rx.get('OS', {}).get('Sphere', ''), key="os_sphere")
+                os_cylinder = st.text_input("Cylinder OS", value=last_rx.get('OS', {}).get('Cylinder', ''), key="os_cylinder")
+                os_axis = st.text_input("Axis OS", value=last_rx.get('OS', {}).get('Axis', ''), key="os_axis")
+            
+            rx_table = {
+                "OD": {"Sphere": od_sphere, "Cylinder": od_cylinder, "Axis": od_axis},
+                "OS": {"Sphere": os_sphere, "Cylinder": os_cylinder, "Axis": os_axis}
+            }
+            st.session_state['rx_table'] = rx_table
         
         # Patient Process Management
         st.markdown("---")
