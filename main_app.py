@@ -850,7 +850,7 @@ def main():
                 st.write(f"**Gender:** {p[3]}")
                 st.write(f"**Registration Date:** {p[5] if len(p) > 5 else 'N/A'}")
                 
-                if st.button(f"Select Patient", key=f"select_{p[0]}"):
+                if st.button(f"Select Patient", key=f"select_patient_{p[0]}_{hash(str(p))}"):
                     st.session_state.update({
                         'patient_id': p[0],
                         'patient_name': p[1],
