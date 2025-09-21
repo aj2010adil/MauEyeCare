@@ -15,9 +15,16 @@ from urllib.parse import urlencode, parse_qs
 
 class OAuthSheetsAPI:
     def __init__(self):
-        self.client_id = "641133812410-phlnghc1fau2gjt3e7m73sm5ec7n0s6v.apps.googleusercontent.com"
-        self.client_secret = "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"
-        self.redirect_uri = "https://maueyecare.streamlit.app"
+        try:
+            self.client_id = st.secrets["google_oauth"]["client_id"]
+            self.client_secret = st.secrets["google_oauth"]["client_secret"]
+            self.redirect_uri = st.secrets["google_oauth"]["redirect_uri"]
+        except:
+            # Fallback for development
+            self.client_id = "641133812410-phlnghc1fau2gjt3e7m73sm5ec7n0s6v.apps.googleusercontent.com"
+            self.client_secret = "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"
+            self.redirect_uri = "https://maueyecare.streamlit.app"
+        
         self.sheet_id = "1Ju6luR74A_emPUWThUYO9iNDXkPMblwNFt-Ql92fyPQ"
         self.scopes = "https://www.googleapis.com/auth/spreadsheets"
         
@@ -220,8 +227,8 @@ class OAuthSheetsAPI:
     def get_patients(self):
         """Get patients from Google Sheets (using read-only API)"""
         try:
-            from .google_sheets_api import google_sheets_api
-            return google_sheets_api.read_sheet("Patients")
+            from .google_sheets_manager import sheets_manager
+            return sheets_manager.get_patients()
         except:
             return []
     
@@ -235,47 +242,72 @@ class OAuthSheetsAPI:
             'Content-Type': 'application/json'
         }
         
-        # Get current medicines data
         try:
-            from .google_sheets_manager import sheets_manager
-            medicines = sheets_manager.get_medicines()
+            # First get all data from Medicines sheet
+            get_url = f"https://sheets.googleapis.com/v4/spreadsheets/{self.sheet_id}/values/Medicines!A:H"
+            get_response = requests.get(get_url, headers=headers)
             
-            # Find medicine row
-            medicine_row = None
-            row_index = None
-            for i, med in enumerate(medicines):
-                if isinstance(med, dict) and med.get('name', '').lower() == medicine_name.lower():
-                    medicine_row = med
-                    row_index = i + 2  # +2 because sheets are 1-indexed and have header
+            if get_response.status_code == 401:  # Token expired
+                if self.refresh_access_token():
+                    headers['Authorization'] = f'Bearer {st.session_state["access_token"]}'
+                    get_response = requests.get(get_url, headers=headers)
+            
+            if get_response.status_code != 200:
+                return {'success': False, 'error': f'Failed to read sheet: {get_response.text}'}
+            
+            sheet_data = get_response.json().get('values', [])
+            
+            if not sheet_data:
+                return {'success': False, 'error': 'No data found in Medicines sheet'}
+            
+            # Find medicine row (assuming first row is header)
+            medicine_row_index = None
+            current_qty = 0
+            
+            for i, row in enumerate(sheet_data[1:], start=2):  # Skip header, start from row 2
+                if len(row) > 0 and row[0].lower().strip() == medicine_name.lower().strip():
+                    medicine_row_index = i
+                    # Quantity is typically in column E (index 4)
+                    if len(row) > 4:
+                        try:
+                            current_qty = int(float(row[4]))
+                        except (ValueError, TypeError):
+                            current_qty = 0
                     break
             
-            if medicine_row and row_index:
-                current_qty = int(medicine_row.get('quantity', 0))
-                new_qty = max(0, current_qty - quantity_used)
-                
-                # Update quantity in column E (5th column)
-                url = f"https://sheets.googleapis.com/v4/spreadsheets/{self.sheet_id}/values/Medicines!E{row_index}?valueInputOption=RAW"
-                
-                payload = {
-                    'values': [[new_qty]]
+            if medicine_row_index is None:
+                return {'success': False, 'error': f'Medicine "{medicine_name}" not found in sheet'}
+            
+            # Calculate new quantity
+            new_qty = max(0, current_qty - quantity_used)
+            
+            # Update quantity in column E
+            update_url = f"https://sheets.googleapis.com/v4/spreadsheets/{self.sheet_id}/values/Medicines!E{medicine_row_index}?valueInputOption=RAW"
+            
+            payload = {
+                'values': [[new_qty]]
+            }
+            
+            update_response = requests.put(update_url, headers=headers, json=payload)
+            
+            if update_response.status_code == 401:  # Token expired
+                if self.refresh_access_token():
+                    headers['Authorization'] = f'Bearer {st.session_state["access_token"]}'
+                    update_response = requests.put(update_url, headers=headers, json=payload)
+            
+            if update_response.status_code == 200:
+                return {
+                    'success': True, 
+                    'medicine': medicine_name,
+                    'old_qty': current_qty, 
+                    'new_qty': new_qty,
+                    'used': quantity_used
                 }
-                
-                response = requests.put(url, headers=headers, json=payload)
-                
-                if response.status_code == 401:  # Token expired
-                    if self.refresh_access_token():
-                        headers['Authorization'] = f'Bearer {st.session_state["access_token"]}'
-                        response = requests.put(url, headers=headers, json=payload)
-                
-                if response.status_code == 200:
-                    return {'success': True, 'old_qty': current_qty, 'new_qty': new_qty}
-                else:
-                    return {'success': False, 'error': f'Update failed: {response.text}'}
             else:
-                return {'success': False, 'error': f'Medicine {medicine_name} not found'}
+                return {'success': False, 'error': f'Update failed: {update_response.text}'}
                 
         except Exception as e:
-            return {'success': False, 'error': str(e)}
+            return {'success': False, 'error': f'Exception: {str(e)}'}
     
     def update_inventory(self, item_name, new_quantity, item_type="medicine"):
         """Update inventory quantities in Google Sheets"""

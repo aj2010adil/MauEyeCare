@@ -48,6 +48,14 @@ def main():
                 medicines, spectacles, patients = get_sheet_data()
                 st.success(f"✅ Synced: {len(medicines)} medicines, {len(spectacles)} spectacles, {len(patients)} patients!")
         
+        # OAuth status
+        if oauth_sheets_api.is_authenticated():
+            st.success("✅ Google Sheets Connected")
+        else:
+            st.error("❌ Google Sheets Not Connected")
+            auth_url = oauth_sheets_api.get_auth_url()
+            st.markdown(f"[🔗 Connect to Google Sheets]({auth_url})")
+        
         # Current patient info
         if 'patient_name' in st.session_state and st.session_state['patient_name']:
             st.markdown("---")
@@ -56,6 +64,21 @@ def main():
             st.info(f"Age: {st.session_state.get('age', 'N/A')}")
             st.info(f"Mobile: {st.session_state.get('patient_mobile', 'N/A')}")
 
+    # Handle OAuth callback
+    query_params = st.query_params
+    if 'code' in query_params:
+        code = query_params['code']
+        state = query_params.get('state', '')
+        
+        with st.spinner("Authenticating with Google Sheets..."):
+            result = oauth_sheets_api.exchange_code_for_token(code, state)
+            if result['success']:
+                st.success("✅ Google Sheets authentication successful!")
+                st.query_params.clear()
+                st.rerun()
+            else:
+                st.error(f"❌ Authentication failed: {result.get('error', 'Unknown error')}")
+    
     # Main tabs
     tab1, tab2, tab3 = st.tabs([
         "👥 Patient Registration", 
@@ -145,7 +168,7 @@ def main():
                     st.balloons()
                 
                 # Professional Google Sheets integration
-                if oauth_sheets_api.is_authenticated() and not is_duplicate:
+                if oauth_sheets_api.is_authenticated():
                     patient_record = {
                         'name': patient_name,
                         'age': age,
@@ -161,9 +184,14 @@ def main():
                     }
                     result = oauth_sheets_api.add_patient(patient_record)
                     if result.get('success'):
-                        st.info("✅ **Patient added to Google Sheets successfully!**")
+                        if not is_duplicate:
+                            st.info("✅ **New patient added to Google Sheets!**")
+                        else:
+                            st.info("✅ **Return visit recorded in Google Sheets!**")
                     else:
                         st.warning(f"⚠️ Google Sheets sync failed: {result.get('error', 'Unknown error')}")
+                else:
+                    st.warning("⚠️ Google Sheets not connected - patient data not synced")
                 
                 st.rerun()
         
@@ -272,6 +300,9 @@ def main():
                                     st.rerun()
                     
                     st.session_state['medicine_details'] = medicine_details
+                    
+                    # Clear the cache to get fresh data
+                    get_sheet_data.clear()
             
             # Spectacle Selection Section
             st.markdown("### 👓 Spectacle Selection")
@@ -387,6 +418,8 @@ def main():
                 if selected_spectacles or medicine_details:
                     # Automatically update stock in Google Sheets BEFORE generating prescription
                     stock_updates = []
+                    stock_errors = []
+                    
                     if oauth_sheets_api.is_authenticated() and medicine_details:
                         with st.spinner("Updating medicine stock in Google Sheets..."):
                             for med_name, details in medicine_details.items():
@@ -394,9 +427,15 @@ def main():
                                     result = oauth_sheets_api.update_medicine_quantity(med_name, details['quantity'])
                                     if result.get('success'):
                                         stock_updates.append(f"{med_name}: {result.get('old_qty', 0)} → {result.get('new_qty', 0)}")
+                                    else:
+                                        stock_errors.append(f"{med_name}: {result.get('error', 'Unknown error')}")
                             
                             if stock_updates:
                                 st.success(f"✅ Stock updated: {', '.join(stock_updates)}")
+                            if stock_errors:
+                                st.error(f"❌ Stock update errors: {', '.join(stock_errors)}")
+                    elif medicine_details:
+                        st.warning("⚠️ OAuth not authenticated - stock will not be updated automatically")
                     
                     # Create prescription HTML
                     current_time = datetime.now(timezone(timedelta(hours=5, minutes=30)))
@@ -507,32 +546,39 @@ def main():
                     
                     st.success("✅ Prescription generated successfully!")
                     
-                    # Professional workflow options
-                    col1, col2 = st.columns(2)
-                    
-                    with col1:
-                        if st.button("🔄 New Prescription (Same Patient)", type="secondary"):
-                            # Clear only prescription data, keep patient info
-                            for key in ['selected_spectacles', 'medicine_details', 'selected_medicines_list']:
-                                if key in st.session_state:
-                                    del st.session_state[key]
-                            st.success("🎆 Ready for new prescription!")
-                            st.rerun()
-                    
-                    with col2:
-                        if st.button("👥 Start New Patient", type="primary"):
-                            # Clear all patient and prescription data
-                            keys_to_clear = [
-                                'patient_name', 'patient_mobile', 'age', 'gender', 'patient_issue', 'advice',
-                                'selected_spectacles', 'medicine_details', 'selected_medicines_list', 'rx_table'
-                            ]
-                            for key in keys_to_clear:
-                                if key in st.session_state:
-                                    del st.session_state[key]
-                            st.success("🆕 Ready for new patient registration!")
-                            st.rerun()
+                    # Mark prescription as generated
+                    st.session_state['prescription_generated'] = True
                 else:
                     st.warning("⚠️ Please select at least one spectacle or medicine to generate prescription")
+            
+            # Show workflow options after prescription is generated
+            if st.session_state.get('prescription_generated', False):
+                st.markdown("---")
+                st.markdown("### 🎯 Next Steps")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    if st.button("🔄 New Prescription (Same Patient)", type="secondary"):
+                        # Clear only prescription data, keep patient info
+                        for key in ['selected_spectacles', 'medicine_details', 'selected_medicines_list', 'prescription_generated']:
+                            if key in st.session_state:
+                                del st.session_state[key]
+                        st.success("🎆 Ready for new prescription!")
+                        st.rerun()
+                
+                with col2:
+                    if st.button("👥 Start New Patient", type="primary"):
+                        # Clear all patient and prescription data
+                        keys_to_clear = [
+                            'patient_name', 'patient_mobile', 'age', 'gender', 'patient_issue', 'advice',
+                            'selected_spectacles', 'medicine_details', 'selected_medicines_list', 'rx_table', 'prescription_generated'
+                        ]
+                        for key in keys_to_clear:
+                            if key in st.session_state:
+                                del st.session_state[key]
+                        st.success("🆕 Ready for new patient registration!")
+                        st.rerun()
         else:
             st.info("👆 Please register a patient first in the Patient Registration tab")
 
