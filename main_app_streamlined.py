@@ -70,8 +70,8 @@ def main():
         # Get existing patients for suggestions
         try:
             existing_patients = sheets_manager.get_patients()
-            patient_names = [p.get('name', '') for p in existing_patients if isinstance(p, dict)]
-            patient_mobiles = [p.get('mobile', '') for p in existing_patients if isinstance(p, dict)]
+            patient_names = [p.get('name', '') for p in existing_patients if isinstance(p, dict) and p.get('name')]
+            patient_mobiles = [p.get('mobile', '') for p in existing_patients if isinstance(p, dict) and p.get('mobile')]
         except:
             patient_names = []
             patient_mobiles = []
@@ -80,21 +80,29 @@ def main():
             col1, col2 = st.columns(2)
             
             with col1:
-                patient_name = st.text_input("Full Name", placeholder="Enter patient full name")
-                if patient_names:
-                    suggested_name = st.selectbox("Or select existing:", [""] + patient_names[:10], key="name_suggest")
-                    if suggested_name:
-                        patient_name = suggested_name
+                # Combined dropdown + custom input for name
+                name_options = ["-- Enter Custom Name --"] + patient_names[:15]
+                selected_name = st.selectbox("Patient Name", name_options, key="name_dropdown")
+                
+                if selected_name == "-- Enter Custom Name --":
+                    patient_name = st.text_input("Enter Full Name", placeholder="Type patient full name", key="custom_name")
+                else:
+                    patient_name = selected_name
+                    st.info(f"Selected: {selected_name}")
                 
                 age = st.number_input("Age", min_value=0, max_value=120, value=30)
                 gender = st.selectbox("Gender", ["Male", "Female", "Other"])
             
             with col2:
-                contact = st.text_input("Mobile Number", placeholder="Enter mobile number")
-                if patient_mobiles:
-                    suggested_mobile = st.selectbox("Or select existing:", [""] + patient_mobiles[:10], key="mobile_suggest")
-                    if suggested_mobile:
-                        contact = suggested_mobile
+                # Combined dropdown + custom input for mobile
+                mobile_options = ["-- Enter Custom Mobile --"] + patient_mobiles[:15]
+                selected_mobile = st.selectbox("Mobile Number", mobile_options, key="mobile_dropdown")
+                
+                if selected_mobile == "-- Enter Custom Mobile --":
+                    contact = st.text_input("Enter Mobile Number", placeholder="Type mobile number", key="custom_mobile")
+                else:
+                    contact = selected_mobile
+                    st.info(f"Selected: {selected_mobile}")
                 
                 issue_options = ["Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Floaters", "Night Blindness", "Other"]
                 patient_issue = st.selectbox("Patient Issue/Complaint", issue_options)
@@ -105,14 +113,16 @@ def main():
             submitted = st.form_submit_button("💾 Register Patient", type="primary")
             
             if submitted and patient_name:
-                # Check for duplicate based on name and mobile
+                # Professional duplicate check based on name and mobile
                 is_duplicate = False
+                duplicate_patient = None
                 try:
                     for p in existing_patients:
                         if isinstance(p, dict):
-                            if (p.get('name', '').lower() == patient_name.lower() and 
-                                p.get('mobile', '') == contact):
+                            if (p.get('name', '').lower().strip() == patient_name.lower().strip() and 
+                                p.get('mobile', '').strip() == contact.strip()):
                                 is_duplicate = True
+                                duplicate_patient = p
                                 break
                 except:
                     pass
@@ -134,18 +144,26 @@ def main():
                     st.success(f"✅ **New Patient Registered!** {patient_name}")
                     st.balloons()
                 
-                # Add to Google Sheets if OAuth available
-                if oauth_sheets_api.is_authenticated():
+                # Professional Google Sheets integration
+                if oauth_sheets_api.is_authenticated() and not is_duplicate:
                     patient_record = {
                         'name': patient_name,
                         'age': age,
                         'gender': gender,
                         'mobile': contact,
                         'issue': patient_issue,
-                        'advice': advice
+                        'advice': advice,
+                        'email': '',
+                        'address': '',
+                        'city': '',
+                        'state': '',
+                        'pincode': ''
                     }
-                    oauth_sheets_api.add_patient(patient_record)
-                    st.info("✅ **Real-time sync enabled** - Data saved to Google Sheets!")
+                    result = oauth_sheets_api.add_patient(patient_record)
+                    if result.get('success'):
+                        st.info("✅ **Patient added to Google Sheets successfully!**")
+                    else:
+                        st.warning(f"⚠️ Google Sheets sync failed: {result.get('error', 'Unknown error')}")
                 
                 st.rerun()
         
@@ -165,45 +183,95 @@ def main():
                 medicine_options = {}
             
             if medicine_options:
-                selected_medicines = st.multiselect(
-                    "Select Medicines:",
-                    options=list(medicine_options.keys()),
-                    key="post_reg_medicines"
+                # Combined dropdown + custom medicine selection
+                med_names = list(medicine_options.keys())
+                med_dropdown_options = ["-- Select Medicine --"] + med_names
+                
+                selected_med_dropdown = st.selectbox(
+                    "Select Medicine from Inventory:",
+                    med_dropdown_options,
+                    key="med_dropdown"
                 )
                 
-                if selected_medicines:
+                # Allow custom medicine entry
+                custom_medicine = st.text_input(
+                    "Or enter custom medicine:",
+                    placeholder="Type medicine name if not in dropdown",
+                    key="custom_med"
+                )
+                
+                # Determine final medicine selection
+                if selected_med_dropdown != "-- Select Medicine --":
+                    final_medicine = selected_med_dropdown
+                elif custom_medicine:
+                    final_medicine = custom_medicine
+                else:
+                    final_medicine = None
+                
+                if final_medicine:
+                    if 'selected_medicines_list' not in st.session_state:
+                        st.session_state['selected_medicines_list'] = []
+                    
+                    if st.button(f"➕ Add {final_medicine}", key=f"add_{final_medicine}"):
+                        if final_medicine not in st.session_state['selected_medicines_list']:
+                            st.session_state['selected_medicines_list'].append(final_medicine)
+                            st.success(f"Added {final_medicine}")
+                
+                # Show selected medicines with quantities
+                if st.session_state.get('selected_medicines_list'):
+                    st.markdown("**Selected Medicines:**")
                     medicine_details = {}
-                    for med_name in selected_medicines:
-                        med_data = medicine_options[med_name]
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            qty = st.number_input(f"Quantity for {med_name}", min_value=1, value=1, key=f"qty_{med_name}")
-                        with col2:
-                            current_stock = med_data.get('quantity', 0)
-                            if current_stock >= qty:
-                                st.success(f"✅ Stock: {current_stock}")
-                            else:
-                                st.error(f"❌ Insufficient stock: {current_stock}")
-                        with col3:
-                            price = med_data.get('price', 100)
-                            st.info(f"₹{price * qty}")
-                        
-                        medicine_details[med_name] = {
-                            'quantity': qty,
-                            'price': price,
-                            'total_cost': price * qty,
-                            'current_stock': current_stock
-                        }
+                    
+                    for med_name in st.session_state['selected_medicines_list']:
+                        with st.container():
+                            col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
+                            
+                            with col1:
+                                st.write(f"**{med_name}**")
+                            
+                            with col2:
+                                qty = st.number_input(
+                                    "Qty",
+                                    min_value=1,
+                                    value=1,
+                                    key=f"qty_{med_name}",
+                                    label_visibility="collapsed"
+                                )
+                            
+                            with col3:
+                                if med_name in medicine_options:
+                                    med_data = medicine_options[med_name]
+                                    current_stock = int(med_data.get('quantity', 0))
+                                    price = float(med_data.get('price', 100))
+                                    
+                                    if current_stock >= qty:
+                                        st.success(f"Stock: {current_stock}")
+                                    else:
+                                        st.error(f"Low stock: {current_stock}")
+                                    
+                                    medicine_details[med_name] = {
+                                        'quantity': qty,
+                                        'price': price,
+                                        'total_cost': price * qty,
+                                        'current_stock': current_stock,
+                                        'in_inventory': True
+                                    }
+                                else:
+                                    st.info("Custom medicine")
+                                    medicine_details[med_name] = {
+                                        'quantity': qty,
+                                        'price': 0,
+                                        'total_cost': 0,
+                                        'current_stock': 0,
+                                        'in_inventory': False
+                                    }
+                            
+                            with col4:
+                                if st.button("🗑️", key=f"remove_{med_name}"):
+                                    st.session_state['selected_medicines_list'].remove(med_name)
+                                    st.rerun()
                     
                     st.session_state['medicine_details'] = medicine_details
-                    
-                    # Update quantities in Google Sheets after prescription
-                    if st.button("📤 Update Stock & Generate Prescription"):
-                        if oauth_sheets_api.is_authenticated():
-                            for med_name, details in medicine_details.items():
-                                oauth_sheets_api.update_medicine_quantity(med_name, details['quantity'])
-                            st.success("✅ Medicine quantities updated in Google Sheets!")
-                        st.info("🎯 Ready to generate prescription!")
             
             # Spectacle Selection Section
             st.markdown("### 👓 Spectacle Selection")
@@ -215,16 +283,37 @@ def main():
                 spectacle_options = {}
             
             if spectacle_options:
-                selected_spectacle = st.selectbox(
-                    "Select Spectacle:",
-                    options=[""] + list(spectacle_options.keys()),
-                    key="post_reg_spectacle"
+                # Combined dropdown + custom spectacle selection
+                spec_names = list(spectacle_options.keys())
+                spec_dropdown_options = ["-- Select Spectacle --"] + spec_names
+                
+                selected_spec_dropdown = st.selectbox(
+                    "Select Spectacle from Inventory:",
+                    spec_dropdown_options,
+                    key="spec_dropdown"
                 )
                 
-                if selected_spectacle:
-                    spec_data = spectacle_options[selected_spectacle]
-                    st.info(f"Price: ₹{spec_data.get('price', 0)} | Stock: {spec_data.get('quantity', 0)}")
-                    st.session_state['selected_spectacles'] = [selected_spectacle]
+                # Allow custom spectacle entry
+                custom_spectacle = st.text_input(
+                    "Or enter custom spectacle:",
+                    placeholder="Type spectacle name if not in dropdown",
+                    key="custom_spec"
+                )
+                
+                # Determine final spectacle selection
+                if selected_spec_dropdown != "-- Select Spectacle --":
+                    final_spectacle = selected_spec_dropdown
+                    if final_spectacle in spectacle_options:
+                        spec_data = spectacle_options[final_spectacle]
+                        st.info(f"Price: ₹{spec_data.get('price', 0)} | Stock: {spec_data.get('quantity', 0)}")
+                elif custom_spectacle:
+                    final_spectacle = custom_spectacle
+                    st.info("Custom spectacle - Price will be determined manually")
+                else:
+                    final_spectacle = None
+                
+                if final_spectacle:
+                    st.session_state['selected_spectacles'] = [final_spectacle]
             
             # Eye Prescription Section (separate from registration)
             st.markdown("### 👁️ Eye Prescription")
@@ -296,6 +385,19 @@ def main():
             
             if st.button("📤 Generate Prescription", type="primary"):
                 if selected_spectacles or medicine_details:
+                    # Automatically update stock in Google Sheets BEFORE generating prescription
+                    stock_updates = []
+                    if oauth_sheets_api.is_authenticated() and medicine_details:
+                        with st.spinner("Updating medicine stock in Google Sheets..."):
+                            for med_name, details in medicine_details.items():
+                                if details.get('in_inventory', False):
+                                    result = oauth_sheets_api.update_medicine_quantity(med_name, details['quantity'])
+                                    if result.get('success'):
+                                        stock_updates.append(f"{med_name}: {result.get('old_qty', 0)} → {result.get('new_qty', 0)}")
+                            
+                            if stock_updates:
+                                st.success(f"✅ Stock updated: {', '.join(stock_updates)}")
+                    
                     # Create prescription HTML
                     current_time = datetime.now(timezone(timedelta(hours=5, minutes=30)))
                     prescription_html = f"""
@@ -405,17 +507,34 @@ def main():
                     
                     st.success("✅ Prescription generated successfully!")
                     
-                    # Clear selections for next prescription
-                    if st.button("🔄 New Prescription"):
-                        for key in ['selected_spectacles', 'medicine_details']:
-                            if key in st.session_state:
-                                del st.session_state[key]
-                        st.success("🎆 Ready for new prescription!")
-                        st.rerun()
+                    # Professional workflow options
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        if st.button("🔄 New Prescription (Same Patient)", type="secondary"):
+                            # Clear only prescription data, keep patient info
+                            for key in ['selected_spectacles', 'medicine_details', 'selected_medicines_list']:
+                                if key in st.session_state:
+                                    del st.session_state[key]
+                            st.success("🎆 Ready for new prescription!")
+                            st.rerun()
+                    
+                    with col2:
+                        if st.button("👥 Start New Patient", type="primary"):
+                            # Clear all patient and prescription data
+                            keys_to_clear = [
+                                'patient_name', 'patient_mobile', 'age', 'gender', 'patient_issue', 'advice',
+                                'selected_spectacles', 'medicine_details', 'selected_medicines_list', 'rx_table'
+                            ]
+                            for key in keys_to_clear:
+                                if key in st.session_state:
+                                    del st.session_state[key]
+                            st.success("🆕 Ready for new patient registration!")
+                            st.rerun()
                 else:
-                    st.warning("⚠️ Please select at least one spectacle or medicine")
+                    st.warning("⚠️ Please select at least one spectacle or medicine to generate prescription")
         else:
-            st.warning("⚠️ Please register a patient first")
+            st.info("👆 Please register a patient first in the Patient Registration tab")
 
     # --- Analytics Tab ---
     with tab3:

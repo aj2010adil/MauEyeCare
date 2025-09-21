@@ -225,6 +225,58 @@ class OAuthSheetsAPI:
         except:
             return []
     
+    def update_medicine_quantity(self, medicine_name, quantity_used):
+        """Update medicine quantity in Google Sheets after prescription"""
+        if not self.is_authenticated():
+            return {'success': False, 'error': 'Not authenticated'}
+        
+        headers = {
+            'Authorization': f'Bearer {st.session_state["access_token"]}',
+            'Content-Type': 'application/json'
+        }
+        
+        # Get current medicines data
+        try:
+            from .google_sheets_manager import sheets_manager
+            medicines = sheets_manager.get_medicines()
+            
+            # Find medicine row
+            medicine_row = None
+            row_index = None
+            for i, med in enumerate(medicines):
+                if isinstance(med, dict) and med.get('name', '').lower() == medicine_name.lower():
+                    medicine_row = med
+                    row_index = i + 2  # +2 because sheets are 1-indexed and have header
+                    break
+            
+            if medicine_row and row_index:
+                current_qty = int(medicine_row.get('quantity', 0))
+                new_qty = max(0, current_qty - quantity_used)
+                
+                # Update quantity in column E (5th column)
+                url = f"https://sheets.googleapis.com/v4/spreadsheets/{self.sheet_id}/values/Medicines!E{row_index}?valueInputOption=RAW"
+                
+                payload = {
+                    'values': [[new_qty]]
+                }
+                
+                response = requests.put(url, headers=headers, json=payload)
+                
+                if response.status_code == 401:  # Token expired
+                    if self.refresh_access_token():
+                        headers['Authorization'] = f'Bearer {st.session_state["access_token"]}'
+                        response = requests.put(url, headers=headers, json=payload)
+                
+                if response.status_code == 200:
+                    return {'success': True, 'old_qty': current_qty, 'new_qty': new_qty}
+                else:
+                    return {'success': False, 'error': f'Update failed: {response.text}'}
+            else:
+                return {'success': False, 'error': f'Medicine {medicine_name} not found'}
+                
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+    
     def update_inventory(self, item_name, new_quantity, item_type="medicine"):
         """Update inventory quantities in Google Sheets"""
         sheet_name = "Medicines" if item_type == "medicine" else "Spectacles"
