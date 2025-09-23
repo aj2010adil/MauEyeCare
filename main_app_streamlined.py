@@ -35,19 +35,19 @@ def main():
         initial_sidebar_state="expanded"
     )
     
-    st.title("🏥 MauEyeCare - Professional Eye Care Hospital")
+    st.title("🏥 Mau Eye Care - Professional Eye Care Hospital")
     st.markdown("*Streamlined Hospital Management System*")
-    
+
     # Sidebar
     with st.sidebar:
         st.header("🔧 System Controls")
-        
+
         if st.button("🔄 Sync Google Sheets"):
             with st.spinner("Syncing with Google Sheets..."):
                 get_sheet_data.clear()
                 medicines, spectacles, patients = get_sheet_data()
                 st.success(f"✅ Synced: {len(medicines)} medicines, {len(spectacles)} spectacles, {len(patients)} patients!")
-        
+
         # OAuth status
         if oauth_sheets_api.is_authenticated():
             st.success("✅ Google Sheets Connected")
@@ -55,7 +55,7 @@ def main():
             st.error("❌ Google Sheets Not Connected")
             auth_url = oauth_sheets_api.get_auth_url()
             st.markdown(f"[🔗 Connect to Google Sheets]({auth_url})")
-        
+
         # Low stock alerts for doctor
         try:
             medicines, _, _ = get_sheet_data()
@@ -137,7 +137,7 @@ def main():
                 address = st.text_input("Address", placeholder="Street address")
                 col_city, col_state = st.columns(2)
                 with col_city:
-                    city = st.text_input("City", value="Azamgarh", placeholder="City name")
+                    city = st.text_input("City", value="Mubarkpur, Azamgarh", placeholder="City name")
                 with col_state:
                     state = st.selectbox("State", [
                         "Uttar Pradesh", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
@@ -340,7 +340,14 @@ def main():
                                 qty = st.number_input("Quantity", min_value=1, value=1, key=f"qty_{med_name}")
 
                             with col2:
-                                dosage = st.text_input("Dosage", value="1 tablet", key=f"dosage_{med_name}")
+                                # Get medicine type from Google Sheets data
+                                if med_name in medicine_options:
+                                    med_data = medicine_options[med_name]
+                                    med_type = med_data.get('type', 'tablet')
+                                    default_dosage = f"1 {med_type}"
+                                else:
+                                    default_dosage = "1 tablet"
+                                dosage = st.text_input("Dosage", value=default_dosage, key=f"dosage_{med_name}")
 
                             with col3:
                                 timing = st.selectbox("When to take",
@@ -528,7 +535,7 @@ def main():
             st.markdown("### 💰 Consultation Fees")
             col_fee1, col_fee2 = st.columns(2)
             with col_fee1:
-                consultation_fee = st.number_input("Consultation Fee (₹)", min_value=0, value=500, step=50)
+                consultation_fee = st.number_input("Consultation Fee (₹)", min_value=0, value=100, step=50)
             with col_fee2:
                 additional_charges = st.number_input("Additional Charges (₹)", min_value=0, value=0, step=50)
 
@@ -681,28 +688,33 @@ def main():
 <!DOCTYPE html>
 <html>
 <head>
-    <title>MauEyeCare Prescription - {patient_name}</title>
+    <title>Mau Eye Care Prescription - {patient_name}</title>
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 20px; }}
-        .header {{ text-align: center; background: #2E86AB; color: white; padding: 20px; }}
-        .patient-info {{ background: #f8f9ff; padding: 15px; margin: 10px 0; }}
-        .prescription {{ padding: 15px; margin: 10px 0; }}
-        .item {{ background: #f0f8ff; padding: 10px; margin: 5px 0; }}
+        @page {{ margin: 0.5in; size: A4; }}
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 12px; line-height: 1.3; }}
+        .header {{ text-align: center; background: #2E86AB; color: white; padding: 10px; margin-bottom: 10px; }}
+        .header h1 {{ margin: 5px 0; font-size: 18px; }}
+        .header p {{ margin: 2px 0; font-size: 11px; }}
+        .patient-info {{ background: #f8f9ff; padding: 8px; margin: 5px 0; font-size: 11px; }}
+        .patient-info h3 {{ margin: 5px 0; font-size: 13px; }}
+        .prescription {{ padding: 8px; margin: 5px 0; }}
+        .prescription h3 {{ margin: 5px 0; font-size: 13px; }}
+        .item {{ background: #f0f8ff; padding: 6px; margin: 3px 0; font-size: 11px; }}
+        .cost-summary {{ text-align: center; font-weight: bold; margin: 8px 0; background: #e8f5e8; padding: 8px; font-size: 12px; }}
+        .footer {{ text-align: center; margin-top: 10px; color: #666; font-size: 10px; }}
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>MauEyeCare Optical Center</h1>
+        <h1>Mau Eye Care</h1>
         <p>Dr. Danish - Eye Care Specialist</p>
         <p>📞 +91 92356-47410 | 📧 maueyecare@gmail.com</p>
     </div>
 
     <div class="patient-info">
         <h3>👤 Patient Information</h3>
-        <p><strong>Name:</strong> {patient_name}</p>
-        <p><strong>Age:</strong> {st.session_state.get('age', 'N/A')} | <strong>Gender:</strong> {st.session_state.get('gender', 'N/A')}</p>
-        <p><strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')}</p>
-        <p><strong>Date:</strong> {current_time.strftime('%d/%m/%Y %I:%M %p IST')}</p>
+        <p><strong>Name:</strong> {patient_name} | <strong>Age:</strong> {st.session_state.get('age', 'N/A')} | <strong>Gender:</strong> {st.session_state.get('gender', 'N/A')}</p>
+        <p><strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')} | <strong>Date:</strong> {current_time.strftime('%d/%m/%Y %I:%M %p IST')}</p>
     </div>"""
 
                     # Add eye prescription
@@ -768,7 +780,7 @@ def main():
         </div>"""
 
                         prescription_html += f"""
-        <div style="text-align: center; font-weight: bold; margin: 10px 0;">
+        <div class="cost-summary">
             Total Medicine Cost: ₹{total_med_cost:,}
         </div>
     </div>"""
@@ -796,15 +808,15 @@ def main():
 
                     if grand_total > 0:
                         prescription_html += f"""
-    <div style="text-align: center; font-weight: bold; margin: 20px 0; background: #e8f5e8; padding: 15px;">
+    <div class="cost-summary">
         <h3>Total Bill: ₹{grand_total:,}</h3>
     </div>"""
 
                     # Add footer
                     prescription_html += """
-    <div style="text-align: center; margin-top: 20px; color: #666;">
+    <div class="footer">
         <p><strong>Dr. Danish</strong> - Eye Care Specialist</p>
-        <p>MauEyeCare Optical Center</p>
+        <p>Mau Eye Care</p>
         <p>📞 +91 92356-47410 | 📧 maueyecare@gmail.com</p>
     </div>
 </body>
