@@ -72,7 +72,7 @@ def main():
                             st.warning(f"⚠️ {med.get('name', 'Unknown')}: {stock_level} units left")
         except:
             pass
-
+        
         # Current patient info
         if 'patient_name' in st.session_state and st.session_state['patient_name']:
             st.markdown("---")
@@ -86,7 +86,7 @@ def main():
     if 'code' in query_params:
         code = query_params['code']
         state = query_params.get('state', '')
-
+        
         with st.spinner("Authenticating with Google Sheets..."):
             result = oauth_sheets_api.exchange_code_for_token(code, state)
             if result['success']:
@@ -95,10 +95,10 @@ def main():
                 st.rerun()
             else:
                 st.error(f"❌ Authentication failed: {result.get('error', 'Unknown error')}")
-
+    
     # Main tabs
     tab1, tab2, tab3 = st.tabs([
-        "👥 Patient Registration",
+        "👥 Patient Registration", 
         "📤 Prescription Generator",
         "📊 Analytics"
     ])
@@ -106,7 +106,7 @@ def main():
     # --- Patient Registration Tab ---
     with tab1:
         st.header("👥 Patient Registration")
-
+        
         # Get existing patients for suggestions
         try:
             existing_patients = sheets_manager.get_patients()
@@ -115,24 +115,24 @@ def main():
         except:
             patient_names = []
             patient_mobiles = []
-
+        
         with st.form("patient_form"):
             col1, col2 = st.columns(2)
-
+            
             with col1:
                 # Combined dropdown + custom input for name
                 name_options = ["-- Enter Custom Name --"] + patient_names[:15]
                 selected_name = st.selectbox("Patient Name", name_options, key="name_dropdown")
-
+                
                 if selected_name == "-- Enter Custom Name --":
                     patient_name = st.text_input("Enter Full Name", placeholder="Type patient full name", key="custom_name")
                 else:
                     patient_name = selected_name
                     st.info(f"Selected: {selected_name}")
-
+                
                 age = st.number_input("Age", min_value=0, max_value=120, value=30)
                 gender = st.selectbox("Gender", ["Male", "Female", "Other"])
-
+                
                 # Address fields for demographics with defaults
                 address = st.text_input("Address", placeholder="Street address")
                 col_city, col_state = st.columns(2)
@@ -140,40 +140,40 @@ def main():
                     city = st.text_input("City", value="Azamgarh", placeholder="City name")
                 with col_state:
                     state = st.selectbox("State", [
-                        "Uttar Pradesh", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
-                        "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
-                        "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
-                        "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+                        "Uttar Pradesh", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", 
+                        "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", 
+                        "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", 
+                        "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", 
                         "Telangana", "Tripura", "Uttarakhand", "West Bengal", "Delhi"
                     ])
                 pincode = st.text_input("Pincode", value="276404", placeholder="6-digit pincode")
-
+            
             with col2:
                 # Combined dropdown + custom input for mobile
                 mobile_options = ["-- Enter Custom Mobile --"] + patient_mobiles[:15]
                 selected_mobile = st.selectbox("Mobile Number", mobile_options, key="mobile_dropdown")
-
+                
                 if selected_mobile == "-- Enter Custom Mobile --":
                     contact = st.text_input("Enter Mobile Number", placeholder="Type mobile number", key="custom_mobile")
                 else:
                     contact = selected_mobile
                     st.info(f"Selected: {selected_mobile}")
-
+                
                 issue_options = ["Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Floaters", "Night Blindness", "Other"]
                 patient_issue = st.selectbox("Patient Issue/Complaint", issue_options)
-
+                
                 advice_options = ["Spectacle Prescription", "Regular Eye Checkup", "Dry Eye Treatment", "Glaucoma Screening", "Diabetic Eye Exam", "Other"]
                 advice = st.selectbox("Advice/Notes", advice_options)
-
+                
                 # Professional details for analytics
                 occupation = st.text_input("Occupation", placeholder="Patient's occupation")
                 referral_source = st.selectbox("How did you hear about us?", [
-                    "", "Google Search", "Social Media", "Friend/Family", "Doctor Referral",
+                    "", "Google Search", "Social Media", "Friend/Family", "Doctor Referral", 
                     "Advertisement", "Walk-in", "Previous Patient", "Other"
                 ])
-
+            
             submitted = st.form_submit_button("💾 Register Patient", type="primary")
-
+            
             if submitted and patient_name:
                 # Professional duplicate check based on name and mobile
                 is_duplicate = False
@@ -181,14 +181,14 @@ def main():
                 try:
                     for p in existing_patients:
                         if isinstance(p, dict):
-                            if (p.get('name', '').lower().strip() == patient_name.lower().strip() and
+                            if (p.get('name', '').lower().strip() == patient_name.lower().strip() and 
                                 p.get('mobile', '').strip() == contact.strip()):
                                 is_duplicate = True
                                 duplicate_patient = p
                                 break
                 except:
                     pass
-
+                
                 # Store patient info in session
                 st.session_state.update({
                     'patient_name': patient_name,
@@ -205,18 +205,18 @@ def main():
                     'advice': advice,
                     'new_patient': not is_duplicate
                 })
-
+                
                 if is_duplicate:
                     st.success(f"🔄 **Return Visit Recorded!** {patient_name}")
-
+                    
                     # Show last visit details for returning patient
                     st.markdown("---")
                     st.subheader("📅 Previous Visit History")
-
+                    
                     try:
                         # Get patient's previous visits
                         for p in existing_patients:
-                            if isinstance(p, dict) and (p.get('name', '').lower().strip() == patient_name.lower().strip() and
+                            if isinstance(p, dict) and (p.get('name', '').lower().strip() == patient_name.lower().strip() and 
                                                        p.get('mobile', '').strip() == contact.strip()):
                                 col_hist1, col_hist2 = st.columns(2)
                                 with col_hist1:
@@ -226,7 +226,7 @@ def main():
                                     st.info(f"**Age at Last Visit:** {p.get('age', 'N/A')}")
                                     st.info(f"**Total Visits:** {p.get('visits', 1)}")
                                 break
-
+                        
                         # Get last prescription if available
                         try:
                             prescriptions = sheets_manager.get_prescriptions()
@@ -245,7 +245,7 @@ def main():
                 else:
                     st.success(f"✅ **New Patient Registered!** {patient_name}")
                     st.balloons()
-
+                
                 # Professional Google Sheets integration
                 if oauth_sheets_api.is_authenticated():
                     patient_record = {
@@ -273,42 +273,42 @@ def main():
                         st.warning(f"⚠️ Google Sheets sync failed: {result.get('error', 'Unknown error')}")
                 else:
                     st.warning("⚠️ Google Sheets not connected - patient data not synced")
-
+                
                 st.rerun()
-
+        
         # Post-registration: Medicine and Spectacle Selection
         if 'patient_name' in st.session_state and st.session_state['patient_name']:
             st.markdown("---")
             st.subheader(f"📋 Prescription for {st.session_state['patient_name']}")
-
+            
             # Medicine Selection Section
             st.markdown("### 💊 Medicine Selection")
-
+            
             # Load medicines from Google Sheets
             try:
                 medicines, _, _ = get_sheet_data()
                 medicine_options = {med['name']: med for med in medicines if isinstance(med, dict) and 'name' in med}
             except:
                 medicine_options = {}
-
+            
             if medicine_options:
                 # Combined dropdown + custom medicine selection
                 med_names = list(medicine_options.keys())
                 med_dropdown_options = ["-- Select Medicine --"] + med_names
-
+                
                 selected_med_dropdown = st.selectbox(
                     "Select Medicine from Inventory:",
                     med_dropdown_options,
                     key="med_dropdown"
                 )
-
+                
                 # Allow custom medicine entry
                 custom_medicine = st.text_input(
                     "Or enter custom medicine:",
                     placeholder="Type medicine name if not in dropdown",
                     key="custom_med"
                 )
-
+                
                 # Determine final medicine selection
                 if selected_med_dropdown != "-- Select Medicine --":
                     final_medicine = selected_med_dropdown
@@ -316,53 +316,53 @@ def main():
                     final_medicine = custom_medicine
                 else:
                     final_medicine = None
-
+                
                 if final_medicine:
                     if 'selected_medicines_list' not in st.session_state:
                         st.session_state['selected_medicines_list'] = []
-
+                    
                     if st.button(f"➕ Add {final_medicine}", key=f"add_{final_medicine}"):
                         if final_medicine not in st.session_state['selected_medicines_list']:
                             st.session_state['selected_medicines_list'].append(final_medicine)
                             st.success(f"Added {final_medicine}")
-
+                
                 # Show selected medicines with quantities and dosage
                 if st.session_state.get('selected_medicines_list'):
                     st.markdown("**Selected Medicines with Dosage:**")
                     medicine_details = {}
-
+                    
                     for med_name in st.session_state['selected_medicines_list']:
                         with st.container():
                             st.markdown(f"**{med_name}**")
                             col1, col2, col3, col4 = st.columns([2, 2, 2, 2])
-
+                            
                             with col1:
                                 qty = st.number_input("Quantity", min_value=1, value=1, key=f"qty_{med_name}")
-
+                            
                             with col2:
                                 dosage = st.text_input("Dosage", value="1 tablet", key=f"dosage_{med_name}")
-
+                            
                             with col3:
-                                timing = st.selectbox("When to take",
-                                                    ["After meals", "Before meals", "With meals", "As needed", "Bedtime"],
+                                timing = st.selectbox("When to take", 
+                                                    ["After meals", "Before meals", "With meals", "As needed", "Bedtime"], 
                                                     key=f"timing_{med_name}")
-
+                            
                             with col4:
                                 if st.button("🗑️ Remove", key=f"remove_{med_name}"):
                                     st.session_state['selected_medicines_list'].remove(med_name)
                                     st.rerun()
-
+                            
                             # Stock and price info
                             if med_name in medicine_options:
                                 med_data = medicine_options[med_name]
                                 current_stock = int(med_data.get('quantity', 0))
                                 price = float(med_data.get('price', 100))
-
+                                
                                 if current_stock >= qty:
                                     st.success(f"✅ Stock: {current_stock} | Price: ₹{price * qty}")
                                 else:
                                     st.error(f"❌ Low stock: {current_stock} | Price: ₹{price * qty}")
-
+                                
                                 medicine_details[med_name] = {
                                     'quantity': qty,
                                     'price': price,
@@ -383,44 +383,44 @@ def main():
                                     'timing': timing,
                                     'in_inventory': False
                                 }
-
+                    
                     st.session_state['medicine_details'] = medicine_details
-
+                    
                     # Show total medicine cost
                     total_cost = sum(details['total_cost'] for details in medicine_details.values())
                     if total_cost > 0:
                         st.success(f"💰 Total Medicine Cost: ₹{total_cost:,}")
-
+                    
                     # Clear the cache to get fresh data
                     get_sheet_data.clear()
-
+            
             # Spectacle Selection Section
             st.markdown("### 👓 Spectacle Selection")
-
+            
             try:
                 _, spectacles, _ = get_sheet_data()
                 spectacle_options = {spec['name']: spec for spec in spectacles if isinstance(spec, dict) and 'name' in spec}
             except:
                 spectacle_options = {}
-
+            
             if spectacle_options:
                 # Combined dropdown + custom spectacle selection
                 spec_names = list(spectacle_options.keys())
                 spec_dropdown_options = ["-- Select Spectacle --"] + spec_names
-
+                
                 selected_spec_dropdown = st.selectbox(
                     "Select Spectacle from Inventory:",
                     spec_dropdown_options,
                     key="spec_dropdown"
                 )
-
+                
                 # Allow custom spectacle entry
                 custom_spectacle = st.text_input(
                     "Or enter custom spectacle:",
                     placeholder="Type spectacle name if not in dropdown",
                     key="custom_spec"
                 )
-
+                
                 # Determine final spectacle selection
                 if selected_spec_dropdown != "-- Select Spectacle --":
                     final_spectacle = selected_spec_dropdown
@@ -432,14 +432,14 @@ def main():
                     st.info("Custom spectacle - Price will be determined manually")
                 else:
                     final_spectacle = None
-
+                
                 if final_spectacle:
                     st.session_state['selected_spectacles'] = [final_spectacle]
-
+                    
                     # Add spectacle usage instructions for first-time users
                     st.markdown("**Spectacle Usage Instructions:**")
                     first_time_user = st.checkbox("First time spectacle user?", key="first_time_spec")
-
+                    
                     if first_time_user:
                         st.session_state['spectacle_instructions'] = """• Start by wearing glasses for 2-3 hours daily, gradually increase usage
 • Clean lenses with microfiber cloth and lens cleaner only
@@ -448,20 +448,20 @@ def main():
 • Initial mild headache or dizziness is normal for 2-3 days
 • Return for adjustment if discomfort persists beyond a week"""
                     else:
-                        custom_instructions = st.text_area("Custom spectacle instructions:",
+                        custom_instructions = st.text_area("Custom spectacle instructions:", 
                                                          placeholder="Enter specific care instructions",
                                                          key="custom_spec_instructions")
                         st.session_state['spectacle_instructions'] = custom_instructions or "Follow standard spectacle care guidelines"
-
+            
             # Eye Prescription Section (separate from registration)
             st.markdown("### 👁️ Eye Prescription")
-
+            
             # Standard prescription values for suggestions
             sphere_options = ["", "+0.25", "+0.50", "+0.75", "+1.00", "+1.25", "+1.50", "+1.75", "+2.00", "+2.25", "+2.50", "+3.00", "+3.50", "+4.00", "+5.00", "+6.00",
                             "-0.25", "-0.50", "-0.75", "-1.00", "-1.25", "-1.50", "-1.75", "-2.00", "-2.25", "-2.50", "-3.00", "-3.50", "-4.00", "-5.00", "-6.00", "-8.00", "-10.00"]
             cylinder_options = ["", "-0.25", "-0.50", "-0.75", "-1.00", "-1.25", "-1.50", "-1.75", "-2.00", "-2.25", "-2.50", "-3.00", "-4.00", "-5.00"]
             axis_options = ["", "10", "15", "20", "30", "45", "60", "75", "90", "105", "120", "135", "150", "165", "180"]
-
+            
             # Get last prescription for returning patient
             last_rx = {}
             if not st.session_state.get('new_patient', True):
@@ -473,57 +473,57 @@ def main():
                         last_rx = json.loads(last_prescription.get('rx_table', '{}')) if last_prescription.get('rx_table') else {}
                 except:
                     pass
-
+            
             col_od, col_os = st.columns(2)
-
+            
             with col_od:
                 st.markdown("**OD (Right Eye)**")
-
+                
                 # Sphere OD with suggestions
-                sphere_od_dropdown = st.selectbox("Sphere OD (Select)", sphere_options,
+                sphere_od_dropdown = st.selectbox("Sphere OD (Select)", sphere_options, 
                                                 index=sphere_options.index(last_rx.get('OD', {}).get('Sphere', '')) if last_rx.get('OD', {}).get('Sphere', '') in sphere_options else 0,
                                                 key="sphere_od_dropdown")
                 sphere_od_custom = st.text_input("Or type custom Sphere OD", value="" if sphere_od_dropdown else last_rx.get('OD', {}).get('Sphere', ''), key="sphere_od_custom")
                 od_sphere = sphere_od_custom if sphere_od_custom else sphere_od_dropdown
-
+                
                 # Cylinder OD with suggestions
                 cylinder_od_dropdown = st.selectbox("Cylinder OD (Select)", cylinder_options,
                                                    index=cylinder_options.index(last_rx.get('OD', {}).get('Cylinder', '')) if last_rx.get('OD', {}).get('Cylinder', '') in cylinder_options else 0,
                                                    key="cylinder_od_dropdown")
                 cylinder_od_custom = st.text_input("Or type custom Cylinder OD", value="" if cylinder_od_dropdown else last_rx.get('OD', {}).get('Cylinder', ''), key="cylinder_od_custom")
                 od_cylinder = cylinder_od_custom if cylinder_od_custom else cylinder_od_dropdown
-
+                
                 # Axis OD with suggestions
                 axis_od_dropdown = st.selectbox("Axis OD (Select)", axis_options,
                                                index=axis_options.index(last_rx.get('OD', {}).get('Axis', '')) if last_rx.get('OD', {}).get('Axis', '') in axis_options else 0,
                                                key="axis_od_dropdown")
                 axis_od_custom = st.text_input("Or type custom Axis OD", value="" if axis_od_dropdown else last_rx.get('OD', {}).get('Axis', ''), key="axis_od_custom")
                 od_axis = axis_od_custom if axis_od_custom else axis_od_dropdown
-
+            
             with col_os:
                 st.markdown("**OS (Left Eye)**")
-
+                
                 # Sphere OS with suggestions
                 sphere_os_dropdown = st.selectbox("Sphere OS (Select)", sphere_options,
                                                  index=sphere_options.index(last_rx.get('OS', {}).get('Sphere', '')) if last_rx.get('OS', {}).get('Sphere', '') in sphere_options else 0,
                                                  key="sphere_os_dropdown")
                 sphere_os_custom = st.text_input("Or type custom Sphere OS", value="" if sphere_os_dropdown else last_rx.get('OS', {}).get('Sphere', ''), key="sphere_os_custom")
                 os_sphere = sphere_os_custom if sphere_os_custom else sphere_os_dropdown
-
+                
                 # Cylinder OS with suggestions
                 cylinder_os_dropdown = st.selectbox("Cylinder OS (Select)", cylinder_options,
                                                    index=cylinder_options.index(last_rx.get('OS', {}).get('Cylinder', '')) if last_rx.get('OS', {}).get('Cylinder', '') in cylinder_options else 0,
                                                    key="cylinder_os_dropdown")
                 cylinder_os_custom = st.text_input("Or type custom Cylinder OS", value="" if cylinder_os_dropdown else last_rx.get('OS', {}).get('Cylinder', ''), key="cylinder_os_custom")
                 os_cylinder = cylinder_os_custom if cylinder_os_custom else cylinder_os_dropdown
-
+                
                 # Axis OS with suggestions
                 axis_os_dropdown = st.selectbox("Axis OS (Select)", axis_options,
                                                index=axis_options.index(last_rx.get('OS', {}).get('Axis', '')) if last_rx.get('OS', {}).get('Axis', '') in axis_options else 0,
                                                key="axis_os_dropdown")
                 axis_os_custom = st.text_input("Or type custom Axis OS", value="" if axis_os_dropdown else last_rx.get('OS', {}).get('Axis', ''), key="axis_os_custom")
                 os_axis = axis_os_custom if axis_os_custom else axis_os_dropdown
-
+            
             # Doctor fees section
             st.markdown("### 💰 Consultation Fees")
             col_fee1, col_fee2 = st.columns(2)
@@ -531,11 +531,11 @@ def main():
                 consultation_fee = st.number_input("Consultation Fee (₹)", min_value=0, value=500, step=50)
             with col_fee2:
                 additional_charges = st.number_input("Additional Charges (₹)", min_value=0, value=0, step=50)
-
+            
             total_consultation = consultation_fee + additional_charges
             if total_consultation > 0:
                 st.info(f"Total Consultation: ₹{total_consultation}")
-
+            
             rx_table = {
                 "OD": {"Sphere": od_sphere, "Cylinder": od_cylinder, "Axis": od_axis},
                 "OS": {"Sphere": os_sphere, "Cylinder": os_cylinder, "Axis": os_axis}
@@ -547,29 +547,29 @@ def main():
     # --- Prescription Generator Tab ---
     with tab2:
         st.header("📄 Prescription Generator")
-
+        
         if 'patient_name' in st.session_state:
             patient_name = st.session_state['patient_name']
-
+            
             st.success(f"👤 **Patient:** {patient_name}")
-
+            
             # Show selected items
             col1, col2 = st.columns(2)
-
+            
             with col1:
                 st.markdown("### 👓 Selected Spectacles")
                 selected_spectacles = st.session_state.get('selected_spectacles', [])
                 if selected_spectacles:
                     for spec_name in selected_spectacles:
                         st.write(f"• {spec_name}")
-
+                    
                     # Show spectacle instructions if any
                     if st.session_state.get('spectacle_instructions'):
                         st.markdown("**Usage Instructions:**")
                         st.info(st.session_state['spectacle_instructions'])
                 else:
                     st.info("No spectacles selected")
-
+            
             with col2:
                 st.markdown("### 💊 Selected Medicines")
                 medicine_details = st.session_state.get('medicine_details', {})
@@ -578,12 +578,12 @@ def main():
                         st.write(f"• {med_name} - Qty: {details['quantity']} | Dosage: {details.get('dosage', 'As directed')} | Timing: {details.get('timing', 'As directed')} | ₹{details['total_cost']}")
                 else:
                     st.info("No medicines selected")
-
+                
                 # Show total cost breakdown
                 total_med_cost = sum(details['total_cost'] for details in medicine_details.values()) if medicine_details else 0
                 consultation_fee = st.session_state.get('consultation_fee', 0)
                 additional_charges = st.session_state.get('additional_charges', 0)
-
+                
                 if total_med_cost > 0 or consultation_fee > 0:
                     st.markdown("**Cost Breakdown:**")
                     if total_med_cost > 0:
@@ -592,22 +592,22 @@ def main():
                         st.write(f"• Consultation: ₹{consultation_fee:,}")
                     if additional_charges > 0:
                         st.write(f"• Additional: ₹{additional_charges:,}")
-
+                    
                     grand_total = total_med_cost + consultation_fee + additional_charges
                     st.markdown(f"**Total: ₹{grand_total:,}**")
-
+            
             # Generate prescription
             st.markdown("---")
-
+            
             # Prescription Preview
             if st.button("🔍 Preview Prescription", type="secondary"):
                 if selected_spectacles or medicine_details:
                     st.markdown("---")
                     st.subheader("🔍 Prescription Preview")
-
+                    
                     # Patient info preview
                     st.markdown(f"**Patient:** {patient_name} | **Age:** {st.session_state.get('age', 'N/A')} | **Mobile:** {st.session_state.get('patient_mobile', 'N/A')}")
-
+                    
                     # Eye prescription preview
                     rx_table = st.session_state.get('rx_table', {})
                     if rx_table and (rx_table.get('OD', {}).get('Sphere') or rx_table.get('OS', {}).get('Sphere')):
@@ -619,24 +619,24 @@ def main():
                         with col_prev2:
                             os_data = rx_table.get('OS', {})
                             st.write(f"OS: SPH {os_data.get('Sphere', '')} CYL {os_data.get('Cylinder', '')} AXIS {os_data.get('Axis', '')}")
-
+                    
                     # Spectacles preview
                     if selected_spectacles:
                         st.markdown("**Spectacles:**")
                         for spec in selected_spectacles:
                             st.write(f"• {spec}")
-
+                        
                         # Show spectacle instructions
                         if st.session_state.get('spectacle_instructions'):
                             st.markdown("**Usage Instructions:**")
                             st.info(st.session_state['spectacle_instructions'])
-
+                    
                     # Medicines preview
                     if medicine_details:
                         st.markdown("**Medicines:**")
                         for med_name, details in medicine_details.items():
                             st.write(f"• {med_name} - Qty: {details['quantity']} | Dosage: {details.get('dosage', 'N/A')} | Timing: {details.get('timing', 'N/A')}")
-
+                    
                     # Show total cost breakdown
                     if total_med_cost > 0 or consultation_fee > 0:
                         st.markdown("**Cost Breakdown:**")
@@ -646,18 +646,18 @@ def main():
                             st.write(f"• Consultation: ₹{consultation_fee:,}")
                         if additional_charges > 0:
                             st.write(f"• Additional: ₹{additional_charges:,}")
-
+                        
                         grand_total = total_med_cost + consultation_fee + additional_charges
                         st.markdown(f"**Total: ₹{grand_total:,}**")
                 else:
                     st.warning("⚠️ Please select medicines or spectacles to preview")
-
+            
             if st.button("📤 Generate Prescription", type="primary"):
                 if selected_spectacles or medicine_details:
                     # Automatically update stock in Google Sheets BEFORE generating prescription
                     stock_updates = []
                     stock_errors = []
-
+                    
                     if oauth_sheets_api.is_authenticated() and medicine_details:
                         with st.spinner("Updating medicine stock in Google Sheets..."):
                             for med_name, details in medicine_details.items():
@@ -667,14 +667,14 @@ def main():
                                         stock_updates.append(f"{med_name}: {result.get('old_qty', 0)} → {result.get('new_qty', 0)}")
                                     else:
                                         stock_errors.append(f"{med_name}: {result.get('error', 'Unknown error')}")
-
+                            
                             if stock_updates:
                                 st.success(f"✅ Stock updated: {', '.join(stock_updates)}")
                             if stock_errors:
                                 st.error(f"❌ Stock update errors: {', '.join(stock_errors)}")
                     elif medicine_details:
                         st.warning("⚠️ OAuth not authenticated - stock will not be updated automatically")
-
+                    
                     # Create prescription HTML
                     current_time = datetime.now(timezone(timedelta(hours=5, minutes=30)))
                     prescription_html = f"""
@@ -696,7 +696,7 @@ def main():
         <p>Dr. Danish - Eye Care Specialist</p>
         <p>📞 +91 92356-47410 | 📧 maueyecare@gmail.com</p>
     </div>
-
+    
     <div class="patient-info">
         <h3>👤 Patient Information</h3>
         <p><strong>Name:</strong> {patient_name}</p>
@@ -704,40 +704,40 @@ def main():
         <p><strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')}</p>
         <p><strong>Date:</strong> {current_time.strftime('%d/%m/%Y %I:%M %p IST')}</p>
     </div>"""
-
+                    
                     # Add eye prescription
                     rx_table = st.session_state.get('rx_table', {})
                     if rx_table and (rx_table.get('OD', {}).get('Sphere') or rx_table.get('OS', {}).get('Sphere')):
                         prescription_html += """
     <div class="prescription">
         <h3>👁️ Eye Prescription (RX)</h3>"""
-
+                        
                         for eye in ['OD', 'OS']:
                             eye_data = rx_table.get(eye, {})
                             if eye_data.get('Sphere'):
                                 eye_name = "Right Eye" if eye == "OD" else "Left Eye"
                                 prescription_html += f"""
         <div class="item">
-            <strong>{eye} ({eye_name}):</strong>
-            SPH {eye_data.get('Sphere', '')}
-            CYL {eye_data.get('Cylinder', '')}
+            <strong>{eye} ({eye_name}):</strong> 
+            SPH {eye_data.get('Sphere', '')} 
+            CYL {eye_data.get('Cylinder', '')} 
             AXIS {eye_data.get('Axis', '')}
         </div>"""
-
+                        
                         prescription_html += "</div>"
-
+                    
                     # Add spectacles
                     if selected_spectacles:
                         prescription_html += """
     <div class="prescription">
         <h3>👓 Recommended Spectacles</h3>"""
-
+                        
                         for spec_name in selected_spectacles:
                             prescription_html += f"""
         <div class="item">
             <strong>{spec_name}</strong>
         </div>"""
-
+                        
                         # Add spectacle instructions
                         spectacle_instructions = st.session_state.get('spectacle_instructions', '')
                         if spectacle_instructions:
@@ -746,15 +746,15 @@ def main():
             <strong>Usage Instructions:</strong><br>
             {spectacle_instructions.replace(chr(10), '<br>').replace('•', '&bull;')}
         </div>"""
-
+                        
                         prescription_html += "</div>"
-
+                    
                     # Add medicines
                     if medicine_details:
                         prescription_html += """
     <div class="prescription">
         <h3>💊 Prescribed Medicines</h3>"""
-
+                        
                         total_med_cost = 0
                         for med_name, details in medicine_details.items():
                             total_med_cost += details['total_cost']
@@ -766,18 +766,18 @@ def main():
             Timing: {details.get('timing', 'As directed')}<br>
             Price: ₹{details['price']} x {details['quantity']} = <strong>₹{details['total_cost']}</strong>
         </div>"""
-
+                        
                         prescription_html += f"""
         <div style="text-align: center; font-weight: bold; margin: 10px 0;">
             Total Medicine Cost: ₹{total_med_cost:,}
         </div>
     </div>"""
-
+                    
                     # Add consultation fees
                     consultation_fee = st.session_state.get('consultation_fee', 0)
                     additional_charges = st.session_state.get('additional_charges', 0)
                     total_consultation = consultation_fee + additional_charges
-
+                    
                     if total_consultation > 0:
                         prescription_html += f"""
     <div class="prescription">
@@ -789,17 +789,17 @@ def main():
             <strong>Total Consultation:</strong> ₹{total_consultation:,}
         </div>
     </div>"""
-
+                    
                     # Calculate total bill
                     total_med_cost = sum(details['total_cost'] for details in medicine_details.values()) if medicine_details else 0
                     grand_total = total_med_cost + total_consultation
-
+                    
                     if grand_total > 0:
                         prescription_html += f"""
     <div style="text-align: center; font-weight: bold; margin: 20px 0; background: #e8f5e8; padding: 15px;">
         <h3>Total Bill: ₹{grand_total:,}</h3>
     </div>"""
-
+                    
                     # Add footer
                     prescription_html += """
     <div style="text-align: center; margin-top: 20px; color: #666;">
@@ -809,7 +809,7 @@ def main():
     </div>
 </body>
 </html>"""
-
+                    
                     # Download prescription
                     timestamp = current_time.strftime("%Y%m%d_%H%M")
                     st.download_button(
@@ -819,21 +819,21 @@ def main():
                         mime="text/html",
                         type="primary"
                     )
-
+                    
                     st.success("✅ Prescription generated successfully!")
-
+                    
                     # Mark prescription as generated
                     st.session_state['prescription_generated'] = True
                 else:
                     st.warning("⚠️ Please select at least one spectacle or medicine to generate prescription")
-
+            
             # Show workflow options after prescription is generated
             if st.session_state.get('prescription_generated', False):
                 st.markdown("---")
                 st.markdown("### 🎯 Next Steps")
-
+                
                 col1, col2 = st.columns(2)
-
+                
                 with col1:
                     if st.button("🔄 New Prescription (Same Patient)", type="secondary"):
                         # Clear only prescription data, keep patient info
@@ -842,7 +842,7 @@ def main():
                                 del st.session_state[key]
                         st.success("🎆 Ready for new prescription!")
                         st.rerun()
-
+                
                 with col2:
                     if st.button("👥 Start New Patient", type="primary"):
                         # Clear all patient and prescription data
@@ -862,10 +862,10 @@ def main():
     # --- Analytics Tab ---
     with tab3:
         st.header("📊 Hospital Analytics & Business Intelligence")
-
+        
         try:
             medicines, spectacles, patients = get_sheet_data()
-
+            
             # Debug: Check if data is loaded
             if not medicines and not spectacles and not patients:
                 st.warning("⚠️ No data loaded from Google Sheets. Checking connection...")
@@ -878,17 +878,17 @@ def main():
                     st.info("🔄 Trying to refresh data...")
                     get_sheet_data.clear()
                     medicines, spectacles, patients = get_sheet_data()
-
+            
             if patients and len(patients) > 0:
                 # Key Performance Indicators
                 st.subheader("🎯 Key Performance Indicators")
-
+                
                 col1, col2, col3, col4 = st.columns(4)
-
+                
                 with col1:
                     total_patients = len(patients)
                     st.metric("Total Patients", total_patients)
-
+                
                 with col2:
                     # Calculate return patients
                     unique_patients = set()
@@ -900,27 +900,27 @@ def main():
                                 return_visits += 1
                             else:
                                 unique_patients.add(patient_key)
-
+                    
                     return_rate = (return_visits / total_patients * 100) if total_patients > 0 else 0
                     st.metric("Return Rate", f"{return_rate:.1f}%")
-
+                
                 with col3:
                     # Average age
                     ages = [int(p.get('age', 0)) for p in patients if isinstance(p, dict) and p.get('age')]
                     avg_age = sum(ages) / len(ages) if ages else 0
                     st.metric("Average Age", f"{avg_age:.1f} years")
-
+                
                 with col4:
                     # Revenue estimation (consultation fees)
                     avg_consultation = 500  # Default consultation fee
                     estimated_revenue = total_patients * avg_consultation
                     st.metric("Est. Revenue", f"₹{estimated_revenue:,}")
-
+                
                 # Demographics Analysis
                 st.subheader("👥 Patient Demographics")
-
+                
                 col_demo1, col_demo2 = st.columns(2)
-
+                
                 with col_demo1:
                     st.markdown("**Gender Distribution**")
                     gender_counts = {}
@@ -928,15 +928,15 @@ def main():
                         if isinstance(p, dict):
                             gender = p.get('gender', 'Unknown')
                             gender_counts[gender] = gender_counts.get(gender, 0) + 1
-
+                    
                     for gender, count in gender_counts.items():
                         percentage = (count / total_patients * 100) if total_patients > 0 else 0
                         st.write(f"• {gender}: {count} ({percentage:.1f}%)")
-
+                
                 with col_demo2:
                     st.markdown("**Age Groups**")
                     age_groups = {"0-18": 0, "19-35": 0, "36-50": 0, "51-65": 0, "65+": 0}
-
+                    
                     for age in ages:
                         if age <= 18:
                             age_groups["0-18"] += 1
@@ -948,16 +948,16 @@ def main():
                             age_groups["51-65"] += 1
                         else:
                             age_groups["65+"] += 1
-
+                    
                     for age_group, count in age_groups.items():
                         percentage = (count / len(ages) * 100) if ages else 0
                         st.write(f"• {age_group}: {count} ({percentage:.1f}%)")
-
+                
                 # Geographic Analysis
                 st.subheader("🗺️ Geographic Distribution")
-
+                
                 col_geo1, col_geo2 = st.columns(2)
-
+                
                 with col_geo1:
                     st.markdown("**Top Cities**")
                     city_counts = {}
@@ -965,13 +965,13 @@ def main():
                         if isinstance(p, dict) and p.get('city'):
                             city = p.get('city', 'Unknown')
                             city_counts[city] = city_counts.get(city, 0) + 1
-
+                    
                     # Sort cities by count
                     sorted_cities = sorted(city_counts.items(), key=lambda x: x[1], reverse=True)[:5]
                     for city, count in sorted_cities:
                         percentage = (count / total_patients * 100) if total_patients > 0 else 0
                         st.write(f"• {city}: {count} ({percentage:.1f}%)")
-
+                
                 with col_geo2:
                     st.markdown("**Top States**")
                     state_counts = {}
@@ -979,18 +979,18 @@ def main():
                         if isinstance(p, dict) and p.get('state'):
                             state = p.get('state', 'Unknown')
                             state_counts[state] = state_counts.get(state, 0) + 1
-
+                    
                     # Sort states by count
                     sorted_states = sorted(state_counts.items(), key=lambda x: x[1], reverse=True)[:5]
                     for state, count in sorted_states:
                         percentage = (count / total_patients * 100) if total_patients > 0 else 0
                         st.write(f"• {state}: {count} ({percentage:.1f}%)")
-
+                
                 # Marketing Analysis
                 st.subheader("📱 Marketing & Referral Analysis")
-
+                
                 col_market1, col_market2 = st.columns(2)
-
+                
                 with col_market1:
                     st.markdown("**Referral Sources**")
                     referral_counts = {}
@@ -998,14 +998,14 @@ def main():
                         if isinstance(p, dict) and p.get('referral_source'):
                             source = p.get('referral_source', 'Unknown')
                             referral_counts[source] = referral_counts.get(source, 0) + 1
-
+                    
                     # Sort by effectiveness
                     sorted_referrals = sorted(referral_counts.items(), key=lambda x: x[1], reverse=True)
                     for source, count in sorted_referrals:
                         percentage = (count / total_patients * 100) if total_patients > 0 else 0
                         roi_indicator = "🟢" if percentage > 20 else "🟡" if percentage > 10 else "🔴"
                         st.write(f"{roi_indicator} {source}: {count} ({percentage:.1f}%)")
-
+                
                 with col_market2:
                     st.markdown("**Common Issues**")
                     issue_counts = {}
@@ -1013,35 +1013,35 @@ def main():
                         if isinstance(p, dict) and p.get('issue'):
                             issue = p.get('issue', 'Unknown')
                             issue_counts[issue] = issue_counts.get(issue, 0) + 1
-
+                    
                     # Sort by frequency
                     sorted_issues = sorted(issue_counts.items(), key=lambda x: x[1], reverse=True)[:5]
                     for issue, count in sorted_issues:
                         percentage = (count / total_patients * 100) if total_patients > 0 else 0
                         st.write(f"• {issue}: {count} ({percentage:.1f}%)")
-
+                
                 # Business Intelligence Recommendations
                 st.subheader("💡 Business Intelligence & Revenue Optimization")
-
+                
                 # Marketing recommendations
                 if referral_counts:
                     top_referral = max(referral_counts.items(), key=lambda x: x[1])
                     st.success(f"🎯 **Top Performing Channel**: {top_referral[0]} ({top_referral[1]} patients)")
                     st.info("💰 **Recommendation**: Increase investment in this channel for better ROI")
-
+                
                 # Age group targeting
                 if age_groups:
                     top_age_group = max(age_groups.items(), key=lambda x: x[1])
                     st.success(f"🎯 **Primary Target Demographic**: {top_age_group[0]} years ({top_age_group[1]} patients)")
                     st.info("📱 **Recommendation**: Focus marketing campaigns on this age group")
-
+                
                 # Geographic expansion
                 if city_counts:
                     if len(city_counts) < 5:
                         st.warning("🗺️ **Geographic Opportunity**: Consider expanding to nearby cities")
                     else:
                         st.success("🌍 **Good Geographic Coverage**: Well-distributed patient base")
-
+                
                 # Revenue optimization
                 st.markdown("**Revenue Enhancement Strategies:**")
                 st.write("• 💰 Implement tiered consultation fees based on complexity")
@@ -1049,7 +1049,7 @@ def main():
                 st.write("• 📱 Invest more in top-performing referral channels")
                 st.write("• 🎯 Target marketing to primary demographic groups")
                 st.write("• 👥 Develop referral incentive programs")
-
+                
                 # Inventory insights
                 if medicines:
                     st.subheader("📊 Inventory Insights")
@@ -1060,10 +1060,10 @@ def main():
                             st.write(f"• {med.get('name', 'Unknown')}: {med.get('quantity', 0)} units left")
                     else:
                         st.success("✅ **Inventory Status**: All medicines adequately stocked")
-
+            
             else:
                 st.info("📊 No patient data available for analytics. Start registering patients to see insights!")
-
+                
                 # Show sample insights for empty state
                 st.markdown("### 💡 What you'll see with patient data:")
                 st.write("• Patient demographics and age distribution")
@@ -1072,18 +1072,18 @@ def main():
                 st.write("• Revenue optimization recommendations")
                 st.write("• Return patient analysis")
                 st.write("• Inventory management insights")
-
+        
         except Exception as e:
             st.error(f"😞 Unable to load analytics: {str(e)}")
             st.info("Please ensure Google Sheets connection is working properly.")
-
+            
             # Try alternative data loading
             try:
                 st.info("🔄 Attempting alternative data loading...")
                 from modules.google_sheets_manager import sheets_manager
                 patients = sheets_manager.get_patients()
                 medicines = sheets_manager.get_medicines()
-
+                
                 if patients:
                     st.success(f"✅ Loaded {len(patients)} patients via alternative method")
                     # Show basic analytics with alternative data
