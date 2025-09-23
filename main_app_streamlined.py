@@ -115,6 +115,21 @@ def main():
                 
                 age = st.number_input("Age", min_value=0, max_value=120, value=30)
                 gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+                
+                # Address fields for demographics
+                address = st.text_input("Address", placeholder="Street address")
+                col_city, col_state = st.columns(2)
+                with col_city:
+                    city = st.text_input("City", placeholder="City name")
+                with col_state:
+                    state = st.selectbox("State", [
+                        "", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", 
+                        "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", 
+                        "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", 
+                        "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", 
+                        "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi"
+                    ])
+                pincode = st.text_input("Pincode", placeholder="6-digit pincode")
             
             with col2:
                 # Combined dropdown + custom input for mobile
@@ -132,6 +147,13 @@ def main():
                 
                 advice_options = ["Spectacle Prescription", "Regular Eye Checkup", "Dry Eye Treatment", "Glaucoma Screening", "Diabetic Eye Exam", "Other"]
                 advice = st.selectbox("Advice/Notes", advice_options)
+                
+                # Professional details for analytics
+                occupation = st.text_input("Occupation", placeholder="Patient's occupation")
+                referral_source = st.selectbox("How did you hear about us?", [
+                    "", "Google Search", "Social Media", "Friend/Family", "Doctor Referral", 
+                    "Advertisement", "Walk-in", "Previous Patient", "Other"
+                ])
             
             submitted = st.form_submit_button("💾 Register Patient", type="primary")
             
@@ -156,6 +178,12 @@ def main():
                     'patient_mobile': contact,
                     'age': age,
                     'gender': gender,
+                    'address': address,
+                    'city': city,
+                    'state': state,
+                    'pincode': pincode,
+                    'occupation': occupation,
+                    'referral_source': referral_source,
                     'patient_issue': patient_issue,
                     'advice': advice,
                     'new_patient': not is_duplicate
@@ -177,10 +205,12 @@ def main():
                         'issue': patient_issue,
                         'advice': advice,
                         'email': '',
-                        'address': '',
-                        'city': '',
-                        'state': '',
-                        'pincode': ''
+                        'address': address,
+                        'city': city,
+                        'state': state,
+                        'pincode': pincode,
+                        'occupation': occupation,
+                        'referral_source': referral_source
                     }
                     result = oauth_sheets_api.add_patient(patient_record)
                     if result.get('success'):
@@ -349,6 +379,12 @@ def main():
             # Eye Prescription Section (separate from registration)
             st.markdown("### 👁️ Eye Prescription")
             
+            # Standard prescription values for suggestions
+            sphere_options = ["", "+0.25", "+0.50", "+0.75", "+1.00", "+1.25", "+1.50", "+1.75", "+2.00", "+2.25", "+2.50", "+3.00", "+3.50", "+4.00", "+5.00", "+6.00",
+                            "-0.25", "-0.50", "-0.75", "-1.00", "-1.25", "-1.50", "-1.75", "-2.00", "-2.25", "-2.50", "-3.00", "-3.50", "-4.00", "-5.00", "-6.00", "-8.00", "-10.00"]
+            cylinder_options = ["", "-0.25", "-0.50", "-0.75", "-1.00", "-1.25", "-1.50", "-1.75", "-2.00", "-2.25", "-2.50", "-3.00", "-4.00", "-5.00"]
+            axis_options = ["", "10", "15", "20", "30", "45", "60", "75", "90", "105", "120", "135", "150", "165", "180"]
+            
             # Get last prescription for returning patient
             last_rx = {}
             if not st.session_state.get('new_patient', True):
@@ -365,21 +401,71 @@ def main():
             
             with col_od:
                 st.markdown("**OD (Right Eye)**")
-                od_sphere = st.text_input("Sphere OD", value=last_rx.get('OD', {}).get('Sphere', ''), key="od_sphere")
-                od_cylinder = st.text_input("Cylinder OD", value=last_rx.get('OD', {}).get('Cylinder', ''), key="od_cylinder")
-                od_axis = st.text_input("Axis OD", value=last_rx.get('OD', {}).get('Axis', ''), key="od_axis")
+                
+                # Sphere OD with suggestions
+                sphere_od_dropdown = st.selectbox("Sphere OD (Select)", sphere_options, 
+                                                index=sphere_options.index(last_rx.get('OD', {}).get('Sphere', '')) if last_rx.get('OD', {}).get('Sphere', '') in sphere_options else 0,
+                                                key="sphere_od_dropdown")
+                sphere_od_custom = st.text_input("Or type custom Sphere OD", value="" if sphere_od_dropdown else last_rx.get('OD', {}).get('Sphere', ''), key="sphere_od_custom")
+                od_sphere = sphere_od_custom if sphere_od_custom else sphere_od_dropdown
+                
+                # Cylinder OD with suggestions
+                cylinder_od_dropdown = st.selectbox("Cylinder OD (Select)", cylinder_options,
+                                                   index=cylinder_options.index(last_rx.get('OD', {}).get('Cylinder', '')) if last_rx.get('OD', {}).get('Cylinder', '') in cylinder_options else 0,
+                                                   key="cylinder_od_dropdown")
+                cylinder_od_custom = st.text_input("Or type custom Cylinder OD", value="" if cylinder_od_dropdown else last_rx.get('OD', {}).get('Cylinder', ''), key="cylinder_od_custom")
+                od_cylinder = cylinder_od_custom if cylinder_od_custom else cylinder_od_dropdown
+                
+                # Axis OD with suggestions
+                axis_od_dropdown = st.selectbox("Axis OD (Select)", axis_options,
+                                               index=axis_options.index(last_rx.get('OD', {}).get('Axis', '')) if last_rx.get('OD', {}).get('Axis', '') in axis_options else 0,
+                                               key="axis_od_dropdown")
+                axis_od_custom = st.text_input("Or type custom Axis OD", value="" if axis_od_dropdown else last_rx.get('OD', {}).get('Axis', ''), key="axis_od_custom")
+                od_axis = axis_od_custom if axis_od_custom else axis_od_dropdown
             
             with col_os:
                 st.markdown("**OS (Left Eye)**")
-                os_sphere = st.text_input("Sphere OS", value=last_rx.get('OS', {}).get('Sphere', ''), key="os_sphere")
-                os_cylinder = st.text_input("Cylinder OS", value=last_rx.get('OS', {}).get('Cylinder', ''), key="os_cylinder")
-                os_axis = st.text_input("Axis OS", value=last_rx.get('OS', {}).get('Axis', ''), key="os_axis")
+                
+                # Sphere OS with suggestions
+                sphere_os_dropdown = st.selectbox("Sphere OS (Select)", sphere_options,
+                                                 index=sphere_options.index(last_rx.get('OS', {}).get('Sphere', '')) if last_rx.get('OS', {}).get('Sphere', '') in sphere_options else 0,
+                                                 key="sphere_os_dropdown")
+                sphere_os_custom = st.text_input("Or type custom Sphere OS", value="" if sphere_os_dropdown else last_rx.get('OS', {}).get('Sphere', ''), key="sphere_os_custom")
+                os_sphere = sphere_os_custom if sphere_os_custom else sphere_os_dropdown
+                
+                # Cylinder OS with suggestions
+                cylinder_os_dropdown = st.selectbox("Cylinder OS (Select)", cylinder_options,
+                                                   index=cylinder_options.index(last_rx.get('OS', {}).get('Cylinder', '')) if last_rx.get('OS', {}).get('Cylinder', '') in cylinder_options else 0,
+                                                   key="cylinder_os_dropdown")
+                cylinder_os_custom = st.text_input("Or type custom Cylinder OS", value="" if cylinder_os_dropdown else last_rx.get('OS', {}).get('Cylinder', ''), key="cylinder_os_custom")
+                os_cylinder = cylinder_os_custom if cylinder_os_custom else cylinder_os_dropdown
+                
+                # Axis OS with suggestions
+                axis_os_dropdown = st.selectbox("Axis OS (Select)", axis_options,
+                                               index=axis_options.index(last_rx.get('OS', {}).get('Axis', '')) if last_rx.get('OS', {}).get('Axis', '') in axis_options else 0,
+                                               key="axis_os_dropdown")
+                axis_os_custom = st.text_input("Or type custom Axis OS", value="" if axis_os_dropdown else last_rx.get('OS', {}).get('Axis', ''), key="axis_os_custom")
+                os_axis = axis_os_custom if axis_os_custom else axis_os_dropdown
+            
+            # Doctor fees section
+            st.markdown("### 💰 Consultation Fees")
+            col_fee1, col_fee2 = st.columns(2)
+            with col_fee1:
+                consultation_fee = st.number_input("Consultation Fee (₹)", min_value=0, value=500, step=50)
+            with col_fee2:
+                additional_charges = st.number_input("Additional Charges (₹)", min_value=0, value=0, step=50)
+            
+            total_consultation = consultation_fee + additional_charges
+            if total_consultation > 0:
+                st.info(f"Total Consultation: ₹{total_consultation}")
             
             rx_table = {
                 "OD": {"Sphere": od_sphere, "Cylinder": od_cylinder, "Axis": od_axis},
                 "OS": {"Sphere": os_sphere, "Cylinder": os_cylinder, "Axis": os_axis}
             }
             st.session_state['rx_table'] = rx_table
+            st.session_state['consultation_fee'] = consultation_fee
+            st.session_state['additional_charges'] = additional_charges
 
     # --- Prescription Generator Tab ---
     with tab2:
@@ -524,6 +610,33 @@ def main():
         </div>
     </div>"""
                     
+                    # Add consultation fees
+                    consultation_fee = st.session_state.get('consultation_fee', 0)
+                    additional_charges = st.session_state.get('additional_charges', 0)
+                    total_consultation = consultation_fee + additional_charges
+                    
+                    if total_consultation > 0:
+                        prescription_html += f"""
+    <div class="prescription">
+        <h3>💰 Consultation Charges</h3>
+        <div class="item">
+            <strong>Consultation Fee:</strong> ₹{consultation_fee:,}<br>
+            <strong>Additional Charges:</strong> ₹{additional_charges:,}<br>
+            <hr>
+            <strong>Total Consultation:</strong> ₹{total_consultation:,}
+        </div>
+    </div>"""
+                    
+                    # Calculate total bill
+                    total_med_cost = sum(details['total_cost'] for details in medicine_details.values()) if medicine_details else 0
+                    grand_total = total_med_cost + total_consultation
+                    
+                    if grand_total > 0:
+                        prescription_html += f"""
+    <div style="text-align: center; font-weight: bold; margin: 20px 0; background: #e8f5e8; padding: 15px;">
+        <h3>Total Bill: ₹{grand_total:,}</h3>
+    </div>"""
+                    
                     # Add footer
                     prescription_html += """
     <div style="text-align: center; margin-top: 20px; color: #666;">
@@ -561,7 +674,7 @@ def main():
                 with col1:
                     if st.button("🔄 New Prescription (Same Patient)", type="secondary"):
                         # Clear only prescription data, keep patient info
-                        for key in ['selected_spectacles', 'medicine_details', 'selected_medicines_list', 'prescription_generated']:
+                        for key in ['selected_spectacles', 'medicine_details', 'selected_medicines_list', 'prescription_generated', 'consultation_fee', 'additional_charges']:
                             if key in st.session_state:
                                 del st.session_state[key]
                         st.success("🎆 Ready for new prescription!")
@@ -571,7 +684,8 @@ def main():
                     if st.button("👥 Start New Patient", type="primary"):
                         # Clear all patient and prescription data
                         keys_to_clear = [
-                            'patient_name', 'patient_mobile', 'age', 'gender', 'patient_issue', 'advice',
+                            'patient_name', 'patient_mobile', 'age', 'gender', 'address', 'city', 'state', 'pincode',
+                            'occupation', 'referral_source', 'patient_issue', 'advice', 'consultation_fee', 'additional_charges',
                             'selected_spectacles', 'medicine_details', 'selected_medicines_list', 'rx_table', 'prescription_generated'
                         ]
                         for key in keys_to_clear:
