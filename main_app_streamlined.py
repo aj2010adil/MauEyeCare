@@ -340,19 +340,45 @@ def main():
                                 qty = st.number_input("Quantity", min_value=1, value=1, key=f"qty_{med_name}")
 
                             with col2:
-                                # Get medicine type from Google Sheets data
+                                # Professional dosage based on medicine type
                                 if med_name in medicine_options:
                                     med_data = medicine_options[med_name]
-                                    med_type = med_data.get('type', 'tablet')
-                                    default_dosage = f"1 {med_type}"
+                                    med_type = med_data.get('type', 'tablet').lower()
+
+                                    # Professional dosage patterns
+                                    if 'drop' in med_type or 'eye' in med_type:
+                                        professional_dosage = "1 drop 4 times daily"
+                                    elif 'tablet' in med_type or 'tab' in med_type:
+                                        professional_dosage = "1 tab 2 times daily"
+                                    elif 'capsule' in med_type or 'cap' in med_type:
+                                        professional_dosage = "1 cap 2 times daily"
+                                    elif 'syrup' in med_type:
+                                        professional_dosage = "5ml 3 times daily"
+                                    elif 'ointment' in med_type:
+                                        professional_dosage = "Apply 2 times daily"
+                                    else:
+                                        professional_dosage = "As directed"
                                 else:
-                                    default_dosage = "1 tablet"
-                                dosage = st.text_input("Dosage", value=default_dosage, key=f"dosage_{med_name}")
+                                    professional_dosage = "As directed"
+
+                                st.info(f"Dosage: {professional_dosage}")
 
                             with col3:
-                                timing = st.selectbox("When to take",
-                                                    ["After meals", "Before meals", "With meals", "As needed", "Bedtime"],
-                                                    key=f"timing_{med_name}")
+                                # Show timing based on medicine type
+                                if med_name in medicine_options:
+                                    med_data = medicine_options[med_name]
+                                    med_type = med_data.get('type', 'tablet').lower()
+
+                                    if 'drop' in med_type or 'eye' in med_type:
+                                        timing_info = "Morning, Afternoon, Evening, Night"
+                                    elif 'tablet' in med_type or 'tab' in med_type:
+                                        timing_info = "After meals (Morning & Evening)"
+                                    else:
+                                        timing_info = "As per doctor's advice"
+                                else:
+                                    timing_info = "As per doctor's advice"
+
+                                st.info(f"Timing: {timing_info}")
 
                             with col4:
                                 if st.button("🗑️ Remove", key=f"remove_{med_name}"):
@@ -375,8 +401,8 @@ def main():
                                     'price': price,
                                     'total_cost': price * qty,
                                     'current_stock': current_stock,
-                                    'dosage': dosage,
-                                    'timing': timing,
+                                    'dosage': professional_dosage,
+                                    'timing': timing_info,
                                     'in_inventory': True
                                 }
                             else:
@@ -386,8 +412,8 @@ def main():
                                     'price': 0,
                                     'total_cost': 0,
                                     'current_stock': 0,
-                                    'dosage': dosage,
-                                    'timing': timing,
+                                    'dosage': professional_dosage,
+                                    'timing': timing_info,
                                     'in_inventory': False
                                 }
 
@@ -463,11 +489,28 @@ def main():
             # Eye Prescription Section (separate from registration)
             st.markdown("### 👁️ Eye Prescription")
 
+            # Vision Testing Section
+            st.markdown("#### 📊 Vision Testing")
+            col_vision1, col_vision2 = st.columns(2)
+
+            with col_vision1:
+                st.markdown("**Distance Vision**")
+                vision_options = ["", "6/6", "6/9", "6/12", "6/18", "6/24", "6/36", "6/60", "CF (Counting Fingers)", "HM (Hand Movement)", "PL (Perception of Light)", "NPL (No Perception of Light)"]
+                od_vision = st.selectbox("OD Distance Vision", vision_options, key="od_distance_vision")
+                os_vision = st.selectbox("OS Distance Vision", vision_options, key="os_distance_vision")
+
+            with col_vision2:
+                st.markdown("**Near Vision**)
+                near_vision_options = ["", "N6", "N8", "N10", "N12", "N18", "N24", "N36", "N48"]
+                od_near_vision = st.selectbox("OD Near Vision", near_vision_options, key="od_near_vision")
+                os_near_vision = st.selectbox("OS Near Vision", near_vision_options, key="os_near_vision")
+
             # Standard prescription values for suggestions
             sphere_options = ["", "+0.25", "+0.50", "+0.75", "+1.00", "+1.25", "+1.50", "+1.75", "+2.00", "+2.25", "+2.50", "+3.00", "+3.50", "+4.00", "+5.00", "+6.00",
                             "-0.25", "-0.50", "-0.75", "-1.00", "-1.25", "-1.50", "-1.75", "-2.00", "-2.25", "-2.50", "-3.00", "-3.50", "-4.00", "-5.00", "-6.00", "-8.00", "-10.00"]
             cylinder_options = ["", "-0.25", "-0.50", "-0.75", "-1.00", "-1.25", "-1.50", "-1.75", "-2.00", "-2.25", "-2.50", "-3.00", "-4.00", "-5.00"]
             axis_options = ["", "10", "15", "20", "30", "45", "60", "75", "90", "105", "120", "135", "150", "165", "180"]
+            near_add_options = ["", "+1.00", "+1.25", "+1.50", "+1.75", "+2.00", "+2.25", "+2.50", "+2.75", "+3.00", "+3.25", "+3.50", "+3.75", "+4.00"]
 
             # Get last prescription for returning patient
             last_rx = {}
@@ -481,55 +524,73 @@ def main():
                 except:
                     pass
 
-            col_od, col_os = st.columns(2)
+            st.markdown("#### 🔍 Prescription Details")
+            col_od, col_os, col_near = st.columns(3)
 
             with col_od:
                 st.markdown("**OD (Right Eye)**")
 
                 # Sphere OD with suggestions
-                sphere_od_dropdown = st.selectbox("Sphere OD (Select)", sphere_options,
+                sphere_od_dropdown = st.selectbox("Sphere OD", sphere_options,
                                                 index=sphere_options.index(last_rx.get('OD', {}).get('Sphere', '')) if last_rx.get('OD', {}).get('Sphere', '') in sphere_options else 0,
                                                 key="sphere_od_dropdown")
-                sphere_od_custom = st.text_input("Or type custom Sphere OD", value="" if sphere_od_dropdown else last_rx.get('OD', {}).get('Sphere', ''), key="sphere_od_custom")
+                sphere_od_custom = st.text_input("Custom Sphere OD", value="" if sphere_od_dropdown else last_rx.get('OD', {}).get('Sphere', ''), key="sphere_od_custom")
                 od_sphere = sphere_od_custom if sphere_od_custom else sphere_od_dropdown
 
                 # Cylinder OD with suggestions
-                cylinder_od_dropdown = st.selectbox("Cylinder OD (Select)", cylinder_options,
+                cylinder_od_dropdown = st.selectbox("Cylinder OD", cylinder_options,
                                                    index=cylinder_options.index(last_rx.get('OD', {}).get('Cylinder', '')) if last_rx.get('OD', {}).get('Cylinder', '') in cylinder_options else 0,
                                                    key="cylinder_od_dropdown")
-                cylinder_od_custom = st.text_input("Or type custom Cylinder OD", value="" if cylinder_od_dropdown else last_rx.get('OD', {}).get('Cylinder', ''), key="cylinder_od_custom")
+                cylinder_od_custom = st.text_input("Custom Cylinder OD", value="" if cylinder_od_dropdown else last_rx.get('OD', {}).get('Cylinder', ''), key="cylinder_od_custom")
                 od_cylinder = cylinder_od_custom if cylinder_od_custom else cylinder_od_dropdown
 
                 # Axis OD with suggestions
-                axis_od_dropdown = st.selectbox("Axis OD (Select)", axis_options,
+                axis_od_dropdown = st.selectbox("Axis OD", axis_options,
                                                index=axis_options.index(last_rx.get('OD', {}).get('Axis', '')) if last_rx.get('OD', {}).get('Axis', '') in axis_options else 0,
                                                key="axis_od_dropdown")
-                axis_od_custom = st.text_input("Or type custom Axis OD", value="" if axis_od_dropdown else last_rx.get('OD', {}).get('Axis', ''), key="axis_od_custom")
+                axis_od_custom = st.text_input("Custom Axis OD", value="" if axis_od_dropdown else last_rx.get('OD', {}).get('Axis', ''), key="axis_od_custom")
                 od_axis = axis_od_custom if axis_od_custom else axis_od_dropdown
 
             with col_os:
                 st.markdown("**OS (Left Eye)**")
 
                 # Sphere OS with suggestions
-                sphere_os_dropdown = st.selectbox("Sphere OS (Select)", sphere_options,
+                sphere_os_dropdown = st.selectbox("Sphere OS", sphere_options,
                                                  index=sphere_options.index(last_rx.get('OS', {}).get('Sphere', '')) if last_rx.get('OS', {}).get('Sphere', '') in sphere_options else 0,
                                                  key="sphere_os_dropdown")
-                sphere_os_custom = st.text_input("Or type custom Sphere OS", value="" if sphere_os_dropdown else last_rx.get('OS', {}).get('Sphere', ''), key="sphere_os_custom")
+                sphere_os_custom = st.text_input("Custom Sphere OS", value="" if sphere_os_dropdown else last_rx.get('OS', {}).get('Sphere', ''), key="sphere_os_custom")
                 os_sphere = sphere_os_custom if sphere_os_custom else sphere_os_dropdown
 
                 # Cylinder OS with suggestions
-                cylinder_os_dropdown = st.selectbox("Cylinder OS (Select)", cylinder_options,
+                cylinder_os_dropdown = st.selectbox("Cylinder OS", cylinder_options,
                                                    index=cylinder_options.index(last_rx.get('OS', {}).get('Cylinder', '')) if last_rx.get('OS', {}).get('Cylinder', '') in cylinder_options else 0,
                                                    key="cylinder_os_dropdown")
-                cylinder_os_custom = st.text_input("Or type custom Cylinder OS", value="" if cylinder_os_dropdown else last_rx.get('OS', {}).get('Cylinder', ''), key="cylinder_os_custom")
+                cylinder_os_custom = st.text_input("Custom Cylinder OS", value="" if cylinder_os_dropdown else last_rx.get('OS', {}).get('Cylinder', ''), key="cylinder_os_custom")
                 os_cylinder = cylinder_os_custom if cylinder_os_custom else cylinder_os_dropdown
 
                 # Axis OS with suggestions
-                axis_os_dropdown = st.selectbox("Axis OS (Select)", axis_options,
+                axis_os_dropdown = st.selectbox("Axis OS", axis_options,
                                                index=axis_options.index(last_rx.get('OS', {}).get('Axis', '')) if last_rx.get('OS', {}).get('Axis', '') in axis_options else 0,
                                                key="axis_os_dropdown")
-                axis_os_custom = st.text_input("Or type custom Axis OS", value="" if axis_os_dropdown else last_rx.get('OS', {}).get('Axis', ''), key="axis_os_custom")
+                axis_os_custom = st.text_input("Custom Axis OS", value="" if axis_os_dropdown else last_rx.get('OS', {}).get('Axis', ''), key="axis_os_custom")
                 os_axis = axis_os_custom if axis_os_custom else axis_os_dropdown
+
+            with col_near:
+                st.markdown("**Near Vision ADD**")
+
+                # Near ADD for OD
+                near_add_od_dropdown = st.selectbox("ADD OD", near_add_options,
+                                                   index=near_add_options.index(last_rx.get('OD', {}).get('ADD', '')) if last_rx.get('OD', {}).get('ADD', '') in near_add_options else 0,
+                                                   key="near_add_od_dropdown")
+                near_add_od_custom = st.text_input("Custom ADD OD", value="" if near_add_od_dropdown else last_rx.get('OD', {}).get('ADD', ''), key="near_add_od_custom")
+                od_add = near_add_od_custom if near_add_od_custom else near_add_od_dropdown
+
+                # Near ADD for OS
+                near_add_os_dropdown = st.selectbox("ADD OS", near_add_options,
+                                                   index=near_add_options.index(last_rx.get('OS', {}).get('ADD', '')) if last_rx.get('OS', {}).get('ADD', '') in near_add_options else 0,
+                                                   key="near_add_os_dropdown")
+                near_add_os_custom = st.text_input("Custom ADD OS", value="" if near_add_os_dropdown else last_rx.get('OS', {}).get('ADD', ''), key="near_add_os_custom")
+                os_add = near_add_os_custom if near_add_os_custom else near_add_os_dropdown
 
             # Doctor fees section
             st.markdown("### 💰 Consultation Fees")
@@ -544,8 +605,8 @@ def main():
                 st.info(f"Total Consultation: ₹{total_consultation}")
 
             rx_table = {
-                "OD": {"Sphere": od_sphere, "Cylinder": od_cylinder, "Axis": od_axis},
-                "OS": {"Sphere": os_sphere, "Cylinder": os_cylinder, "Axis": os_axis}
+                "OD": {"Sphere": od_sphere, "Cylinder": od_cylinder, "Axis": od_axis, "ADD": od_add, "Vision": od_vision, "Near": od_near_vision},
+                "OS": {"Sphere": os_sphere, "Cylinder": os_cylinder, "Axis": os_axis, "ADD": os_add, "Vision": os_vision, "Near": os_near_vision}
             }
             st.session_state['rx_table'] = rx_table
             st.session_state['consultation_fee'] = consultation_fee
@@ -622,10 +683,21 @@ def main():
                         col_prev1, col_prev2 = st.columns(2)
                         with col_prev1:
                             od_data = rx_table.get('OD', {})
-                            st.write(f"OD: SPH {od_data.get('Sphere', '')} CYL {od_data.get('Cylinder', '')} AXIS {od_data.get('Axis', '')}")
+                            st.write(f"OD: SPH {od_data.get('Sphere', '')} CYL {od_data.get('Cylinder', '')} AXIS {od_data.get('Axis', '')} ADD {od_data.get('ADD', '')}")
                         with col_prev2:
                             os_data = rx_table.get('OS', {})
-                            st.write(f"OS: SPH {os_data.get('Sphere', '')} CYL {os_data.get('Cylinder', '')} AXIS {os_data.get('Axis', '')}")
+                            st.write(f"OS: SPH {os_data.get('Sphere', '')} CYL {os_data.get('Cylinder', '')} AXIS {os_data.get('Axis', '')} ADD {os_data.get('ADD', '')}")
+
+                    # Vision testing preview
+                    if rx_table and (rx_table.get('OD', {}).get('Vision') or rx_table.get('OS', {}).get('Vision')):
+                        st.markdown("**Vision Testing:**")
+                        col_vis1, col_vis2 = st.columns(2)
+                        with col_vis1:
+                            od_data = rx_table.get('OD', {})
+                            st.write(f"OD: Distance {od_data.get('Vision', '')} | Near {od_data.get('Near', '')}")
+                        with col_vis2:
+                            os_data = rx_table.get('OS', {})
+                            st.write(f"OS: Distance {os_data.get('Vision', '')} | Near {os_data.get('Near', '')}")
 
                     # Spectacles preview
                     if selected_spectacles:
@@ -690,18 +762,23 @@ def main():
 <head>
     <title>Mau Eye Care Prescription - {patient_name}</title>
     <style>
-        @page {{ margin: 0.5in; size: A4; }}
-        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 12px; line-height: 1.3; }}
-        .header {{ text-align: center; background: #2E86AB; color: white; padding: 10px; margin-bottom: 10px; }}
-        .header h1 {{ margin: 5px 0; font-size: 18px; }}
-        .header p {{ margin: 2px 0; font-size: 11px; }}
-        .patient-info {{ background: #f8f9ff; padding: 8px; margin: 5px 0; font-size: 11px; }}
-        .patient-info h3 {{ margin: 5px 0; font-size: 13px; }}
-        .prescription {{ padding: 8px; margin: 5px 0; }}
-        .prescription h3 {{ margin: 5px 0; font-size: 13px; }}
-        .item {{ background: #f0f8ff; padding: 6px; margin: 3px 0; font-size: 11px; }}
-        .cost-summary {{ text-align: center; font-weight: bold; margin: 8px 0; background: #e8f5e8; padding: 8px; font-size: 12px; }}
-        .footer {{ text-align: center; margin-top: 10px; color: #666; font-size: 10px; }}
+        @page {{ margin: 0.4in; size: A4; }}
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 11px; line-height: 1.2; }}
+        .header {{ text-align: center; background: #2E86AB; color: white; padding: 8px; margin-bottom: 8px; }}
+        .header h1 {{ margin: 3px 0; font-size: 16px; }}
+        .header p {{ margin: 1px 0; font-size: 10px; }}
+        .patient-info {{ background: #f8f9ff; padding: 6px; margin: 4px 0; font-size: 10px; }}
+        .patient-info h3 {{ margin: 3px 0; font-size: 12px; }}
+        .two-column {{ display: flex; gap: 15px; }}
+        .left-column {{ flex: 1; }}
+        .right-column {{ flex: 1; }}
+        .prescription {{ padding: 6px; margin: 4px 0; }}
+        .prescription h3 {{ margin: 4px 0; font-size: 12px; }}
+        .item {{ background: #f0f8ff; padding: 4px; margin: 2px 0; font-size: 10px; }}
+        .vision-table {{ width: 100%; border-collapse: collapse; margin: 5px 0; }}
+        .vision-table th, .vision-table td {{ border: 1px solid #ccc; padding: 3px; text-align: center; font-size: 9px; }}
+        .cost-summary {{ text-align: center; font-weight: bold; margin: 6px 0; background: #e8f5e8; padding: 6px; font-size: 11px; }}
+        .footer {{ text-align: center; margin-top: 8px; color: #666; font-size: 9px; }}
     </style>
 </head>
 <body>
@@ -717,88 +794,115 @@ def main():
         <p><strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')} | <strong>Date:</strong> {current_time.strftime('%d/%m/%Y %I:%M %p IST')}</p>
     </div>"""
 
-                    # Add eye prescription
+                    # Start two-column layout
+                    prescription_html += """
+    <div class="two-column">
+        <div class="left-column">"""
+
+                    # Add eye prescription and vision testing
                     rx_table = st.session_state.get('rx_table', {})
-                    if rx_table and (rx_table.get('OD', {}).get('Sphere') or rx_table.get('OS', {}).get('Sphere')):
+                    if rx_table:
                         prescription_html += """
-    <div class="prescription">
-        <h3>👁️ Eye Prescription (RX)</h3>"""
+            <div class="prescription">
+                <h3>👁️ Eye Prescription & Vision</h3>
+                <table class="vision-table">
+                    <tr>
+                        <th>Eye</th>
+                        <th>Vision</th>
+                        <th>Near</th>
+                        <th>SPH</th>
+                        <th>CYL</th>
+                        <th>AXIS</th>
+                        <th>ADD</th>
+                    </tr>"""
 
                         for eye in ['OD', 'OS']:
                             eye_data = rx_table.get(eye, {})
-                            if eye_data.get('Sphere'):
-                                eye_name = "Right Eye" if eye == "OD" else "Left Eye"
-                                prescription_html += f"""
-        <div class="item">
-            <strong>{eye} ({eye_name}):</strong>
-            SPH {eye_data.get('Sphere', '')}
-            CYL {eye_data.get('Cylinder', '')}
-            AXIS {eye_data.get('Axis', '')}
-        </div>"""
+                            eye_name = "Right" if eye == "OD" else "Left"
+                            prescription_html += f"""
+                    <tr>
+                        <td><strong>{eye}</strong></td>
+                        <td>{eye_data.get('Vision', '')}</td>
+                        <td>{eye_data.get('Near', '')}</td>
+                        <td>{eye_data.get('Sphere', '')}</td>
+                        <td>{eye_data.get('Cylinder', '')}</td>
+                        <td>{eye_data.get('Axis', '')}</td>
+                        <td>{eye_data.get('ADD', '')}</td>
+                    </tr>"""
 
-                        prescription_html += "</div>"
+                        prescription_html += """
+                </table>
+            </div>"""
 
-                    # Add spectacles
+                    # Add spectacles in left column
                     if selected_spectacles:
                         prescription_html += """
-    <div class="prescription">
-        <h3>👓 Recommended Spectacles</h3>"""
+            <div class="prescription">
+                <h3>👓 Recommended Spectacles</h3>"""
 
                         for spec_name in selected_spectacles:
                             prescription_html += f"""
-        <div class="item">
-            <strong>{spec_name}</strong>
-        </div>"""
+                <div class="item">
+                    <strong>{spec_name}</strong>
+                </div>"""
 
                         # Add spectacle instructions
                         spectacle_instructions = st.session_state.get('spectacle_instructions', '')
                         if spectacle_instructions:
                             prescription_html += f"""
-        <div class="item">
-            <strong>Usage Instructions:</strong><br>
-            {spectacle_instructions.replace(chr(10), '<br>').replace('•', '&bull;')}
-        </div>"""
+                <div class="item">
+                    <strong>Care Instructions:</strong><br>
+                    {spectacle_instructions.replace(chr(10), '<br>').replace('•', '&bull;')}
+                </div>"""
 
                         prescription_html += "</div>"
 
-                    # Add medicines
+                    # Close left column and start right column
+                    prescription_html += """
+        </div>
+        <div class="right-column">"""
+
+                    # Add medicines in right column
                     if medicine_details:
                         prescription_html += """
-    <div class="prescription">
-        <h3>💊 Prescribed Medicines</h3>"""
+            <div class="prescription">
+                <h3>💊 Prescribed Medicines</h3>"""
 
                         total_med_cost = 0
                         for med_name, details in medicine_details.items():
                             total_med_cost += details['total_cost']
                             prescription_html += f"""
-        <div class="item">
-            <strong>{med_name}</strong><br>
-            Quantity: {details['quantity']}<br>
-            Dosage: {details.get('dosage', 'As directed')}<br>
-            Timing: {details.get('timing', 'As directed')}<br>
-            Price: ₹{details['price']} x {details['quantity']} = <strong>₹{details['total_cost']}</strong>
-        </div>"""
+                <div class="item">
+                    <strong>{med_name}</strong><br>
+                    Qty: {details['quantity']} | {details.get('dosage', 'As directed')}<br>
+                    {details.get('timing', 'As directed')}<br>
+                    Price: ₹{details['price']} x {details['quantity']} = <strong>₹{details['total_cost']}</strong>
+                </div>"""
 
                         prescription_html += f"""
-        <div class="cost-summary">
-            Total Medicine Cost: ₹{total_med_cost:,}
-        </div>
-    </div>"""
+                <div class="cost-summary">
+                    Medicine Total: ₹{total_med_cost:,}
+                </div>
+            </div>"""
 
-                    # Add consultation fees
+                    # Add consultation fees in right column
                     consultation_fee = st.session_state.get('consultation_fee', 0)
                     additional_charges = st.session_state.get('additional_charges', 0)
                     total_consultation = consultation_fee + additional_charges
 
                     if total_consultation > 0:
                         prescription_html += f"""
-    <div class="prescription">
-        <h3>💰 Consultation Charges</h3>
-        <div class="item">
-            <strong>Consultation Fee:</strong> ₹{consultation_fee:,}<br>
-            <strong>Additional Charges:</strong> ₹{additional_charges:,}<br>
-            <hr>
-            <strong>Total Consultation:</strong> ₹{total_consultation:,}
+            <div class="prescription">
+                <h3>💰 Consultation Charges</h3>
+                <div class="item">
+                    Consultation Fee: ₹{consultation_fee:,}<br>
+                    Additional Charges: ₹{additional_charges:,}<br>
+                    <strong>Total: ₹{total_consultation:,}</strong>
+                </div>
+            </div>"""
+
+                    # Close right column and two-column layout
+                    prescription_html += """
         </div>
     </div>"""
 
@@ -809,7 +913,7 @@ def main():
                     if grand_total > 0:
                         prescription_html += f"""
     <div class="cost-summary">
-        <h3>Total Bill: ₹{grand_total:,}</h3>
+        <h3>TOTAL BILL: ₹{grand_total:,}</h3>
     </div>"""
 
                     # Add footer
