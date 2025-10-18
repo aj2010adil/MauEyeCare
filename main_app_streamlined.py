@@ -500,7 +500,7 @@ def main():
                 os_vision = st.selectbox("OS Distance Vision", vision_options, key="os_distance_vision")
 
             with col_vision2:
-                st.markdown("**Near Vision**)
+                st.markdown("**Near Vision**")
                 near_vision_options = ["", "N6", "N8", "N10", "N12", "N18", "N24", "N36", "N48"]
                 od_near_vision = st.selectbox("OD Near Vision", near_vision_options, key="od_near_vision")
                 os_near_vision = st.selectbox("OS Near Vision", near_vision_options, key="os_near_vision")
