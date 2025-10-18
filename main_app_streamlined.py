@@ -763,29 +763,60 @@ def main():
     <title>Mau Eye Care Prescription - {patient_name}</title>
     <style>
         @page {{ margin: 0.4in; size: A4; }}
-        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 11px; line-height: 1.2; }}
-        .header {{ text-align: center; background: #2E86AB; color: white; padding: 8px; margin-bottom: 8px; }}
+        body {{ 
+            font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 11px; line-height: 1.2;
+            background-image: url('file:///D:/Users/W7146644/WebstormProjects/MauEyeCare/mec.jpg');
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+        }}
+        .page {{ background: rgba(255,255,255,0.95); min-height: 100vh; padding: 10px; }}
+        .header {{ background: rgba(46, 134, 171, 0.9); color: white; padding: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }}
+        .header-left {{ text-align: left; flex: 1; }}
+        .header-center {{ text-align: center; flex: 1; }}
+        .header-right {{ text-align: right; flex: 1; }}
         .header h1 {{ margin: 3px 0; font-size: 16px; }}
+        .header h2 {{ margin: 2px 0; font-size: 14px; font-weight: bold; }}
         .header p {{ margin: 1px 0; font-size: 10px; }}
-        .patient-info {{ background: #f8f9ff; padding: 6px; margin: 4px 0; font-size: 10px; }}
+        .urdu {{ font-family: 'Noto Nastaliq Urdu', 'Arial Unicode MS', sans-serif; }}
+        .patient-info {{ background: rgba(248, 249, 255, 0.9); padding: 6px; margin: 4px 0; font-size: 10px; }}
         .patient-info h3 {{ margin: 3px 0; font-size: 12px; }}
         .two-column {{ display: flex; gap: 15px; }}
         .left-column {{ flex: 1; }}
         .right-column {{ flex: 1; }}
-        .prescription {{ padding: 6px; margin: 4px 0; }}
+        .prescription {{ padding: 6px; margin: 4px 0; background: rgba(255,255,255,0.8); }}
         .prescription h3 {{ margin: 4px 0; font-size: 12px; }}
-        .item {{ background: #f0f8ff; padding: 4px; margin: 2px 0; font-size: 10px; }}
-        .vision-table {{ width: 100%; border-collapse: collapse; margin: 5px 0; }}
+        .item {{ background: rgba(240, 248, 255, 0.9); padding: 4px; margin: 2px 0; font-size: 10px; }}
+        .vision-table {{ width: 100%; border-collapse: collapse; margin: 5px 0; background: rgba(255,255,255,0.9); }}
         .vision-table th, .vision-table td {{ border: 1px solid #ccc; padding: 3px; text-align: center; font-size: 9px; }}
-        .cost-summary {{ text-align: center; font-weight: bold; margin: 6px 0; background: #e8f5e8; padding: 6px; font-size: 11px; }}
-        .footer {{ text-align: center; margin-top: 8px; color: #666; font-size: 9px; }}
+        .cost-summary {{ text-align: center; font-weight: bold; margin: 6px 0; background: rgba(232, 245, 232, 0.9); padding: 6px; font-size: 11px; }}
+        .footer {{ text-align: center; margin-top: 8px; color: #666; font-size: 9px; background: rgba(255,255,255,0.8); padding: 5px; }}
+        .services {{ background: rgba(255,255,255,0.9); padding: 8px; margin: 8px 0; }}
+        .signature {{ background: rgba(255,255,255,0.9); padding: 8px; margin: 8px 0; text-align: right; }}
+        @media print {{ .page {{ page-break-after: always; }} }}
     </style>
 </head>
 <body>
+    <div class="page">
     <div class="header">
-        <h1>Mau Eye Care</h1>
-        <p>Dr. Danish - Eye Care Specialist</p>
-        <p>📞 +91 92356-47410 | 📧 maueyecare@gmail.com</p>
+        <div class="header-left">
+            <h2>Dr. Danish</h2>
+            <p>B.Sc. Optometry</p>
+            <p>Optometrist & Eye Specialist</p>
+            <p>Reg. No.: UPS 2908</p>
+        </div>
+        <div class="header-center">
+            <h1>Mau Eye Care</h1>
+            <p>Pura Sofi Bhonu Kuraishi Dasai Kuwa</p>
+            <p>Mubarakpur, Azamgarh, Uttar Pradesh, India</p>
+            <p>📞 +91 92356-47410 | 📧 info@maueyecare.com</p>
+            <p>🌐 www.maueyeycare.com</p>
+            <p>Mon-Sat: 9:00 AM - 8:00 PM | Sunday: Closed</p>
+        </div>
+        <div class="header-right">
+            <h2 class="urdu">ڈاکٹر دانش</h2>
+            <p class="urdu">بی ایس سی آپٹومیٹری</p>
+            <p class="urdu">آنکھوں کے ماہر</p>
+            <p class="urdu">رجسٹریشن نمبر: یو پی ایس ۲۹۰۸</p>
+        </div>
     </div>
 
     <div class="patient-info">
@@ -917,12 +948,56 @@ def main():
         <h3>TOTAL BILL: ₹{grand_total:,}</h3>
     </div>"""
 
-                    # Add footer
+                    # Add services and signature
                     prescription_html += """
+    <div class="services">
+        <h3>Our Services:</h3>
+        <p>• Eye Examinations • Prescription Glasses • Contact Lens Fitting • Eye Disease Treatment • Vision Therapy</p>
+    </div>
+    
+    <div class="signature">
+        <p>Doctor Signature: ___________________________</p>
+    </div>
+    
     <div class="footer">
-        <p><strong>Dr. Danish</strong> - Eye Care Specialist</p>
-        <p>Mau Eye Care</p>
-        <p>📞 +91 92356-47410 | 📧 maueyecare@gmail.com</p>
+        <p><strong>Dr. Danish, B.Sc. Optometry</strong> - Optometrist & Eye Specialist | Reg. No.: UPS 2908</p>
+        <p>Mau Eye Care | Mubarakpur, Azamgarh | 📞 +91 92356-47410 | 🌐 www.maueyeycare.com</p>
+    </div>
+    </div>
+    
+    <!-- URDU BACK PAGE -->
+    <div class="page">
+    <div class="header">
+        <div class="header-center" style="flex: 3; text-align: center;">
+            <h1 class="urdu">ماؤ آئی کیئر</h1>
+            <p class="urdu">پورا صوفی بھونو قریشی داسائی کوا</p>
+            <p class="urdu">مبارک پور، اعظم گڑھ، اتر پردیش، ہندوستان</p>
+            <p class="urdu">فون: ۰۹۲۳۵۶-۴۷۴۱۰ | ای میل: info@maueyecare.com</p>
+            <p class="urdu">ویب سائٹ: www.maueyeycare.com</p>
+            <p class="urdu">پیر سے ہفتہ: صبح ۹ بجے سے رات ۸ بجے | اتوار: بند</p>
+        </div>
+    </div>
+    
+    <div class="patient-info">
+        <h3 class="urdu">مریض کی معلومات</h3>
+        <p class="urdu"><strong>نام:</strong> {patient_name} | <strong>عمر:</strong> {st.session_state.get('age', 'N/A')} | <strong>جنس:</strong> {st.session_state.get('gender', 'N/A')}</p>
+        <p class="urdu"><strong>موبائل:</strong> {st.session_state.get('patient_mobile', 'N/A')} | <strong>تاریخ:</strong> {current_time.strftime('%d/%m/%Y %I:%M %p IST')}</p>
+        <p class="urdu"><strong>پتہ:</strong> {st.session_state.get('address', '')}, {st.session_state.get('city', '')}, {st.session_state.get('state', '')} - {st.session_state.get('pincode', '')}</p>
+    </div>
+    
+    <div class="services">
+        <h3 class="urdu">ہماری خدمات:</h3>
+        <p class="urdu">• آنکھوں کا معائنہ • عینک کی تجویز • کانٹیکٹ لینز کی فٹنگ • آنکھوں کی بیماریوں کا علاج • بینائی کی تھیراپی</p>
+    </div>
+    
+    <div class="signature">
+        <p class="urdu">ڈاکٹر کے دستخط: ___________________________</p>
+    </div>
+    
+    <div class="footer">
+        <p class="urdu"><strong>ڈاکٹر دانش، بی ایس سی آپٹومیٹری</strong> - آنکھوں کے ماہر | رجسٹریشن نمبر: یو پی ایس ۲۹۰۸</p>
+        <p class="urdu">ماؤ آئی کیئر | مبارک پور، اعظم گڑھ | فون: ۰۹۲۳۵۶-۴۷۴۱۰ | www.maueyeycare.com</p>
+    </div>
     </div>
 </body>
 </html>"""
