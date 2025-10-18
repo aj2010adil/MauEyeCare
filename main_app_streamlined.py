@@ -340,45 +340,45 @@ def main():
                                 qty = st.number_input("Quantity", min_value=1, value=1, key=f"qty_{med_name}")
 
                             with col2:
-                                # Professional dosage based on medicine type
+                                # Doctor customizable dosage
                                 if med_name in medicine_options:
                                     med_data = medicine_options[med_name]
                                     med_type = med_data.get('type', 'tablet').lower()
 
-                                    # Professional dosage patterns
+                                    # Default dosage suggestions based on medicine type
                                     if 'drop' in med_type or 'eye' in med_type:
-                                        professional_dosage = "1 drop 4 times daily"
+                                        default_dosage = "1 drop 4 times daily"
                                     elif 'tablet' in med_type or 'tab' in med_type:
-                                        professional_dosage = "1 tab 2 times daily"
+                                        default_dosage = "1 tab 2 times daily"
                                     elif 'capsule' in med_type or 'cap' in med_type:
-                                        professional_dosage = "1 cap 2 times daily"
+                                        default_dosage = "1 cap 2 times daily"
                                     elif 'syrup' in med_type:
-                                        professional_dosage = "5ml 3 times daily"
+                                        default_dosage = "5ml 3 times daily"
                                     elif 'ointment' in med_type:
-                                        professional_dosage = "Apply 2 times daily"
+                                        default_dosage = "Apply 2 times daily"
                                     else:
-                                        professional_dosage = "As directed"
+                                        default_dosage = "As directed"
                                 else:
-                                    professional_dosage = "As directed"
+                                    default_dosage = "As directed"
 
-                                st.info(f"Dosage: {professional_dosage}")
+                                dosage = st.text_input("Dosage", value=default_dosage, key=f"dosage_{med_name}")
 
                             with col3:
-                                # Show timing based on medicine type
+                                # Doctor customizable timing
                                 if med_name in medicine_options:
                                     med_data = medicine_options[med_name]
                                     med_type = med_data.get('type', 'tablet').lower()
 
                                     if 'drop' in med_type or 'eye' in med_type:
-                                        timing_info = "Morning, Afternoon, Evening, Night"
+                                        default_timing = "Morning, Afternoon, Evening, Night"
                                     elif 'tablet' in med_type or 'tab' in med_type:
-                                        timing_info = "After meals (Morning & Evening)"
+                                        default_timing = "After meals (Morning & Evening)"
                                     else:
-                                        timing_info = "As per doctor's advice"
+                                        default_timing = "As per doctor's advice"
                                 else:
-                                    timing_info = "As per doctor's advice"
+                                    default_timing = "As per doctor's advice"
 
-                                st.info(f"Timing: {timing_info}")
+                                timing = st.text_input("Timing", value=default_timing, key=f"timing_{med_name}")
 
                             with col4:
                                 if st.button("🗑️ Remove", key=f"remove_{med_name}"):
@@ -401,8 +401,8 @@ def main():
                                     'price': price,
                                     'total_cost': price * qty,
                                     'current_stock': current_stock,
-                                    'dosage': professional_dosage,
-                                    'timing': timing_info,
+                                    'dosage': dosage,
+                                    'timing': timing,
                                     'in_inventory': True
                                 }
                             else:
@@ -412,8 +412,8 @@ def main():
                                     'price': 0,
                                     'total_cost': 0,
                                     'current_stock': 0,
-                                    'dosage': professional_dosage,
-                                    'timing': timing_info,
+                                    'dosage': dosage,
+                                    'timing': timing,
                                     'in_inventory': False
                                 }
 
