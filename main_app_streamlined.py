@@ -113,7 +113,6 @@ def main():
             patient_names = [p.get('name', '') for p in existing_patients if isinstance(p, dict) and p.get('name')]
             patient_mobiles = [p.get('mobile', '') for p in existing_patients if isinstance(p, dict) and p.get('mobile')]
         except:
-            existing_patients = []
             patient_names = []
             patient_mobiles = []
 
@@ -125,9 +124,6 @@ def main():
                 patient_options = ["-- New Patient --"] + [f"{p.get('name', 'Unknown')} - {p.get('mobile', 'No Mobile')}" for p in existing_patients[:15] if isinstance(p, dict)]
                 selected_patient = st.selectbox("Select Patient or Enter New", patient_options, key="patient_dropdown")
 
-                # Initialize selected_patient_data
-                selected_patient_data = None
-                
                 # Auto-fill or manual entry
                 if selected_patient == "-- New Patient --":
                     patient_name = st.text_input("Patient Name", placeholder="Enter full name", key="patient_name_input")
@@ -135,6 +131,7 @@ def main():
                     gender = st.selectbox("Gender", ["Male", "Female", "Other"])
                 else:
                     # Find selected patient data
+                    selected_patient_data = None
                     for p in existing_patients:
                         if isinstance(p, dict) and f"{p.get('name', 'Unknown')} - {p.get('mobile', 'No Mobile')}" == selected_patient:
                             selected_patient_data = p
