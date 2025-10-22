@@ -108,11 +108,16 @@ def main():
         st.header("👥 Patient Registration")
 
         # Get existing patients for suggestions
+        existing_patients = []
+        patient_names = []
+        patient_mobiles = []
         try:
-            existing_patients = sheets_manager.get_patients()
-            patient_names = [p.get('name', '') for p in existing_patients if isinstance(p, dict) and p.get('name')]
-            patient_mobiles = [p.get('mobile', '') for p in existing_patients if isinstance(p, dict) and p.get('mobile')]
-        except:
+            _, _, existing_patients = get_sheet_data()
+            if existing_patients:
+                patient_names = [p.get('name', '') for p in existing_patients if isinstance(p, dict) and p.get('name')]
+                patient_mobiles = [p.get('mobile', '') for p in existing_patients if isinstance(p, dict) and p.get('mobile')]
+        except Exception as e:
+            existing_patients = []
             patient_names = []
             patient_mobiles = []
 
