@@ -385,16 +385,16 @@ def main():
                                     st.session_state['selected_medicines_list'].remove(med_name)
                                     st.rerun()
 
-                            # Stock and price info
+                            # Stock info (price hidden from display but tracked internally)
                             if med_name in medicine_options:
                                 med_data = medicine_options[med_name]
                                 current_stock = int(med_data.get('quantity', 0))
                                 price = float(med_data.get('price', 100))
 
                                 if current_stock >= qty:
-                                    st.success(f"✅ Stock: {current_stock} | Price: ₹{price * qty}")
+                                    st.success(f"✅ Stock Available: {current_stock} units")
                                 else:
-                                    st.error(f"❌ Low stock: {current_stock} | Price: ₹{price * qty}")
+                                    st.error(f"❌ Low Stock: {current_stock} units")
 
                                 medicine_details[med_name] = {
                                     'quantity': qty,
@@ -406,7 +406,7 @@ def main():
                                     'in_inventory': True
                                 }
                             else:
-                                st.info("📊 Custom medicine - Price: ₹0")
+                                st.info("📊 Custom medicine")
                                 medicine_details[med_name] = {
                                     'quantity': qty,
                                     'price': 0,
@@ -418,11 +418,6 @@ def main():
                                 }
 
                     st.session_state['medicine_details'] = medicine_details
-
-                    # Show total medicine cost
-                    total_cost = sum(details['total_cost'] for details in medicine_details.values())
-                    if total_cost > 0:
-                        st.success(f"💰 Total Medicine Cost: ₹{total_cost:,}")
 
                     # Clear the cache to get fresh data
                     get_sheet_data.clear()
@@ -489,20 +484,38 @@ def main():
             # Eye Prescription Section (separate from registration)
             st.markdown("### 👁️ Eye Prescription")
 
+            # Complaint and Diagnosis Section
+            st.markdown("#### 🩺 Clinical Assessment")
+            col_clinical1, col_clinical2 = st.columns(2)
+
+            with col_clinical1:
+                complaint_options = ["", "Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Floaters", "Night Blindness", "Headache", "Eye Strain", "Watering", "Itching", "Other"]
+                complaint = st.selectbox("Chief Complaint", complaint_options, key="complaint")
+                if complaint == "Other":
+                    custom_complaint = st.text_input("Specify Complaint", key="custom_complaint")
+                    complaint = custom_complaint if custom_complaint else "Other"
+
+            with col_clinical2:
+                diagnosis_options = ["", "Myopia", "Hyperopia", "Astigmatism", "Presbyopia", "Dry Eye Syndrome", "Conjunctivitis", "Glaucoma Suspect", "Diabetic Retinopathy", "Cataract", "Normal Eye Exam", "Other"]
+                diagnosis = st.selectbox("Diagnosis", diagnosis_options, key="diagnosis")
+                if diagnosis == "Other":
+                    custom_diagnosis = st.text_input("Specify Diagnosis", key="custom_diagnosis")
+                    diagnosis = custom_diagnosis if custom_diagnosis else "Other"
+
             # Vision Testing Section
             st.markdown("#### 📊 Vision Testing")
             col_vision1, col_vision2 = st.columns(2)
 
             with col_vision1:
-                st.markdown("**Distance Vision**")
+                st.markdown("**OD (Right Eye) Vision**")
                 vision_options = ["", "6/6", "6/9", "6/12", "6/18", "6/24", "6/36", "6/60", "CF (Counting Fingers)", "HM (Hand Movement)", "PL (Perception of Light)", "NPL (No Perception of Light)"]
                 od_vision = st.selectbox("OD Distance Vision", vision_options, key="od_distance_vision")
-                os_vision = st.selectbox("OS Distance Vision", vision_options, key="os_distance_vision")
-
-            with col_vision2:
-                st.markdown("**Near Vision**")
                 near_vision_options = ["", "N6", "N8", "N10", "N12", "N18", "N24", "N36", "N48"]
                 od_near_vision = st.selectbox("OD Near Vision", near_vision_options, key="od_near_vision")
+
+            with col_vision2:
+                st.markdown("**OS (Left Eye) Vision**")
+                os_vision = st.selectbox("OS Distance Vision", vision_options, key="os_distance_vision")
                 os_near_vision = st.selectbox("OS Near Vision", near_vision_options, key="os_near_vision")
 
             # Standard prescription values for suggestions
@@ -611,6 +624,8 @@ def main():
             st.session_state['rx_table'] = rx_table
             st.session_state['consultation_fee'] = consultation_fee
             st.session_state['additional_charges'] = additional_charges
+            st.session_state['complaint'] = complaint
+            st.session_state['diagnosis'] = diagnosis
 
     # --- Prescription Generator Tab ---
     with tab2:
@@ -824,6 +839,7 @@ def main():
         <p><strong>Name:</strong> {patient_name} | <strong>Age:</strong> {st.session_state.get('age', 'N/A')} | <strong>Gender:</strong> {st.session_state.get('gender', 'N/A')}</p>
         <p><strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')} | <strong>Date:</strong> {current_time.strftime('%d/%m/%Y %I:%M %p IST')}</p>
         <p><strong>Address:</strong> {st.session_state.get('address', '')}, {st.session_state.get('city', '')}, {st.session_state.get('state', '')} - {st.session_state.get('pincode', '')}</p>
+        <p><strong>Complaint:</strong> {st.session_state.get('complaint', 'N/A')} | <strong>Diagnosis:</strong> {st.session_state.get('diagnosis', 'N/A')}</p>
     </div>"""
 
                     # Start two-column layout
@@ -907,14 +923,10 @@ def main():
                 <div class="item">
                     <strong>{med_name}</strong><br>
                     Qty: {details['quantity']} | {details.get('dosage', 'As directed')}<br>
-                    {details.get('timing', 'As directed')}<br>
-                    Price: ₹{details['price']} x {details['quantity']} = <strong>₹{details['total_cost']}</strong>
+                    {details.get('timing', 'As directed')}
                 </div>"""
 
-                        prescription_html += f"""
-                <div class="cost-summary">
-                    Medicine Total: ₹{total_med_cost:,}
-                </div>
+                        prescription_html += """
             </div>"""
 
                     # Add consultation fees in right column
@@ -962,41 +974,6 @@ def main():
     <div class="footer">
         <p><strong>Dr. Danish, B.Sc. Optometry</strong> - Optometrist & Eye Specialist | Reg. No.: UPS 2908</p>
         <p>Mau Eye Care | Mubarakpur, Azamgarh | 📞 +91 92356-47410 | 🌐 www.maueyeycare.com</p>
-    </div>
-    </div>
-    
-    <!-- URDU BACK PAGE -->
-    <div class="page">
-    <div class="header">
-        <div class="header-center" style="flex: 3; text-align: center;">
-            <h1 class="urdu">ماؤ آئی کیئر</h1>
-            <p class="urdu">پورا صوفی بھونو قریشی داسائی کوا</p>
-            <p class="urdu">مبارک پور، اعظم گڑھ، اتر پردیش، ہندوستان</p>
-            <p class="urdu">فون: ۰۹۲۳۵۶-۴۷۴۱۰ | ای میل: info@maueyecare.com</p>
-            <p class="urdu">ویب سائٹ: www.maueyeycare.com</p>
-            <p class="urdu">پیر سے ہفتہ: صبح ۹ بجے سے رات ۸ بجے | اتوار: بند</p>
-        </div>
-    </div>
-    
-    <div class="patient-info">
-        <h3 class="urdu">مریض کی معلومات</h3>
-        <p class="urdu"><strong>نام:</strong> {patient_name} | <strong>عمر:</strong> {st.session_state.get('age', 'N/A')} | <strong>جنس:</strong> {st.session_state.get('gender', 'N/A')}</p>
-        <p class="urdu"><strong>موبائل:</strong> {st.session_state.get('patient_mobile', 'N/A')} | <strong>تاریخ:</strong> {current_time.strftime('%d/%m/%Y %I:%M %p IST')}</p>
-        <p class="urdu"><strong>پتہ:</strong> {st.session_state.get('address', '')}, {st.session_state.get('city', '')}, {st.session_state.get('state', '')} - {st.session_state.get('pincode', '')}</p>
-    </div>
-    
-    <div class="services">
-        <h3 class="urdu">ہماری خدمات:</h3>
-        <p class="urdu">• آنکھوں کا معائنہ • عینک کی تجویز • کانٹیکٹ لینز کی فٹنگ • آنکھوں کی بیماریوں کا علاج • بینائی کی تھیراپی</p>
-    </div>
-    
-    <div class="signature">
-        <p class="urdu">ڈاکٹر کے دستخط: ___________________________</p>
-    </div>
-    
-    <div class="footer">
-        <p class="urdu"><strong>ڈاکٹر دانش، بی ایس سی آپٹومیٹری</strong> - آنکھوں کے ماہر | رجسٹریشن نمبر: یو پی ایس ۲۹۰۸</p>
-        <p class="urdu">ماؤ آئی کیئر | مبارک پور، اعظم گڑھ | فون: ۰۹۲۳۵۶-۴۷۴۱۰ | www.maueyeycare.com</p>
     </div>
     </div>
 </body>
