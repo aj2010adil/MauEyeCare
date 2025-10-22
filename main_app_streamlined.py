@@ -159,11 +159,17 @@ def main():
                     contact = selected_mobile
                     st.info(f"Selected: {selected_mobile}")
 
-                issue_options = ["Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Floaters", "Night Blindness", "Other"]
+                issue_options = ["Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Floaters", "Night Blindness", "Headache", "Eye Strain", "Watering", "Itching", "Burning Sensation", "Foreign Body Sensation", "Light Sensitivity", "Discharge", "Swelling", "Routine Checkup", "Other"]
                 patient_issue = st.selectbox("Patient Issue/Complaint", issue_options)
+                if patient_issue == "Other":
+                    custom_issue = st.text_area("Specify Issue/Complaint", placeholder="Describe the patient's complaint in detail", key="custom_issue")
+                    patient_issue = custom_issue if custom_issue else "Other"
 
-                advice_options = ["Spectacle Prescription", "Regular Eye Checkup", "Dry Eye Treatment", "Glaucoma Screening", "Diabetic Eye Exam", "Other"]
+                advice_options = ["Spectacle Prescription", "Regular Eye Checkup", "Dry Eye Treatment", "Glaucoma Screening", "Diabetic Eye Exam", "Contact Lens Consultation", "Vision Therapy", "Follow-up in 1 month", "Follow-up in 3 months", "Follow-up in 6 months", "Refer to Specialist", "Eye Protection Advised", "Computer Vision Syndrome Care", "Other"]
                 advice = st.selectbox("Advice/Notes", advice_options)
+                if advice == "Other":
+                    custom_advice = st.text_area("Specify Advice/Notes", placeholder="Enter detailed advice or notes for the patient", key="custom_advice")
+                    advice = custom_advice if custom_advice else "Other"
 
                 # Professional details for analytics
                 occupation = st.text_input("Occupation", placeholder="Patient's occupation")
@@ -624,8 +630,8 @@ def main():
             st.session_state['rx_table'] = rx_table
             st.session_state['consultation_fee'] = consultation_fee
             st.session_state['additional_charges'] = additional_charges
-            st.session_state['complaint'] = complaint
-            st.session_state['diagnosis'] = diagnosis
+            st.session_state['patient_complaint'] = complaint
+            st.session_state['patient_diagnosis'] = diagnosis
 
     # --- Prescription Generator Tab ---
     with tab2:
@@ -839,7 +845,7 @@ def main():
         <p><strong>Name:</strong> {patient_name} | <strong>Age:</strong> {st.session_state.get('age', 'N/A')} | <strong>Gender:</strong> {st.session_state.get('gender', 'N/A')}</p>
         <p><strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')} | <strong>Date:</strong> {current_time.strftime('%d/%m/%Y %I:%M %p IST')}</p>
         <p><strong>Address:</strong> {st.session_state.get('address', '')}, {st.session_state.get('city', '')}, {st.session_state.get('state', '')} - {st.session_state.get('pincode', '')}</p>
-        <p><strong>Complaint:</strong> {st.session_state.get('complaint', 'N/A')} | <strong>Diagnosis:</strong> {st.session_state.get('diagnosis', 'N/A')}</p>
+        <p><strong>Complaint:</strong> {st.session_state.get('patient_complaint', 'N/A')} | <strong>Diagnosis:</strong> {st.session_state.get('patient_diagnosis', 'N/A')}</p>
     </div>"""
 
                     # Start two-column layout
