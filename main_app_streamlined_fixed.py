@@ -785,7 +785,7 @@ def main():
     <div class="header">
         <h1>Mau Eye Care</h1>
         <p>Dr. Danish - Eye Care Specialist</p>
-        <p>📞 +91 92356-47410 | 📧 maueyecare@gmail.com</p>
+        <p>📞 +91 92356-47410 | 📧 mau.eye.care.404@gmail.com</p>
     </div>
     
     <div class="patient-info">
@@ -921,7 +921,7 @@ def main():
     <div class="footer">
         <p><strong>Dr. Danish</strong> - Eye Care Specialist</p>
         <p>Mau Eye Care</p>
-        <p>📞 +91 92356-47410 | 📧 maueyecare@gmail.com</p>
+        <p>📞 +91 92356-47410 | 📧 mau.eye.care.404@gmail.com</p>
     </div>
 </body>
 </html>"""
