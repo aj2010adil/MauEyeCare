@@ -495,18 +495,10 @@ def main():
             col_clinical1, col_clinical2 = st.columns(2)
 
             with col_clinical1:
-                complaint_options = ["", "Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Floaters", "Night Blindness", "Headache", "Eye Strain", "Watering", "Itching", "Other"]
-                complaint = st.selectbox("Chief Complaint", complaint_options, key="complaint")
-                if complaint == "Other":
-                    custom_complaint = st.text_input("Specify Complaint", key="custom_complaint")
-                    complaint = custom_complaint if custom_complaint else "Other"
+                complaint = st.text_area("Chief Complaint", placeholder="Enter patient's chief complaint", key="complaint")
 
             with col_clinical2:
-                diagnosis_options = ["", "Myopia", "Hyperopia", "Astigmatism", "Presbyopia", "Dry Eye Syndrome", "Conjunctivitis", "Glaucoma Suspect", "Diabetic Retinopathy", "Cataract", "Normal Eye Exam", "Other"]
-                diagnosis = st.selectbox("Diagnosis", diagnosis_options, key="diagnosis")
-                if diagnosis == "Other":
-                    custom_diagnosis = st.text_input("Specify Diagnosis", key="custom_diagnosis")
-                    diagnosis = custom_diagnosis if custom_diagnosis else "Other"
+                diagnosis = st.text_area("Diagnosis", placeholder="Enter diagnosis", key="diagnosis")
 
             # Vision Testing Section
             st.markdown("#### 📊 Vision Testing")
@@ -858,33 +850,50 @@ def main():
                     if rx_table:
                         prescription_html += """
             <div class="prescription">
-                <h3>👁️ Eye Prescription & Vision</h3>
+                <h3>👁️ OD (Right Eye) Prescription</h3>
                 <table class="vision-table">
                     <tr>
-                        <th>Eye</th>
-                        <th>Vision</th>
-                        <th>Near</th>
+                        <th>Distance Vision</th>
+                        <th>Near Vision</th>
                         <th>SPH</th>
                         <th>CYL</th>
                         <th>AXIS</th>
                         <th>ADD</th>
                     </tr>"""
-
-                        for eye in ['OD', 'OS']:
-                            eye_data = rx_table.get(eye, {})
-                            eye_name = "Right" if eye == "OD" else "Left"
-                            prescription_html += f"""
+                        
+                        od_data = rx_table.get('OD', {})
+                        prescription_html += f"""
                     <tr>
-                        <td><strong>{eye}</strong></td>
-                        <td>{eye_data.get('Vision', '')}</td>
-                        <td>{eye_data.get('Near', '')}</td>
-                        <td>{eye_data.get('Sphere', '')}</td>
-                        <td>{eye_data.get('Cylinder', '')}</td>
-                        <td>{eye_data.get('Axis', '')}</td>
-                        <td>{eye_data.get('ADD', '')}</td>
+                        <td>{od_data.get('Vision', '')}</td>
+                        <td>{od_data.get('Near', '')}</td>
+                        <td>{od_data.get('Sphere', '')}</td>
+                        <td>{od_data.get('Cylinder', '')}</td>
+                        <td>{od_data.get('Axis', '')}</td>
+                        <td>{od_data.get('ADD', '')}</td>
+                    </tr>
+                </table>
+                
+                <h3>👁️ OS (Left Eye) Prescription</h3>
+                <table class="vision-table">
+                    <tr>
+                        <th>Distance Vision</th>
+                        <th>Near Vision</th>
+                        <th>SPH</th>
+                        <th>CYL</th>
+                        <th>AXIS</th>
+                        <th>ADD</th>
                     </tr>"""
-
-                        prescription_html += """
+                        
+                        os_data = rx_table.get('OS', {})
+                        prescription_html += f"""
+                    <tr>
+                        <td>{os_data.get('Vision', '')}</td>
+                        <td>{os_data.get('Near', '')}</td>
+                        <td>{os_data.get('Sphere', '')}</td>
+                        <td>{os_data.get('Cylinder', '')}</td>
+                        <td>{os_data.get('Axis', '')}</td>
+                        <td>{os_data.get('ADD', '')}</td>
+                    </tr>
                 </table>
             </div>"""
 
@@ -935,36 +944,14 @@ def main():
                         prescription_html += """
             </div>"""
 
-                    # Add consultation fees in right column
-                    consultation_fee = st.session_state.get('consultation_fee', 0)
-                    additional_charges = st.session_state.get('additional_charges', 0)
-                    total_consultation = consultation_fee + additional_charges
 
-                    if total_consultation > 0:
-                        prescription_html += f"""
-            <div class="prescription">
-                <h3>💰 Consultation Charges</h3>
-                <div class="item">
-                    Consultation Fee: ₹{consultation_fee:,}<br>
-                    Additional Charges: ₹{additional_charges:,}<br>
-                    <strong>Total: ₹{total_consultation:,}</strong>
-                </div>
-            </div>"""
 
                     # Close right column and two-column layout
                     prescription_html += """
         </div>
     </div>"""
 
-                    # Calculate total bill
-                    total_med_cost = sum(details['total_cost'] for details in medicine_details.values()) if medicine_details else 0
-                    grand_total = total_med_cost + total_consultation
 
-                    if grand_total > 0:
-                        prescription_html += f"""
-    <div class="cost-summary">
-        <h3>TOTAL BILL: ₹{grand_total:,}</h3>
-    </div>"""
 
                     # Add services and signature
                     prescription_html += """
@@ -985,15 +972,80 @@ def main():
 </body>
 </html>"""
 
-                    # Download prescription
+                    # Create detailed receipt HTML
+                    receipt_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mau Eye Care Receipt - {patient_name}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+        .header {{ text-align: center; background: #2E86AB; color: white; padding: 10px; margin-bottom: 20px; }}
+        .receipt-item {{ background: #f0f8ff; padding: 8px; margin: 5px 0; border-left: 4px solid #2E86AB; }}
+        .total {{ background: #e8f5e8; padding: 10px; font-weight: bold; text-align: center; margin: 10px 0; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Mau Eye Care - Payment Receipt</h2>
+        <p>Patient: {patient_name} | Date: {current_time.strftime('%d/%m/%Y %I:%M %p')}</p>
+    </div>
+    
+    <h3>Medicine Details:</h3>"""
+
+                    total_med_cost = 0
+                    if medicine_details:
+                        for med_name, details in medicine_details.items():
+                            total_med_cost += details['total_cost']
+                            receipt_html += f"""
+    <div class="receipt-item">
+        <strong>{med_name}</strong><br>
+        Quantity: {details['quantity']} | Unit Price: ₹{details['price']} | Total: ₹{details['total_cost']}<br>
+        Dosage: {details.get('dosage', 'As directed')} | Timing: {details.get('timing', 'As directed')}
+    </div>"""
+
+                    consultation_fee = st.session_state.get('consultation_fee', 0)
+                    additional_charges = st.session_state.get('additional_charges', 0)
+                    total_consultation = consultation_fee + additional_charges
+
+                    if total_consultation > 0:
+                        receipt_html += f"""
+    <h3>Consultation Charges:</h3>
+    <div class="receipt-item">
+        Consultation Fee: ₹{consultation_fee}<br>
+        Additional Charges: ₹{additional_charges}<br>
+        <strong>Consultation Total: ₹{total_consultation}</strong>
+    </div>"""
+
+                    grand_total = total_med_cost + total_consultation
+                    receipt_html += f"""
+    <div class="total">
+        <h2>TOTAL AMOUNT: ₹{grand_total:,}</h2>
+    </div>
+</body>
+</html>"""
+
+                    # Download buttons
                     timestamp = current_time.strftime("%Y%m%d_%H%M")
-                    st.download_button(
-                        "💾 Download HTML Prescription",
-                        data=prescription_html.encode('utf-8'),
-                        file_name=f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html",
-                        mime="text/html",
-                        type="primary"
-                    )
+                    col_dl1, col_dl2 = st.columns(2)
+                    
+                    with col_dl1:
+                        st.download_button(
+                            "💾 Download Prescription",
+                            data=prescription_html.encode('utf-8'),
+                            file_name=f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html",
+                            mime="text/html",
+                            type="primary"
+                        )
+                    
+                    with col_dl2:
+                        st.download_button(
+                            "💾 Download Receipt",
+                            data=receipt_html.encode('utf-8'),
+                            file_name=f"Receipt_{patient_name.replace(' ', '_')}_{timestamp}.html",
+                            mime="text/html",
+                            type="secondary"
+                        )
 
                     st.success("✅ Prescription generated successfully!")
 
