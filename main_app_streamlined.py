@@ -820,14 +820,14 @@ def main():
             <p>B.Sc. Optometry</p>
             <p>Optometrist & Eye Specialist</p>
             <p>Reg. No.: UPS 2908</p>
+            <p>📞 +91 92356-47410</p>
         </div>
         <div class="header-center">
             <h1>Mau Eye Care</h1>
             <p>Pura Sofi Bhonu Kuraishi Dasai Kuwa</p>
             <p>Mubarakpur, Azamgarh, Uttar Pradesh, India</p>
-            <p>📞 +91 92356-47410 | 📧 info@maueyecare.com</p>
-            <p>🌐 www.maueyeycare.com</p>
-            <p>Mon-Sat: 9:00 AM - 8:00 PM | Sunday: Closed</p>
+            <p>📧 mau.eye.care.404@gmail.com</p>
+            <p>Mon-Sat: 10:00 AM - 4:00 PM | Sunday: Closed</p>
         </div>
         <div class="header-right">
             <h2 class="urdu">ڈاکٹر دانش</h2>
@@ -850,16 +850,15 @@ def main():
     <div class="two-column">
         <div class="left-column">"""
 
-                    # Add eye prescription and vision testing
+                    # Add eye prescription
                     rx_table = st.session_state.get('rx_table', {})
                     if rx_table:
                         prescription_html += """
             <div class="prescription">
-                <h3>👁️ OD (Right Eye) Prescription</h3>
+                <h3>👁️ Eye Prescription</h3>
                 <table class="vision-table">
                     <tr>
-                        <th>Distance Vision</th>
-                        <th>Near Vision</th>
+                        <th>Eye</th>
                         <th>SPH</th>
                         <th>CYL</th>
                         <th>AXIS</th>
@@ -867,37 +866,40 @@ def main():
                     </tr>"""
                         
                         od_data = rx_table.get('OD', {})
+                        os_data = rx_table.get('OS', {})
                         prescription_html += f"""
                     <tr>
-                        <td>{od_data.get('Vision', '')}</td>
-                        <td>{od_data.get('Near', '')}</td>
+                        <td><strong>OD</strong></td>
                         <td>{od_data.get('Sphere', '')}</td>
                         <td>{od_data.get('Cylinder', '')}</td>
                         <td>{od_data.get('Axis', '')}</td>
                         <td>{od_data.get('ADD', '')}</td>
                     </tr>
-                </table>
-                
-                <h3>👁️ OS (Left Eye) Prescription</h3>
-                <table class="vision-table">
                     <tr>
-                        <th>Distance Vision</th>
-                        <th>Near Vision</th>
-                        <th>SPH</th>
-                        <th>CYL</th>
-                        <th>AXIS</th>
-                        <th>ADD</th>
-                    </tr>"""
-                        
-                        os_data = rx_table.get('OS', {})
-                        prescription_html += f"""
-                    <tr>
-                        <td>{os_data.get('Vision', '')}</td>
-                        <td>{os_data.get('Near', '')}</td>
+                        <td><strong>OS</strong></td>
                         <td>{os_data.get('Sphere', '')}</td>
                         <td>{os_data.get('Cylinder', '')}</td>
                         <td>{os_data.get('Axis', '')}</td>
                         <td>{os_data.get('ADD', '')}</td>
+                    </tr>
+                </table>
+                
+                <h3>👁️ Vision Testing</h3>
+                <table class="vision-table">
+                    <tr>
+                        <th>Eye</th>
+                        <th>Distance Vision</th>
+                        <th>Near Vision</th>
+                    </tr>
+                    <tr>
+                        <td><strong>OD</strong></td>
+                        <td>{od_data.get('Vision', '')}</td>
+                        <td>{od_data.get('Near', '')}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>OS</strong></td>
+                        <td>{os_data.get('Vision', '')}</td>
+                        <td>{os_data.get('Near', '')}</td>
                     </tr>
                 </table>
             </div>"""
@@ -971,7 +973,7 @@ def main():
     
     <div class="footer">
         <p><strong>Dr. Danish, B.Sc. Optometry</strong> - Optometrist & Eye Specialist | Reg. No.: UPS 2908</p>
-        <p>Mau Eye Care | Mubarakpur, Azamgarh | 📞 +91 92356-47410 | 🌐 www.maueyeycare.com</p>
+        <p>Mau Eye Care | Mubarakpur, Azamgarh | 📞 +91 92356-47410 | 📧 mau.eye.care.404@gmail.com</p>
     </div>
     </div>
 </body>
