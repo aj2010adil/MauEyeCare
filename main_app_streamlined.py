@@ -120,63 +120,44 @@ def main():
             col1, col2 = st.columns(2)
 
             with col1:
-                # Smart patient selection with auto-fill
-                patient_options = ["-- New Patient --"] + [f"{p.get('name', 'Unknown')} - {p.get('mobile', 'No Mobile')}" for p in existing_patients[:15] if isinstance(p, dict)]
-                selected_patient = st.selectbox("Select Patient or Enter New", patient_options, key="patient_dropdown")
+                # Combined dropdown + custom input for name
+                name_options = ["-- Enter Custom Name --"] + patient_names[:15]
+                selected_name = st.selectbox("Patient Name", name_options, key="name_dropdown")
 
-                # Auto-fill or manual entry
-                if selected_patient == "-- New Patient --":
-                    patient_name = st.text_input("Patient Name", placeholder="Enter full name", key="patient_name_input")
-                    age = st.number_input("Age", min_value=0, max_value=120, value=30)
-                    gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+                if selected_name == "-- Enter Custom Name --":
+                    patient_name = st.text_input("Enter Full Name", placeholder="Type patient full name", key="custom_name")
                 else:
-                    # Find selected patient data
-                    selected_patient_data = None
-                    for p in existing_patients:
-                        if isinstance(p, dict) and f"{p.get('name', 'Unknown')} - {p.get('mobile', 'No Mobile')}" == selected_patient:
-                            selected_patient_data = p
-                            break
-                    
-                    if selected_patient_data:
-                        patient_name = st.text_input("Patient Name", value=selected_patient_data.get('name', ''), key="patient_name_input")
-                        age = st.number_input("Age", min_value=0, max_value=120, value=int(selected_patient_data.get('age', 30)))
-                        gender_idx = 0
-                        if selected_patient_data.get('gender') in ["Male", "Female", "Other"]:
-                            gender_idx = ["Male", "Female", "Other"].index(selected_patient_data.get('gender'))
-                        gender = st.selectbox("Gender", ["Male", "Female", "Other"], index=gender_idx)
-                    else:
-                        patient_name = st.text_input("Patient Name", placeholder="Enter full name", key="patient_name_input")
-                        age = st.number_input("Age", min_value=0, max_value=120, value=30)
-                        gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+                    patient_name = selected_name
+                    st.info(f"Selected: {selected_name}")
 
-                # Address fields with auto-fill
-                if selected_patient != "-- New Patient --" and selected_patient_data:
-                    address = st.text_input("Address", value=selected_patient_data.get('address', ''), placeholder="Street address")
-                    col_city, col_state = st.columns(2)
-                    with col_city:
-                        city = st.text_input("City", value=selected_patient_data.get('city', 'Mubarkpur, Azamgarh'), placeholder="City name")
-                    with col_state:
-                        state_list = ["Uttar Pradesh", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttarakhand", "West Bengal", "Delhi"]
-                        state_idx = 0
-                        if selected_patient_data.get('state') in state_list:
-                            state_idx = state_list.index(selected_patient_data.get('state'))
-                        state = st.selectbox("State", state_list, index=state_idx)
-                    pincode = st.text_input("Pincode", value=selected_patient_data.get('pincode', '276404'), placeholder="6-digit pincode")
-                else:
-                    address = st.text_input("Address", placeholder="Street address")
-                    col_city, col_state = st.columns(2)
-                    with col_city:
-                        city = st.text_input("City", value="Mubarkpur, Azamgarh", placeholder="City name")
-                    with col_state:
-                        state = st.selectbox("State", ["Uttar Pradesh", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttarakhand", "West Bengal", "Delhi"])
-                    pincode = st.text_input("Pincode", value="276404", placeholder="6-digit pincode")
+                age = st.number_input("Age", min_value=0, max_value=120, value=30)
+                gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+
+                # Address fields for demographics with defaults
+                address = st.text_input("Address", placeholder="Street address")
+                col_city, col_state = st.columns(2)
+                with col_city:
+                    city = st.text_input("City", value="Mubarkpur, Azamgarh", placeholder="City name")
+                with col_state:
+                    state = st.selectbox("State", [
+                        "Uttar Pradesh", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+                        "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+                        "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+                        "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+                        "Telangana", "Tripura", "Uttarakhand", "West Bengal", "Delhi"
+                    ])
+                pincode = st.text_input("Pincode", value="276404", placeholder="6-digit pincode")
 
             with col2:
-                # Mobile number with auto-fill
-                if selected_patient != "-- New Patient --" and selected_patient_data:
-                    contact = st.text_input("Mobile Number", value=selected_patient_data.get('mobile', ''), key="mobile_input")
+                # Combined dropdown + custom input for mobile
+                mobile_options = ["-- Enter Custom Mobile --"] + patient_mobiles[:15]
+                selected_mobile = st.selectbox("Mobile Number", mobile_options, key="mobile_dropdown")
+
+                if selected_mobile == "-- Enter Custom Mobile --":
+                    contact = st.text_input("Enter Mobile Number", placeholder="Type mobile number", key="custom_mobile")
                 else:
-                    contact = st.text_input("Mobile Number", placeholder="Enter mobile number", key="mobile_input")
+                    contact = selected_mobile
+                    st.info(f"Selected: {selected_mobile}")
 
                 issue_options = ["Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Floaters", "Night Blindness", "Headache", "Eye Strain", "Watering", "Itching", "Burning Sensation", "Foreign Body Sensation", "Light Sensitivity", "Discharge", "Swelling", "Routine Checkup", "Other"]
                 patient_issue = st.selectbox("Patient Issue/Complaint", issue_options)
