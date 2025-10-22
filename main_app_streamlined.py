@@ -108,15 +108,11 @@ def main():
         st.header("👥 Patient Registration")
 
         # Get existing patients for suggestions
-        existing_patients = []
-        patient_names = []
-        patient_mobiles = []
         try:
-            existing_patients = sheets_manager.get_patients() or []
+            existing_patients = sheets_manager.get_patients()
             patient_names = [p.get('name', '') for p in existing_patients if isinstance(p, dict) and p.get('name')]
             patient_mobiles = [p.get('mobile', '') for p in existing_patients if isinstance(p, dict) and p.get('mobile')]
-        except Exception as e:
-            st.warning(f"Could not load patient data: {str(e)}")
+        except:
             existing_patients = []
             patient_names = []
             patient_mobiles = []
