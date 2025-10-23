@@ -992,12 +992,12 @@ def main():
                         type="secondary"
                     )
 
-                st.success("✅ Prescription generated successfully!")
+                    st.success("✅ Prescription generated successfully!")
 
-                # Mark prescription as generated
-                st.session_state['prescription_generated'] = True
-            else:
-                st.warning("⚠️ Please select at least one spectacle or medicine to generate prescription")
+                    # Mark prescription as generated
+                    st.session_state['prescription_generated'] = True
+                else:
+                    st.warning("⚠️ Please select at least one spectacle or medicine to generate prescription")
 
             # Show workflow options after prescription is generated
             if st.session_state.get('prescription_generated', False):
