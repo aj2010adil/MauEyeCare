@@ -781,13 +781,8 @@ def main():
     <title>Mau Eye Care Prescription - {patient_name}</title>
     <style>
         @page {{ margin: 0.4in; size: A4; }}
-        body {{ 
-            font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 11px; line-height: 1.2;
-            background-image: url('file:///D:/Users/W7146644/WebstormProjects/MauEyeCare/mec.jpg');
-            background-size: cover; background-position: center; background-repeat: no-repeat;
-        }}
-        .page {{ background: rgba(255,255,255,0.95); min-height: 100vh; padding: 10px; }}
-        .header {{ background: rgba(46, 134, 171, 0.9); color: white; padding: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }}
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 11px; line-height: 1.2; }}
+        .header {{ background: #2E86AB; color: white; padding: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }}
         .header-left {{ text-align: left; flex: 1; }}
         .header-center {{ text-align: center; flex: 1; }}
         .header-right {{ text-align: right; flex: 1; }}
@@ -795,25 +790,20 @@ def main():
         .header h2 {{ margin: 2px 0; font-size: 14px; font-weight: bold; }}
         .header p {{ margin: 1px 0; font-size: 10px; }}
         .urdu {{ font-family: 'Noto Nastaliq Urdu', 'Arial Unicode MS', sans-serif; }}
-        .patient-info {{ background: rgba(248, 249, 255, 0.9); padding: 6px; margin: 4px 0; font-size: 10px; }}
+        .patient-info {{ background: #f8f9ff; padding: 6px; margin: 4px 0; font-size: 10px; }}
         .patient-info h3 {{ margin: 3px 0; font-size: 12px; }}
         .two-column {{ display: flex; gap: 15px; }}
         .left-column {{ flex: 1; }}
         .right-column {{ flex: 1; }}
-        .prescription {{ padding: 6px; margin: 4px 0; background: rgba(255,255,255,0.8); }}
+        .prescription {{ padding: 6px; margin: 4px 0; }}
         .prescription h3 {{ margin: 4px 0; font-size: 12px; }}
-        .item {{ background: rgba(240, 248, 255, 0.9); padding: 4px; margin: 2px 0; font-size: 10px; }}
-        .vision-table {{ width: 100%; border-collapse: collapse; margin: 5px 0; background: rgba(255,255,255,0.9); }}
+        .item {{ background: #f0f8ff; padding: 4px; margin: 2px 0; font-size: 10px; }}
+        .vision-table {{ width: 100%; border-collapse: collapse; margin: 5px 0; }}
         .vision-table th, .vision-table td {{ border: 1px solid #ccc; padding: 3px; text-align: center; font-size: 9px; }}
-        .cost-summary {{ text-align: center; font-weight: bold; margin: 6px 0; background: rgba(232, 245, 232, 0.9); padding: 6px; font-size: 11px; }}
-        .footer {{ text-align: center; margin-top: 8px; color: #666; font-size: 9px; background: rgba(255,255,255,0.8); padding: 5px; }}
-        .services {{ background: rgba(255,255,255,0.9); padding: 8px; margin: 8px 0; }}
-        .signature {{ background: rgba(255,255,255,0.9); padding: 8px; margin: 8px 0; text-align: right; }}
-        @media print {{ .page {{ page-break-after: always; }} }}
+        .signature {{ text-align: right; margin-top: 20px; }}
     </style>
 </head>
 <body>
-    <div class="page">
     <div class="header">
         <div class="header-left">
             <h2>Dr. Danish</h2>
@@ -962,19 +952,8 @@ def main():
 
                     # Add services and signature
                     prescription_html += """
-    <div class="services">
-        <h3>Our Services:</h3>
-        <p>• Eye Examinations • Prescription Glasses • Contact Lens Fitting • Eye Disease Treatment • Vision Therapy</p>
-    </div>
-    
     <div class="signature">
         <p>Doctor Signature: ___________________________</p>
-    </div>
-    
-    <div class="footer">
-        <p><strong>Dr. Danish, B.Sc. Optometry</strong> - Optometrist & Eye Specialist | Reg. No.: UPS 2908</p>
-        <p>Mau Eye Care | Mubarakpur, Azamgarh | 📞 +91 92356-47410 | 📧 mau.eye.care.404@gmail.com</p>
-    </div>
     </div>
 </body>
 </html>"""
