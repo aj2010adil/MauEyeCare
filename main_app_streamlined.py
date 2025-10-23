@@ -187,7 +187,7 @@ def main():
 
             if submitted and patient_name:
                 # Professional duplicate check based on name and mobile
-                is_duplicate = False
+                is_duplicate = Falsee
                 duplicate_patient = None
                 try:
                     for p in existing_patients:
