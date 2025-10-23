@@ -917,58 +917,58 @@ def main():
 </body>
 </html>"""
 
-                # Create detailed receipt HTML
-                receipt_html = f"""
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Mau Eye Care Receipt - {patient_name}</title>
-                    <style>
-                        body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                        .header {{ text-align: center; background: #2E86AB; color: white; padding: 10px; margin-bottom: 20px; }}
-                        .receipt-item {{ background: #f0f8ff; padding: 8px; margin: 5px 0; border-left: 4px solid #2E86AB; }}
-                        .total {{ background: #e8f5e8; padding: 10px; font-weight: bold; text-align: center; margin: 10px 0; }}
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h2>Mau Eye Care - Payment Receipt</h2>
-                        <p>Patient: {patient_name} | Date: {current_time.strftime('%d/%m/%Y %I:%M %p')}</p>
-                    </div>
+                    # Create detailed receipt HTML
+                    receipt_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mau Eye Care Receipt - {patient_name}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+        .header {{ text-align: center; background: #2E86AB; color: white; padding: 10px; margin-bottom: 20px; }}
+        .receipt-item {{ background: #f0f8ff; padding: 8px; margin: 5px 0; border-left: 4px solid #2E86AB; }}
+        .total {{ background: #e8f5e8; padding: 10px; font-weight: bold; text-align: center; margin: 10px 0; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Mau Eye Care - Payment Receipt</h2>
+        <p>Patient: {patient_name} | Date: {current_time.strftime('%d/%m/%Y %I:%M %p')}</p>
+    </div>
+    
+    <h3>Medicine Details:</h3>"""
 
-                    <h3>Medicine Details:</h3>"""
+                    total_med_cost = 0
+                    if medicine_details:
+                        for med_name, details in medicine_details.items():
+                            total_med_cost += details['total_cost']
+                            receipt_html += f"""
+    <div class="receipt-item">
+        <strong>{med_name}</strong><br>
+        Quantity: {details['quantity']} | Unit Price: ₹{details['price']} | Total: ₹{details['total_cost']}<br>
+        Dosage: {details.get('dosage', 'As directed')} | Timing: {details.get('timing', 'As directed')}
+    </div>"""
 
-                                    total_med_cost = 0
-                                    if medicine_details:
-                                        for med_name, details in medicine_details.items():
-                                            total_med_cost += details['total_cost']
-                                            receipt_html += f"""
-                    <div class="receipt-item">
-                        <strong>{med_name}</strong><br>
-                        Quantity: {details['quantity']} | Unit Price: ₹{details['price']} | Total: ₹{details['total_cost']}<br>
-                        Dosage: {details.get('dosage', 'As directed')} | Timing: {details.get('timing', 'As directed')}
-                    </div>"""
+                    consultation_fee = st.session_state.get('consultation_fee', 0)
+                    additional_charges = st.session_state.get('additional_charges', 0)
+                    total_consultation = consultation_fee + additional_charges
 
-                                    consultation_fee = st.session_state.get('consultation_fee', 0)
-                                    additional_charges = st.session_state.get('additional_charges', 0)
-                                    total_consultation = consultation_fee + additional_charges
+                    if total_consultation > 0:
+                        receipt_html += f"""
+    <h3>Consultation Charges:</h3>
+    <div class="receipt-item">
+        Consultation Fee: ₹{consultation_fee}<br>
+        Additional Charges: ₹{additional_charges}<br>
+        <strong>Consultation Total: ₹{total_consultation}</strong>
+    </div>"""
 
-                                    if total_consultation > 0:
-                                        receipt_html += f"""
-                    <h3>Consultation Charges:</h3>
-                    <div class="receipt-item">
-                        Consultation Fee: ₹{consultation_fee}<br>
-                        Additional Charges: ₹{additional_charges}<br>
-                        <strong>Consultation Total: ₹{total_consultation}</strong>
-                    </div>"""
-
-                                    grand_total = total_med_cost + total_consultation
-                                    receipt_html += f"""
-                    <div class="total">
-                        <h2>TOTAL AMOUNT: ₹{grand_total:,}</h2>
-                    </div>
-                </body>
-                </html>"""
+                    grand_total = total_med_cost + total_consultation
+                    receipt_html += f"""
+    <div class="total">
+        <h2>TOTAL AMOUNT: ₹{grand_total:,}</h2>
+    </div>
+</body>
+</html>"""
 
                     # Download buttons
                     timestamp = current_time.strftime("%Y%m%d_%H%M")
