@@ -780,180 +780,139 @@ def main():
 <head>
     <title>Mau Eye Care Prescription - {patient_name}</title>
     <style>
-        @page {{ margin: 0.4in; size: A4; }}
-        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 11px; line-height: 1.2; }}
-        .header {{ background: #2E86AB; color: white; padding: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }}
-        .header-left {{ text-align: left; flex: 1; }}
-        .header-center {{ text-align: center; flex: 1; }}
-        .header-right {{ text-align: right; flex: 1; }}
-        .header h1 {{ margin: 3px 0; font-size: 16px; }}
-        .header h2 {{ margin: 2px 0; font-size: 14px; font-weight: bold; }}
-        .header p {{ margin: 1px 0; font-size: 10px; }}
-        .urdu {{ font-family: 'Noto Nastaliq Urdu', 'Arial Unicode MS', sans-serif; }}
-        .patient-info {{ background: #f8f9ff; padding: 6px; margin: 4px 0; font-size: 10px; }}
-        .patient-info h3 {{ margin: 3px 0; font-size: 12px; }}
-        .two-column {{ display: flex; gap: 15px; }}
-        .left-column {{ flex: 1; }}
-        .right-column {{ flex: 1; }}
-        .prescription {{ padding: 6px; margin: 4px 0; }}
-        .prescription h3 {{ margin: 4px 0; font-size: 12px; }}
-        .item {{ background: #f0f8ff; padding: 4px; margin: 2px 0; font-size: 10px; }}
-        .vision-table {{ width: 100%; border-collapse: collapse; margin: 5px 0; }}
-        .vision-table th, .vision-table td {{ border: 1px solid #ccc; padding: 3px; text-align: center; font-size: 9px; }}
-        .signature {{ text-align: right; margin-top: 20px; }}
+        @page {{ margin: 0.3in; size: A4; }}
+        body {{ 
+            font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 12px;
+            background-image: url('file:///D:/Users/W7146644/WebstormProjects/MauEyeCare/galary/PAd.jpg');
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+        }}
+        .prescription-pad {{ 
+            width: 100%; height: 100vh; position: relative;
+        }}
+        .content {{ 
+            position: absolute; top: 180px; left: 50px; right: 50px;
+            background: rgba(255,255,255,0.95); padding: 20px; border-radius: 8px;
+        }}
+        .patient-header {{ 
+            border-bottom: 2px solid #2E86AB; padding-bottom: 10px; margin-bottom: 15px;
+        }}
+        .patient-row {{ display: flex; justify-content: space-between; margin: 5px 0; }}
+        .rx-section {{ margin: 20px 0; }}
+        .rx-table {{ width: 100%; border-collapse: collapse; margin: 10px 0; }}
+        .rx-table th, .rx-table td {{ border: 1px solid #333; padding: 8px; text-align: center; }}
+        .rx-table th {{ background: #f0f0f0; font-weight: bold; }}
+        .medicines {{ margin: 15px 0; }}
+        .medicine-item {{ 
+            background: #f9f9f9; padding: 8px; margin: 5px 0; 
+            border-left: 4px solid #2E86AB; border-radius: 3px;
+        }}
+        .signature-area {{ 
+            margin-top: 40px; text-align: right;
+            border-top: 1px solid #ccc; padding-top: 15px;
+        }}
+        h3 {{ color: #2E86AB; margin: 10px 0 5px 0; }}
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="header-left">
-            <h2>Dr. Danish</h2>
-            <p>B.Sc. Optometry</p>
-            <p>Optometrist & Eye Specialist</p>
-            <p>Reg. No.: UPS 2908</p>
-            <p>📞 +91 92356-47410</p>
-        </div>
-        <div class="header-center">
-            <h1>Mau Eye Care</h1>
-            <p>Pura Sofi Bhonu Kuraishi Dasai Kuwa</p>
-            <p>Mubarakpur, Azamgarh, Uttar Pradesh, India</p>
-            <p>📧 mau.eye.care.404@gmail.com</p>
-            <p>Mon-Sat: 10:00 AM - 4:00 PM | Sunday: Closed</p>
-        </div>
-        <div class="header-right">
-            <h2 class="urdu">ڈاکٹر دانش</h2>
-            <p class="urdu">بی ایس سی آپٹومیٹری</p>
-            <p class="urdu">آنکھوں کے ماہر</p>
-            <p class="urdu">رجسٹریشن نمبر: یو پی ایس ۲۹۰۸</p>
-        </div>
-    </div>
+    <div class="prescription-pad">
+        <div class="content">
+            <div class="patient-header">
+                <div class="patient-row">
+                    <span><strong>Patient:</strong> {patient_name}</span>
+                    <span><strong>Age:</strong> {st.session_state.get('age', 'N/A')}</span>
+                    <span><strong>Date:</strong> {current_time.strftime('%d/%m/%Y')}</span>
+                </div>
+                <div class="patient-row">
+                    <span><strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')}</span>
+                    <span><strong>Gender:</strong> {st.session_state.get('gender', 'N/A')}</span>
+                </div>
+            </div>
+            
+            <div class="rx-section">
+                <h3>℞ Prescription</h3>"""
 
-    <div class="patient-info">
-        <h3>👤 Patient Information</h3>
-        <p><strong>Name:</strong> {patient_name} | <strong>Age:</strong> {st.session_state.get('age', 'N/A')} | <strong>Gender:</strong> {st.session_state.get('gender', 'N/A')}</p>
-        <p><strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')} | <strong>Date:</strong> {current_time.strftime('%d/%m/%Y %I:%M %p IST')}</p>
-        <p><strong>Address:</strong> {st.session_state.get('address', '')}, {st.session_state.get('city', '')}, {st.session_state.get('state', '')} - {st.session_state.get('pincode', '')}</p>
-        <p><strong>Complaint:</strong> {st.session_state.get('patient_complaint', 'N/A')} | <strong>Diagnosis:</strong> {st.session_state.get('patient_diagnosis', 'N/A')}</p>
-    </div>"""
-
-                    # Start two-column layout
+                # Add eye prescription table
+                rx_table = st.session_state.get('rx_table', {})
+                if rx_table:
                     prescription_html += """
-    <div class="two-column">
-        <div class="left-column">"""
-
-                    # Add eye prescription
-                    rx_table = st.session_state.get('rx_table', {})
-                    if rx_table:
-                        prescription_html += """
-            <div class="prescription">
-                <h3>👁️ Eye Prescription</h3>
-                <table class="vision-table">
+                <table class="rx-table">
                     <tr>
                         <th>Eye</th>
                         <th>SPH</th>
                         <th>CYL</th>
                         <th>AXIS</th>
                         <th>ADD</th>
+                        <th>Vision</th>
                     </tr>"""
-                        
-                        od_data = rx_table.get('OD', {})
-                        os_data = rx_table.get('OS', {})
-                        prescription_html += f"""
+                    
+                    od_data = rx_table.get('OD', {})
+                    os_data = rx_table.get('OS', {})
+                    prescription_html += f"""
                     <tr>
-                        <td><strong>OD</strong></td>
+                        <td><strong>OD (Right)</strong></td>
                         <td>{od_data.get('Sphere', '')}</td>
                         <td>{od_data.get('Cylinder', '')}</td>
                         <td>{od_data.get('Axis', '')}</td>
                         <td>{od_data.get('ADD', '')}</td>
+                        <td>{od_data.get('Vision', '')}</td>
                     </tr>
                     <tr>
-                        <td><strong>OS</strong></td>
+                        <td><strong>OS (Left)</strong></td>
                         <td>{os_data.get('Sphere', '')}</td>
                         <td>{os_data.get('Cylinder', '')}</td>
                         <td>{os_data.get('Axis', '')}</td>
                         <td>{os_data.get('ADD', '')}</td>
-                    </tr>
-                </table>
-                
-                <h3>👁️ Vision Testing</h3>
-                <table class="vision-table">
-                    <tr>
-                        <th>Eye</th>
-                        <th>Distance Vision</th>
-                        <th>Near Vision</th>
-                    </tr>
-                    <tr>
-                        <td><strong>OD</strong></td>
-                        <td>{od_data.get('Vision', '')}</td>
-                        <td>{od_data.get('Near', '')}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>OS</strong></td>
                         <td>{os_data.get('Vision', '')}</td>
-                        <td>{os_data.get('Near', '')}</td>
                     </tr>
                 </table>
-            </div>"""
-
-                    # Add spectacles in left column
-                    if selected_spectacles:
-                        prescription_html += """
-            <div class="prescription">
-                <h3>👓 Recommended Spectacles</h3>"""
-
-                        for spec_name in selected_spectacles:
-                            prescription_html += f"""
-                <div class="item">
+            </div>
+            
+            <!-- Medicines Section -->
+            <div class="medicines">
+                <h3>Medicines</h3>"""
+                
+                # Add medicines
+                if medicine_details:
+                    for med_name, details in medicine_details.items():
+                        prescription_html += f"""
+                <div class="medicine-item">
+                    <strong>{med_name}</strong> - Qty: {details['quantity']}<br>
+                    <em>{details.get('dosage', 'As directed')} | {details.get('timing', 'As directed')}</em>
+                </div>"""
+                else:
+                    prescription_html += "<p>No medicines prescribed</p>"
+                
+                prescription_html += "</div>"
+                
+                # Add spectacles if any
+                if selected_spectacles:
+                    prescription_html += """
+            <div class="medicines">
+                <h3>Spectacles</h3>"""
+                    for spec_name in selected_spectacles:
+                        prescription_html += f"""
+                <div class="medicine-item">
                     <strong>{spec_name}</strong>
                 </div>"""
-
-                        # Add spectacle instructions
-                        spectacle_instructions = st.session_state.get('spectacle_instructions', '')
-                        if spectacle_instructions:
-                            prescription_html += f"""
-                <div class="item">
-                    <strong>Care Instructions:</strong><br>
+                    
+                    spectacle_instructions = st.session_state.get('spectacle_instructions', '')
+                    if spectacle_instructions:
+                        prescription_html += f"""
+                <div class="medicine-item">
+                    <strong>Instructions:</strong><br>
                     {spectacle_instructions.replace(chr(10), '<br>').replace('•', '&bull;')}
                 </div>"""
+                    prescription_html += "</div>"
 
-                        prescription_html += "</div>"
 
-                    # Close left column and start right column
-                    prescription_html += """
+
+                # Add signature area
+                prescription_html += """
+            <div class="signature-area">
+                <p><strong>Dr. Danish</strong></p>
+                <p>Signature: _________________________</p>
+            </div>
         </div>
-        <div class="right-column">"""
-
-                    # Add medicines in right column
-                    if medicine_details:
-                        prescription_html += """
-            <div class="prescription">
-                <h3>💊 Prescribed Medicines</h3>"""
-
-                        total_med_cost = 0
-                        for med_name, details in medicine_details.items():
-                            total_med_cost += details['total_cost']
-                            prescription_html += f"""
-                <div class="item">
-                    <strong>{med_name}</strong><br>
-                    Qty: {details['quantity']} | {details.get('dosage', 'As directed')}<br>
-                    {details.get('timing', 'As directed')}
-                </div>"""
-
-                        prescription_html += """
-            </div>"""
-
-
-
-                    # Close right column and two-column layout
-                    prescription_html += """
-        </div>
-    </div>"""
-
-
-
-                    # Add services and signature
-                    prescription_html += """
-    <div class="signature">
-        <p>Doctor Signature: ___________________________</p>
     </div>
 </body>
 </html>"""
