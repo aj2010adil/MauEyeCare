@@ -187,7 +187,7 @@ def main():
 
             if submitted and patient_name:
                 # Professional duplicate check based on name and mobile
-                is_duplicate = Falsee
+                is_duplicate = False
                 duplicate_patient = None
                 try:
                     for p in existing_patients:
@@ -938,62 +938,64 @@ def main():
 
                     <h3>Medicine Details:</h3>"""
 
-                total_med_cost = 0
-                if medicine_details:
-                    for med_name, details in medicine_details.items():
-                        total_med_cost += details['total_cost']
+                    total_med_cost = 0
+                    if medicine_details:
+                        for med_name, details in medicine_details.items():
+                            total_med_cost += details['total_cost']
+                            receipt_html += f"""
+                    <div class="receipt-item">
+                        <strong>{med_name}</strong><br>
+                        Quantity: {details['quantity']} | Unit Price: ₹{details['price']} | Total: ₹{details['total_cost']}<br>
+                        Dosage: {details.get('dosage', 'As directed')} | Timing: {details.get('timing', 'As directed')}
+                    </div>"""
+
+                    consultation_fee = st.session_state.get('consultation_fee', 0)
+                    additional_charges = st.session_state.get('additional_charges', 0)
+                    total_consultation = consultation_fee + additional_charges
+
+                    if total_consultation > 0:
                         receipt_html += f"""
-                <div class="receipt-item">
-                    <strong>{med_name}</strong><br>
-                    Quantity: {details['quantity']} | Unit Price: ₹{details['price']} | Total: ₹{details['total_cost']}<br>
-                    Dosage: {details.get('dosage', 'As directed')} | Timing: {details.get('timing', 'As directed')}
-                </div>"""
+                    <h3>Consultation Charges:</h3>
+                    <div class="receipt-item">
+                        Consultation Fee: ₹{consultation_fee}<br>
+                        Additional Charges: ₹{additional_charges}<br>
+                        <strong>Consultation Total: ₹{total_consultation}</strong>
+                    </div>"""
 
-                consultation_fee = st.session_state.get('consultation_fee', 0)
-                additional_charges = st.session_state.get('additional_charges', 0)
-                total_consultation = consultation_fee + additional_charges
-
-                if total_consultation > 0:
+                    grand_total = total_med_cost + total_consultation
                     receipt_html += f"""
-                <h3>Consultation Charges:</h3>
-                <div class="receipt-item">
-                    Consultation Fee: ₹{consultation_fee}<br>
-                    Additional Charges: ₹{additional_charges}<br>
-                    <strong>Consultation Total: ₹{total_consultation}</strong>
-                </div>"""
-
-                grand_total = total_med_cost + total_consultation
-                receipt_html += f"""
-                <div class="total">
-                    <h2>TOTAL AMOUNT: ₹{grand_total:,}</h2>
-                </div>
+                    <div class="total">
+                        <h2>TOTAL AMOUNT: ₹{grand_total:,}</h2>
+                    </div>
                 </body>
                 </html>"""
 
-                # Download buttons
-                timestamp = current_time.strftime("%Y%m%d_%H%M")
-                col_dl1, col_dl2 = st.columns(2)
+                    # Download buttons
+                    timestamp = current_time.strftime("%Y%m%d_%H%M")
+                    col_dl1, col_dl2 = st.columns(2)
+                    
+                    with col_dl1:
+                        st.download_button(
+                            "💾 Download Prescription",
+                            data=prescription_html.encode('utf-8'),
+                            file_name=f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html",
+                            mime="text/html",
+                            type="primary"
+                        )
+                    
+                    with col_dl2:
+                        st.download_button(
+                            "💾 Download Receipt",
+                            data=receipt_html.encode('utf-8'),
+                            file_name=f"Receipt_{patient_name.replace(' ', '_')}_{timestamp}.html",
+                            mime="text/html",
+                            type="secondary"
+                        )
 
-                with col_dl1:
-                    st.download_button(
-                        "💾 Download Prescription",
-                        data=prescription_html.encode('utf-8'),
-                        file_name=f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html",
-                        mime="text/html",
-                        type="primary"
-                    )
+                    st.success("✅ Prescription generated successfully!")
 
-                with col_dl2:
-                    st.download_button(
-                        "💾 Download Receipt",
-                        data=receipt_html.encode('utf-8'),
-                        file_name=f"Receipt_{patient_name.replace(' ', '_')}_{timestamp}.html",
-                        mime="text/html",
-                        type="secondary"
-
-                st.success("✅ Prescription generated successfully
-                # Mark prescription as generated
-                st.session_state['prescription_generated'] = True
+                    # Mark prescription as generated
+                    st.session_state['prescription_generated'] = True
                 else:
                     st.warning("⚠️ Please select at least one spectacle or medicine to generate prescription")
 
