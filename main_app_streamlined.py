@@ -187,7 +187,7 @@ def main():
 
             if submitted and patient_name:
                 # Professional duplicate check based on name and mobile
-                is_duplicate = Falsee
+                is_duplicate = False
                 duplicate_patient = None
                 try:
                     for p in existing_patients:
@@ -990,10 +990,12 @@ def main():
                         file_name=f"Receipt_{patient_name.replace(' ', '_')}_{timestamp}.html",
                         mime="text/html",
                         type="secondary"
+                    )
 
-                st.success("✅ Prescription generated successfully
-                # Mark prescription as generated
-                st.session_state['prescription_generated'] = True
+                    st.success("✅ Prescription generated successfully!")
+
+                    # Mark prescription as generated
+                    st.session_state['prescription_generated'] = True
                 else:
                     st.warning("⚠️ Please select at least one spectacle or medicine to generate prescription")
 
