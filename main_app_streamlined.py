@@ -938,23 +938,23 @@ def main():
 
                     <h3>Medicine Details:</h3>"""
 
-                                    total_med_cost = 0
-                                    if medicine_details:
-                                        for med_name, details in medicine_details.items():
-                                            total_med_cost += details['total_cost']
-                                            receipt_html += f"""
+                    total_med_cost = 0
+                    if medicine_details:
+                        for med_name, details in medicine_details.items():
+                            total_med_cost += details['total_cost']
+                            receipt_html += f"""
                     <div class="receipt-item">
                         <strong>{med_name}</strong><br>
                         Quantity: {details['quantity']} | Unit Price: ₹{details['price']} | Total: ₹{details['total_cost']}<br>
                         Dosage: {details.get('dosage', 'As directed')} | Timing: {details.get('timing', 'As directed')}
                     </div>"""
 
-                                    consultation_fee = st.session_state.get('consultation_fee', 0)
-                                    additional_charges = st.session_state.get('additional_charges', 0)
-                                    total_consultation = consultation_fee + additional_charges
+                    consultation_fee = st.session_state.get('consultation_fee', 0)
+                    additional_charges = st.session_state.get('additional_charges', 0)
+                    total_consultation = consultation_fee + additional_charges
 
-                                    if total_consultation > 0:
-                                        receipt_html += f"""
+                    if total_consultation > 0:
+                        receipt_html += f"""
                     <h3>Consultation Charges:</h3>
                     <div class="receipt-item">
                         Consultation Fee: ₹{consultation_fee}<br>
@@ -962,8 +962,8 @@ def main():
                         <strong>Consultation Total: ₹{total_consultation}</strong>
                     </div>"""
 
-                                    grand_total = total_med_cost + total_consultation
-                                    receipt_html += f"""
+                    grand_total = total_med_cost + total_consultation
+                    receipt_html += f"""
                     <div class="total">
                         <h2>TOTAL AMOUNT: ₹{grand_total:,}</h2>
                     </div>
