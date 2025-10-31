@@ -35,7 +35,7 @@ def main():
         initial_sidebar_state="expanded"
     )
     
-    st.title("🏥 Mau Eye Care - Professional Eye Care Hospital")
+    st.title("🏥 Computer and AI assisted Refraction and Contact Lens Center - Mau Eye Care - Professional Eye Care Hospital")
     st.markdown("*Streamlined Hospital Management System*")
 
     # Sidebar
@@ -747,10 +747,10 @@ def main():
                         grand_total = total_med_cost + consultation_fee + additional_charges
                         st.markdown(f"**Total: ₹{grand_total:,}**")
                 else:
-                    st.warning("⚠️ Please select medicines or spectacles to preview")
+                    st.warning("⚠️ Please add spectacles, medicines, or eye prescription to preview")
 
             if st.button("📤 Generate Prescription", type="primary"):
-                if selected_spectacles or medicine_details:
+                if selected_spectacles or medicine_details or st.session_state.get('rx_table', {}):
                     # Automatically update stock in Google Sheets BEFORE generating prescription
                     stock_updates = []
                     stock_errors = []
@@ -1037,11 +1037,7 @@ def main():
 
                     # Mark prescription as generated
                     st.session_state['prescription_generated'] = True
-                else:
-                    st.warning("⚠️ Please select at least one spectacle or medicine to generate prescription")
-
-            # Show workflow options after prescription is generated
-            if st.session_state.get('prescription_generated', False):
+                # Show workflow options immediately after prescription generation
                 st.markdown("---")
                 st.markdown("### 🎯 Next Steps")
 
@@ -1069,6 +1065,10 @@ def main():
                                 del st.session_state[key]
                         st.success("🆕 Ready for new patient registration!")
                         st.rerun()
+            else:
+                st.warning("⚠️ Please add spectacles, medicines, or eye prescription to generate prescription")
+
+
         else:
             st.info("👆 Please register a patient first in the Patient Registration tab")
 
