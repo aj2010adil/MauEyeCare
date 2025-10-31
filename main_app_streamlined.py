@@ -1016,61 +1016,86 @@ def main():
                     col_dl1, col_dl2 = st.columns(2)
                     
                     with col_dl1:
-                        st.download_button(
+                        if st.download_button(
                             "💾 Download Prescription",
                             data=prescription_html.encode('utf-8'),
                             file_name=f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html",
                             mime="text/html",
                             type="primary"
-                        )
+                        ):
+                            # Mark prescription as downloaded
+                            st.session_state['prescription_downloaded'] = True
                     
                     with col_dl2:
-                        st.download_button(
+                        if st.download_button(
                             "💾 Download Receipt",
                             data=receipt_html.encode('utf-8'),
                             file_name=f"Receipt_{patient_name.replace(' ', '_')}_{timestamp}.html",
                             mime="text/html",
                             type="secondary"
-                        )
+                        ):
+                            # Mark receipt as downloaded
+                            st.session_state['receipt_downloaded'] = True
 
                     st.success("✅ Prescription generated successfully!")
 
                     # Mark prescription as generated
                     st.session_state['prescription_generated'] = True
-                # Show workflow options immediately after prescription generation
-                st.markdown("---")
-                st.markdown("### 🎯 Next Steps")
+                    
+                    # Show workflow options only if prescription hasn't been downloaded yet
+                    if not st.session_state.get('prescription_downloaded', False):
+                        st.markdown("---")
+                        st.markdown("### 🎯 Next Steps")
 
-                col1, col2 = st.columns(2)
+                        col1, col2 = st.columns(2)
 
-                with col1:
-                    if st.button("🔄 New Prescription (Same Patient)", type="secondary"):
-                        # Clear only prescription data, keep patient info
-                        for key in ['selected_spectacles', 'medicine_details', 'selected_medicines_list', 'prescription_generated', 'consultation_fee', 'additional_charges']:
-                            if key in st.session_state:
-                                del st.session_state[key]
-                        st.success("🎆 Ready for new prescription!")
-                        st.rerun()
+                        with col1:
+                            if st.button("🔄 New Prescription (Same Patient)", type="secondary"):
+                                # Clear only prescription data, keep patient info
+                                for key in ['selected_spectacles', 'medicine_details', 'selected_medicines_list', 'prescription_generated', 'consultation_fee', 'additional_charges']:
+                                    if key in st.session_state:
+                                        del st.session_state[key]
+                                st.success("🎆 Ready for new prescription!")
+                                st.rerun()
 
-                with col2:
-                    if st.button("👥 Start New Patient", type="primary"):
-                        # Clear all patient and prescription data
-                        keys_to_clear = [
-                            'patient_name', 'patient_mobile', 'age', 'gender', 'address', 'city', 'state', 'pincode',
-                            'occupation', 'referral_source', 'patient_issue', 'advice', 'consultation_fee', 'additional_charges',
-                            'selected_spectacles', 'medicine_details', 'selected_medicines_list', 'rx_table', 'prescription_generated'
-                        ]
-                        for key in keys_to_clear:
-                            if key in st.session_state:
-                                del st.session_state[key]
-                        st.success("🆕 Ready for new patient registration!")
-                        st.rerun()
+                        with col2:
+                            if st.button("👥 Start New Patient", type="primary"):
+                                # Clear all patient and prescription data
+                                keys_to_clear = [
+                                    'patient_name', 'patient_mobile', 'age', 'gender', 'address', 'city', 'state', 'pincode',
+                                    'occupation', 'referral_source', 'patient_issue', 'advice', 'consultation_fee', 'additional_charges',
+                                    'selected_spectacles', 'medicine_details', 'selected_medicines_list', 'rx_table', 'prescription_generated',
+                                    'prescription_downloaded', 'receipt_downloaded'
+                                ]
+                                for key in keys_to_clear:
+                                    if key in st.session_state:
+                                        del st.session_state[key]
+                                st.success("🆕 Ready for new patient registration!")
+                                st.rerun()
+                    else:
+                        st.info("📋 **Prescription downloaded!** Go back to Patient Registration tab to make corrections or register a new patient.")
             else:
                 st.warning("⚠️ Please add spectacles, medicines, or eye prescription to generate prescription")
 
 
         else:
             st.info("👆 Please register a patient first in the Patient Registration tab")
+            
+            # Add option to start fresh even without current patient
+            st.markdown("---")
+            if st.button("🆕 Start New Patient Registration", type="primary"):
+                # Clear all session state for fresh start
+                keys_to_clear = [
+                    'patient_name', 'patient_mobile', 'age', 'gender', 'address', 'city', 'state', 'pincode',
+                    'occupation', 'referral_source', 'patient_issue', 'advice', 'consultation_fee', 'additional_charges',
+                    'selected_spectacles', 'medicine_details', 'selected_medicines_list', 'rx_table', 'prescription_generated',
+                    'prescription_downloaded', 'receipt_downloaded', 'patient_complaint', 'patient_diagnosis', 'spectacle_instructions'
+                ]
+                for key in keys_to_clear:
+                    if key in st.session_state:
+                        del st.session_state[key]
+                st.success("🆕 All data cleared! Go to Patient Registration tab to start fresh.")
+                st.rerun()
 
     # --- Analytics Tab ---
     with tab3:
