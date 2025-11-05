@@ -35,7 +35,7 @@ def main():
         initial_sidebar_state="expanded"
     )
     
-    st.title("🏥 Mau Eye Care - Professional Eye Care Hospital")
+    st.title("🏥 Computer and AI assisted Refraction and Contact Lens Center - Mau Eye Care - Professional Eye Care Hospital")
     st.markdown("*Streamlined Hospital Management System*")
 
     # Sidebar
@@ -772,48 +772,45 @@ def main():
                     elif medicine_details:
                         st.warning("⚠️ OAuth not authenticated - stock will not be updated automatically")
 
-                    # Create prescription HTML
+                    # Create compact single A4 prescription HTML
                     current_time = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+                    rx_table = st.session_state.get('rx_table', {})
+                    od_data = rx_table.get('OD', {})
+                    os_data = rx_table.get('OS', {})
+                    
                     prescription_html = f"""
 <!DOCTYPE html>
 <html>
 <head>
     <title>Mau Eye Care Prescription - {patient_name}</title>
     <style>
-        @page {{ margin: 0.4in; size: A4; }}
-        body {{ 
-            font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 11px; line-height: 1.2;
-            background-image: url('file:///D:/Users/W7146644/WebstormProjects/MauEyeCare/mec.jpg');
-            background-size: cover; background-position: center; background-repeat: no-repeat;
-        }}
-        .page {{ background: rgba(255,255,255,0.95); min-height: 100vh; padding: 10px; }}
-        .header {{ background: rgba(46, 134, 171, 0.9); color: white; padding: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }}
+        @page {{ margin: 0.3in; size: A4; }}
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 9px; line-height: 1.1; }}
+        .header {{ background: #2E86AB; color: white; padding: 4px; margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center; }}
         .header-left {{ text-align: left; flex: 1; }}
         .header-center {{ text-align: center; flex: 1; }}
         .header-right {{ text-align: right; flex: 1; }}
-        .header h1 {{ margin: 3px 0; font-size: 16px; }}
-        .header h2 {{ margin: 2px 0; font-size: 14px; font-weight: bold; }}
-        .header p {{ margin: 1px 0; font-size: 10px; }}
+        .header h1 {{ margin: 1px 0; font-size: 16px; font-weight: bold; }}
+        .header h2 {{ margin: 1px 0; font-size: 10px; font-weight: bold; }}
+        .header p {{ margin: 0; font-size: 7px; }}
         .urdu {{ font-family: 'Noto Nastaliq Urdu', 'Arial Unicode MS', sans-serif; }}
-        .patient-info {{ background: rgba(248, 249, 255, 0.9); padding: 6px; margin: 4px 0; font-size: 10px; }}
-        .patient-info h3 {{ margin: 3px 0; font-size: 12px; }}
-        .two-column {{ display: flex; gap: 15px; }}
-        .left-column {{ flex: 1; }}
-        .right-column {{ flex: 1; }}
-        .prescription {{ padding: 6px; margin: 4px 0; background: rgba(255,255,255,0.8); }}
-        .prescription h3 {{ margin: 4px 0; font-size: 12px; }}
-        .item {{ background: rgba(240, 248, 255, 0.9); padding: 4px; margin: 2px 0; font-size: 10px; }}
-        .vision-table {{ width: 100%; border-collapse: collapse; margin: 5px 0; background: rgba(255,255,255,0.9); }}
-        .vision-table th, .vision-table td {{ border: 1px solid #ccc; padding: 3px; text-align: center; font-size: 9px; }}
-        .cost-summary {{ text-align: center; font-weight: bold; margin: 6px 0; background: rgba(232, 245, 232, 0.9); padding: 6px; font-size: 11px; }}
-        .footer {{ text-align: center; margin-top: 8px; color: #666; font-size: 9px; background: rgba(255,255,255,0.8); padding: 5px; }}
-        .services {{ background: rgba(255,255,255,0.9); padding: 8px; margin: 8px 0; }}
-        .signature {{ background: rgba(255,255,255,0.9); padding: 8px; margin: 8px 0; text-align: right; }}
-        @media print {{ .page {{ page-break-after: always; }} }}
+        .patient-info {{ background: #f8f9ff; padding: 3px; margin: 2px 0; font-size: 8px; }}
+        .patient-info h3 {{ margin: 1px 0; font-size: 9px; }}
+        .content {{ display: flex; gap: 8px; }}
+        .left-section {{ flex: 1; }}
+        .right-section {{ flex: 1; }}
+        .section {{ padding: 2px; margin: 1px 0; }}
+        .section h3 {{ margin: 1px 0; font-size: 9px; }}
+        .item {{ background: #f0f8ff; padding: 2px; margin: 1px 0; font-size: 8px; }}
+        .vision-table {{ width: 100%; border-collapse: collapse; margin: 2px 0; }}
+        .vision-table th, .vision-table td {{ border: 1px solid #ccc; padding: 1px; text-align: center; font-size: 7px; }}
+        .medicine-item {{ background: #fff8f0; padding: 2px; margin: 1px 0; font-size: 8px; border-left: 2px solid #ff9800; }}
+        .spectacle-item {{ background: #f0fff0; padding: 2px; margin: 1px 0; font-size: 8px; border-left: 2px solid #4caf50; }}
+        .signature {{ text-align: right; margin-top: 5px; font-size: 8px; }}
+        .footer {{ margin-top: 3px; text-align: center; font-size: 7px; color: #666; }}
     </style>
 </head>
 <body>
-    <div class="page">
     <div class="header">
         <div class="header-left">
             <h2>Dr. Danish</h2>
@@ -823,38 +820,34 @@ def main():
             <p>📞 +91 92356-47410</p>
         </div>
         <div class="header-center">
+            <p style="font-size: 8px; margin: 0;">Computer and AI assisted Refraction and Contact Lens Center</p>
             <h1>Mau Eye Care</h1>
-            <p>Pura Sofi Bhonu Kuraishi Dasai Kuwa</p>
-            <p>Mubarakpur, Azamgarh, Uttar Pradesh, India</p>
-            <p>📧 mau.eye.care.404@gmail.com</p>
-            <p>Mon-Sat: 10:00 AM - 4:00 PM | Sunday: Closed</p>
+            <p>Pura Sofi Bhonu Kuraishi Dasai Kuwa, Mubarakpur, Azamgarh, UP</p>
+            <p>📧 mau.eye.care.404@gmail.com | Mon-Sat: 10 AM-4 PM</p>
         </div>
         <div class="header-right">
             <h2 class="urdu">ڈاکٹر دانش</h2>
             <p class="urdu">بی ایس سی آپٹومیٹری</p>
             <p class="urdu">آنکھوں کے ماہر</p>
-            <p class="urdu">رجسٹریشن نمبر: یو پی ایس ۲۹۰۸</p>
         </div>
     </div>
 
     <div class="patient-info">
         <h3>👤 Patient Information</h3>
-        <p><strong>Name:</strong> {patient_name} | <strong>Age:</strong> {st.session_state.get('age', 'N/A')} | <strong>Gender:</strong> {st.session_state.get('gender', 'N/A')}</p>
-        <p><strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')} | <strong>Date:</strong> {current_time.strftime('%d/%m/%Y %I:%M %p IST')}</p>
+        <p><strong>Name:</strong> {patient_name} | <strong>Age:</strong> {st.session_state.get('age', 'N/A')} | <strong>Gender:</strong> {st.session_state.get('gender', 'N/A')} | <strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')} | <strong>Date:</strong> {current_time.strftime('%d/%m/%Y')}</p>
         <p><strong>Address:</strong> {st.session_state.get('address', '')}, {st.session_state.get('city', '')}, {st.session_state.get('state', '')} - {st.session_state.get('pincode', '')}</p>
         <p><strong>Complaint:</strong> {st.session_state.get('patient_complaint', 'N/A')} | <strong>Diagnosis:</strong> {st.session_state.get('patient_diagnosis', 'N/A')}</p>
-    </div>"""
+    </div>
 
-                    # Start two-column layout
-                    prescription_html += """
-    <div class="two-column">
-        <div class="left-column">"""
+    <div class="content">
+        <div class="left-section">"""
 
-                    # Add eye prescription
-                    rx_table = st.session_state.get('rx_table', {})
-                    if rx_table:
-                        prescription_html += """
-            <div class="prescription">
+
+
+                    # Add eye prescription section
+                    if rx_table and (od_data.get('Sphere') or os_data.get('Sphere')):
+                        prescription_html += f"""
+            <div class="section">
                 <h3>👁️ Eye Prescription</h3>
                 <table class="vision-table">
                     <tr>
@@ -863,11 +856,7 @@ def main():
                         <th>CYL</th>
                         <th>AXIS</th>
                         <th>ADD</th>
-                    </tr>"""
-                        
-                        od_data = rx_table.get('OD', {})
-                        os_data = rx_table.get('OS', {})
-                        prescription_html += f"""
+                    </tr>
                     <tr>
                         <td><strong>OD</strong></td>
                         <td>{od_data.get('Sphere', '')}</td>
@@ -888,8 +877,8 @@ def main():
                 <table class="vision-table">
                     <tr>
                         <th>Eye</th>
-                        <th>Distance Vision</th>
-                        <th>Near Vision</th>
+                        <th>Distance</th>
+                        <th>Near</th>
                     </tr>
                     <tr>
                         <td><strong>OD</strong></td>
@@ -904,15 +893,16 @@ def main():
                 </table>
             </div>"""
 
-                    # Add spectacles in left column
+
+                    # Add spectacles section
                     if selected_spectacles:
                         prescription_html += """
-            <div class="prescription">
+            <div class="section">
                 <h3>👓 Recommended Spectacles</h3>"""
 
                         for spec_name in selected_spectacles:
                             prescription_html += f"""
-                <div class="item">
+                <div class="spectacle-item">
                     <strong>{spec_name}</strong>
                 </div>"""
 
@@ -920,29 +910,28 @@ def main():
                         spectacle_instructions = st.session_state.get('spectacle_instructions', '')
                         if spectacle_instructions:
                             prescription_html += f"""
-                <div class="item">
+                <div class="spectacle-item">
                     <strong>Care Instructions:</strong><br>
                     {spectacle_instructions.replace(chr(10), '<br>').replace('•', '&bull;')}
                 </div>"""
 
-                        prescription_html += "</div>"
+                        prescription_html += """
+            </div>"""
 
-                    # Close left column and start right column
+                    # Close left section and start right section
                     prescription_html += """
         </div>
-        <div class="right-column">"""
+        <div class="right-section">"""
 
-                    # Add medicines in right column
+                    # Add medicines section
                     if medicine_details:
                         prescription_html += """
-            <div class="prescription">
+            <div class="section">
                 <h3>💊 Prescribed Medicines</h3>"""
 
-                        total_med_cost = 0
                         for med_name, details in medicine_details.items():
-                            total_med_cost += details['total_cost']
                             prescription_html += f"""
-                <div class="item">
+                <div class="medicine-item">
                     <strong>{med_name}</strong><br>
                     Qty: {details['quantity']} | {details.get('dosage', 'As directed')}<br>
                     {details.get('timing', 'As directed')}
@@ -953,28 +942,22 @@ def main():
 
 
 
-                    # Close right column and two-column layout
+                    # Close content and add signature/footer
                     prescription_html += """
         </div>
     </div>"""
 
 
 
-                    # Add services and signature
                     prescription_html += """
-    <div class="services">
-        <h3>Our Services:</h3>
-        <p>• Eye Examinations • Prescription Glasses • Contact Lens Fitting • Eye Disease Treatment • Vision Therapy</p>
-    </div>
-    
     <div class="signature">
         <p>Doctor Signature: ___________________________</p>
     </div>
     
     <div class="footer">
+        <p>This prescription is computer generated and valid for 30 days from date of issue.</p>
         <p><strong>Dr. Danish, B.Sc. Optometry</strong> - Optometrist & Eye Specialist | Reg. No.: UPS 2908</p>
         <p>Mau Eye Care | Mubarakpur, Azamgarh | 📞 +91 92356-47410 | 📧 mau.eye.care.404@gmail.com</p>
-    </div>
     </div>
 </body>
 </html>"""
