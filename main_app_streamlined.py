@@ -956,8 +956,8 @@ def main():
     
     <div class="footer">
         <p>This prescription is computer generated and valid for 30 days from date of issue.</p>
-        <p><strong>Dr. Danish, B.Sc. Optometry</strong> - Optometrist & Eye Specialist | Reg. No.: UPS 2908</p>
-        <p>Mau Eye Care | Mubarakpur, Azamgarh | 📞 +91 92356-47410 | 📧 mau.eye.care.404@gmail.com</p>
+        <p><strong>Our Services:</strong> Eye Examinations • Prescription Glasses • Contact Lens Fitting • Computer Vision Syndrome Care • Diabetic Eye Screening • Glaucoma Testing</p>
+        <p><strong>Specialties:</strong> Refraction • Vision Therapy • Dry Eye Treatment • Pediatric Eye Care • Low Vision Aids • Eye Disease Management</p>
     </div>
 </body>
 </html>"""
