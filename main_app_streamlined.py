@@ -785,29 +785,29 @@ def main():
     <title>Mau Eye Care Prescription - {patient_name}</title>
     <style>
         @page {{ margin: 0.3in; size: A4; }}
-        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 9px; line-height: 1.1; }}
-        .header {{ background: #2E86AB; color: white; padding: 4px; margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center; }}
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 12px; line-height: 1.3; }}
+        .header {{ background: #2E86AB; color: white; padding: 8px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }}
         .header-left {{ text-align: left; flex: 1; }}
         .header-center {{ text-align: center; flex: 1; }}
         .header-right {{ text-align: right; flex: 1; }}
-        .header h1 {{ margin: 1px 0; font-size: 16px; font-weight: bold; }}
-        .header h2 {{ margin: 1px 0; font-size: 10px; font-weight: bold; }}
-        .header p {{ margin: 0; font-size: 7px; }}
+        .header h1 {{ margin: 2px 0; font-size: 20px; font-weight: bold; }}
+        .header h2 {{ margin: 2px 0; font-size: 13px; font-weight: bold; }}
+        .header p {{ margin: 1px 0; font-size: 10px; }}
         .urdu {{ font-family: 'Noto Nastaliq Urdu', 'Arial Unicode MS', sans-serif; }}
-        .patient-info {{ background: #f8f9ff; padding: 3px; margin: 2px 0; font-size: 8px; }}
-        .patient-info h3 {{ margin: 1px 0; font-size: 9px; }}
-        .content {{ display: flex; gap: 8px; }}
+        .patient-info {{ background: #f8f9ff; padding: 6px; margin: 4px 0; font-size: 11px; }}
+        .patient-info h3 {{ margin: 2px 0; font-size: 12px; }}
+        .content {{ display: flex; gap: 12px; }}
         .left-section {{ flex: 1; }}
         .right-section {{ flex: 1; }}
-        .section {{ padding: 2px; margin: 1px 0; }}
-        .section h3 {{ margin: 1px 0; font-size: 9px; }}
-        .item {{ background: #f0f8ff; padding: 2px; margin: 1px 0; font-size: 8px; }}
-        .vision-table {{ width: 100%; border-collapse: collapse; margin: 2px 0; }}
-        .vision-table th, .vision-table td {{ border: 1px solid #ccc; padding: 1px; text-align: center; font-size: 7px; }}
-        .medicine-item {{ background: #fff8f0; padding: 2px; margin: 1px 0; font-size: 8px; border-left: 2px solid #ff9800; }}
-        .spectacle-item {{ background: #f0fff0; padding: 2px; margin: 1px 0; font-size: 8px; border-left: 2px solid #4caf50; }}
-        .signature {{ text-align: right; margin-top: 5px; font-size: 8px; }}
-        .footer {{ margin-top: 3px; text-align: center; font-size: 7px; color: #666; }}
+        .section {{ padding: 4px; margin: 3px 0; }}
+        .section h3 {{ margin: 2px 0; font-size: 12px; }}
+        .item {{ background: #f0f8ff; padding: 4px; margin: 2px 0; font-size: 11px; }}
+        .vision-table {{ width: 100%; border-collapse: collapse; margin: 4px 0; }}
+        .vision-table th, .vision-table td {{ border: 1px solid #ccc; padding: 3px; text-align: center; font-size: 10px; }}
+        .medicine-item {{ background: #fff8f0; padding: 4px; margin: 2px 0; font-size: 11px; border-left: 3px solid #ff9800; }}
+        .spectacle-item {{ background: #f0fff0; padding: 4px; margin: 2px 0; font-size: 11px; border-left: 3px solid #4caf50; }}
+        .signature {{ text-align: right; margin-top: 10px; font-size: 11px; }}
+        .footer {{ margin-top: 8px; text-align: center; font-size: 10px; color: #666; }}
     </style>
 </head>
 <body>
@@ -820,7 +820,7 @@ def main():
             <p>📞 +91 92356-47410</p>
         </div>
         <div class="header-center">
-            <p style="font-size: 8px; margin: 0;">Computer and AI assisted Refraction and Contact Lens Center</p>
+            <p style="font-size: 11px; margin: 1px 0;">Computer and AI assisted Refraction and Contact Lens Center</p>
             <h1>Mau Eye Care</h1>
             <p>Pura Sofi Bhonu Kuraishi Dasai Kuwa, Mubarakpur, Azamgarh, UP</p>
             <p>📧 mau.eye.care.404@gmail.com | Mon-Sat: 10 AM-4 PM</p>
@@ -844,8 +844,8 @@ def main():
 
 
 
-                    # Add eye prescription section
-                    if rx_table and (od_data.get('Sphere') or os_data.get('Sphere')):
+                    # Add eye prescription section - always include
+                    if True:  # Always show eye prescription section
                         prescription_html += f"""
             <div class="section">
                 <h3>👁️ Eye Prescription</h3>
