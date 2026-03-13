@@ -170,7 +170,14 @@ def main():
                     custom_issue = st.text_area("Specify Issue/Complaint", placeholder="Describe the patient's complaint in detail", key="custom_issue")
                     patient_issue = custom_issue if custom_issue else "Other"
 
-                advice_options = ["Spectacle Prescription", "Regular Eye Checkup", "Dry Eye Treatment", "Glaucoma Screening", "Diabetic Eye Exam", "Contact Lens Consultation", "Vision Therapy", "Follow-up in 1 month", "Follow-up in 3 months", "Follow-up in 6 months", "Refer to Specialist", "Eye Protection Advised", "Computer Vision Syndrome Care", "Other"]
+                advice_options = [
+                    "Spectacle Prescription", "Regular Eye Checkup", "Dry Eye Treatment", 
+                    "Glaucoma Screening", "Diabetic Eye Exam", "Contact Lens Consultation", 
+                    "Vision Therapy", "Cataract Surgery (Phaco)", "Cataract Surgery (SICS)", 
+                    "Cataract Surgery (ECCE)", "Follow-up in 1 month", "Follow-up in 3 months", 
+                    "Follow-up in 6 months", "Refer to Specialist", "Eye Protection Advised", 
+                    "Computer Vision Syndrome Care", "Other"
+                ]
                 advice = st.selectbox("Advice/Notes", advice_options)
                 if advice == "Other":
                     custom_advice = st.text_area("Specify Advice/Notes", placeholder="Enter detailed advice or notes for the patient", key="custom_advice")
@@ -511,7 +518,12 @@ def main():
 
             with col_vision1:
                 st.markdown("**OD (Right Eye) Vision**")
-                vision_options = ["", "6/6", "6/9", "6/12", "6/18", "6/24", "6/36", "6/60", "CF (Counting Fingers)", "HM (Hand Movement)", "PL (Perception of Light)", "NPL (No Perception of Light)"]
+                vision_options = [
+                    "", "6/6", "6/9", "6/12", "6/18", "6/24", "6/36", "6/60", 
+                    "5/60", "4/60", "3/60", "2/60", "1/60",
+                    "CF 6m", "CF 5m", "CF 4m", "CF 3m", "CF 2m", "CF 1m",
+                    "CF (Counting Fingers)", "HM (Hand Movement)", "PL (Perception of Light)", "NPL (No Perception of Light)"
+                ]
                 od_vision = st.selectbox("OD Distance Vision", vision_options, key="od_distance_vision")
                 near_vision_options = ["", "N6", "N8", "N10", "N12", "N18", "N24", "N36", "N48"]
                 od_near_vision = st.selectbox("OD Near Vision", near_vision_options, key="od_near_vision")
@@ -836,7 +848,9 @@ def main():
         <h3>👤 Patient Information</h3>
         <p><strong>Name:</strong> {patient_name} | <strong>Age:</strong> {st.session_state.get('age', 'N/A')} | <strong>Gender:</strong> {st.session_state.get('gender', 'N/A')} | <strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')} | <strong>Date:</strong> {current_time.strftime('%d/%m/%Y')}</p>
         <p><strong>Address:</strong> {st.session_state.get('address', '')}, {st.session_state.get('city', '')}, {st.session_state.get('state', '')} - {st.session_state.get('pincode', '')}</p>
-        <p><strong>Complaint:</strong> {st.session_state.get('patient_complaint', 'N/A')} | <strong>Diagnosis:</strong> {st.session_state.get('patient_diagnosis', 'N/A')}</p>
+        <p><strong>Complaint:</strong> {st.session_state.get('patient_complaint') or st.session_state.get('patient_issue') or 'N/A'}</p>
+        <p><strong>Advice:</strong> {st.session_state.get('advice') or 'N/A'}</p>
+        <p><strong>Diagnosis:</strong> {st.session_state.get('patient_diagnosis', 'N/A')}</p>
     </div>
 
     <div class="content">
@@ -1066,11 +1080,15 @@ def main():
                         keys_to_clear = [
                             'patient_name', 'patient_mobile', 'age', 'gender', 'address', 'city', 'state', 'pincode',
                             'occupation', 'referral_source', 'patient_issue', 'advice', 'consultation_fee', 'additional_charges',
-                            'selected_spectacles', 'medicine_details', 'selected_medicines_list', 'rx_table', 'prescription_generated'
+                            'selected_spectacles', 'medicine_details', 'selected_medicines_list', 'rx_table', 'prescription_generated',
+                            'patient_complaint', 'patient_diagnosis', 'complaint', 'diagnosis', 'od_distance_vision', 'od_near_vision',
+                            'os_distance_vision', 'os_near_vision', 'spectacle_instructions', 'new_patient',
+                            'name_dropdown', 'custom_name', 'mobile_dropdown', 'custom_mobile', 'custom_issue', 'custom_advice'
                         ]
                         for key in keys_to_clear:
                             if key in st.session_state:
                                 del st.session_state[key]
+                        
                         st.success("🆕 Ready for new patient registration!")
                         st.rerun()
         else:
