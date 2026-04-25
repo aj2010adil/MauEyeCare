@@ -1,0 +1,25 @@
+Dist/MauEyeCare_ClinicalSuite/api_log.txt
+Dist/MauEyeCare_ClinicalSuite/app_debug.log
+Dist/MauEyeCare_ClinicalSuite/maueyecare.db-shm
+Dist/MauEyeCare_ClinicalSuite/maueyecare.db-wal
+
+# .NET / Visual Studio
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# WPF
+*.baml
+*.g.cs
+*.g.i.cs
+*_wpftmp.csproj
+*wpftmp*
