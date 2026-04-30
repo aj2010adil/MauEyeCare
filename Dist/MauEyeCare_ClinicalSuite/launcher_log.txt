@@ -1,0 +1,4 @@
+BaseDir: C:\Users\DELL\MauEyecare\MauEyeCare\Dist\MauEyeCare_ClinicalSuite
+Resolved API Path: C:\Users\DELL\MauEyecare\MauEyeCare\Dist\MauEyeCare_ClinicalSuite\MauEyeCare.API.exe (Exists: True)
+API Started successfully.
+Resolved AI Path: C:\Users\DELL\MauEyecare\MauEyeCare\Dist\MauEyeCare_ClinicalSuite\MauEyeCare.AI\app.py (Exists: True)

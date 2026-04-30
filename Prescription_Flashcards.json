@@ -1,0 +1,20 @@
+[
+  {
+    "id": "FC001",
+    "term": "SPH (Sphere)",
+    "definition": "Indicates the amount of lens power, measured in diopters (D), prescribed to correct nearsightedness (-) or farsightedness (+). Plano means zero power.",
+    "context": "Healthcare optometry checks."
+  },
+  {
+    "id": "FC002",
+    "term": "CYL (Cylinder)",
+    "definition": "Specifies lens power needed for correcting astigmatism. Left blank or zero if no corneal distortion is detected.",
+    "context": "Visual clarity enhancements."
+  },
+  {
+    "id": "FC003",
+    "term": "AXIS",
+    "definition": "A number from 1 to 180 defining the orientation required for CYL adjustments.",
+    "context": "Anatomical calibration."
+  }
+]

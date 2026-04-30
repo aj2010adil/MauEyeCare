@@ -1,0 +1,22 @@
+# MauEyeCare AI Microservice — Python Dependencies
+# Install: pip install -r requirements.txt
+
+# Core
+flask==3.0.3
+Pillow==10.3.0
+numpy==1.26.4
+pytesseract==0.3.10
+
+# ONNX Runtime (CPU) — optional, for real model inference
+# Uncomment for ONNX:
+# onnxruntime==1.18.0
+
+# ONNX Runtime (GPU) — uncomment for NVIDIA GPU:
+# onnxruntime-gpu==1.18.0
+
+# Dev utilities
+python-dotenv==1.0.1
+
+# If using transformers / CLIP for embedding:
+# transformers==4.41.1
+# torch==2.3.0

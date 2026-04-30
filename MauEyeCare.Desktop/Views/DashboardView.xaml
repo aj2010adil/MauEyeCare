@@ -1,0 +1,106 @@
+<UserControl x:Class="MauEyeCare.Desktop.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Background="#121B29">
+        <StackPanel>
+            <TextBlock Text="DASHBOARD VIEW ACTIVE" Foreground="Yellow" FontSize="10" FontWeight="Bold" Margin="0,0,0,10" />
+            <!-- Greeting -->
+            <TextBlock Margin="0,0,0,24">
+                <Run Text="{Binding Greeting}" FontSize="26" FontWeight="SemiBold"
+                     Foreground="#E8EDF2" />
+                <Run Text=" — Welcome to MauEyeCare" FontSize="20" Foreground="#8BA0B5" />
+            </TextBlock>
+
+            <!-- KPI Cards -->
+            <WrapPanel Margin="0,0,0,28">
+                <Border Style="{StaticResource StatCard}" Margin="0,0,16,16">
+                    <StackPanel>
+                        <TextBlock Text="📅" FontSize="28" />
+                        <TextBlock Text="{Binding TodayAppointments}" FontSize="36"
+                                   FontWeight="Bold" Foreground="{StaticResource TealAccentBrush}"
+                                   Margin="0,4,0,0" />
+                        <TextBlock Text="Today's Appointments" Style="{StaticResource CaptionText}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}" Margin="0,0,16,16">
+                    <StackPanel>
+                        <TextBlock Text="👤" FontSize="28" />
+                        <TextBlock Text="{Binding TotalPatients}" FontSize="36"
+                                   FontWeight="Bold" Foreground="#7C4DFF" Margin="0,4,0,0" />
+                        <TextBlock Text="Total Patients" Style="{StaticResource CaptionText}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}" Margin="0,0,16,16">
+                    <StackPanel>
+                        <TextBlock Text="💰" FontSize="28" />
+                        <TextBlock Text="{Binding PendingInvoices}" FontSize="36"
+                                   FontWeight="Bold" Foreground="{StaticResource WarningBrush}"
+                                   Margin="0,4,0,0" />
+                        <TextBlock Text="Pending Invoices" Style="{StaticResource CaptionText}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="📦" FontSize="28" />
+                        <TextBlock Text="{Binding LowStockItems}" FontSize="36"
+                                   FontWeight="Bold" Foreground="{StaticResource ErrorBrush}"
+                                   Margin="0,4,0,0" />
+                        <TextBlock Text="Low Stock Alerts" Style="{StaticResource CaptionText}" />
+                    </StackPanel>
+                </Border>
+            </WrapPanel>
+
+            <!-- Today's Appointments List -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Today's Schedule" Style="{StaticResource HeadingH2}"
+                               Margin="0,0,0,16" />
+                    <ItemsControl ItemsSource="{Binding UpcomingAppointments}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#17253A" CornerRadius="8" Padding="14,10"
+                                        Margin="0,0,0,8">
+                                    <DockPanel>
+                                        <Border DockPanel.Dock="Left" Background="#00BFA520"
+                                                CornerRadius="6" Padding="8,4" Margin="0,0,12,0">
+                                            <TextBlock Text="{Binding Time}" FontSize="12"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TealAccentBrush}" />
+                                        </Border>
+                                        <TextBlock Text="{Binding PatientName}" FontSize="13"
+                                                   FontWeight="SemiBold" Foreground="#E8EDF2"
+                                                   VerticalAlignment="Center" />
+                                        <Border DockPanel.Dock="Right" CornerRadius="8"
+                                                Padding="8,3" HorizontalAlignment="Right">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="#1E3048" />
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="{Binding Type}" FontSize="10"
+                                                       Foreground="#8BA0B5" />
+                                        </Border>
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock HorizontalAlignment="Center" Margin="0,12,0,0"
+                               FontSize="11" Foreground="#8BA0B5">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Setter Property="Text" Value="No appointments today" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding UpcomingAppointments.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

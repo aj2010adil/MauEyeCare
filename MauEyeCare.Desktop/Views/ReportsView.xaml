@@ -1,0 +1,65 @@
+<UserControl x:Class="MauEyeCare.Desktop.Views.ReportsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF">
+    <Grid Background="#121B29">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="32">
+                <TextBlock Text="Analytics &amp; Performance Reports" FontSize="28" FontWeight="Bold" Foreground="White" Margin="0,0,0,8" />
+                <TextBlock Text="Comprehensive insights into clinic operations and patient demographics." Foreground="#8BA0B5" Margin="0,0,0,32" />
+
+                <UniformGrid Columns="4" Margin="0,0,0,24">
+                    <Border Background="#1E3048" CornerRadius="12" Margin="0,0,16,16" Padding="20">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="TOTAL EXAMS" FontSize="12" FontWeight="Bold" Foreground="#8BA0B5" HorizontalAlignment="Center" />
+                            <TextBlock Text="1,450" FontSize="36" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" Margin="0,8" />
+                            <TextBlock Text="+12% from last month" FontSize="11" Foreground="#00BFA5" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                    
+                    <Border Background="#1E3048" CornerRadius="12" Margin="0,0,16,16" Padding="20">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="AI ACCURACY" FontSize="12" FontWeight="Bold" Foreground="#8BA0B5" HorizontalAlignment="Center" />
+                            <TextBlock Text="94.2%" FontSize="36" FontWeight="Bold" Foreground="{StaticResource TealAccentBrush}" HorizontalAlignment="Center" Margin="0,8" />
+                            <TextBlock Text="Model: ResNet-Ophth v2" FontSize="11" Foreground="#8BA0B5" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#1E3048" CornerRadius="12" Margin="0,0,16,16" Padding="20">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="SHOP REVENUE" FontSize="12" FontWeight="Bold" Foreground="#8BA0B5" HorizontalAlignment="Center" />
+                            <TextBlock Text="₹45,210" FontSize="36" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" Margin="0,8" />
+                            <TextBlock Text="Ready for disbursement" FontSize="11" Foreground="#00BFA5" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#1E3048" CornerRadius="12" Margin="0,0,0,16" Padding="20">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="RECALLS ISSUED" FontSize="12" FontWeight="Bold" Foreground="#8BA0B5" HorizontalAlignment="Center" />
+                            <TextBlock Text="4" FontSize="36" FontWeight="Bold" Foreground="#FF8A80" HorizontalAlignment="Center" Margin="0,8" />
+                            <TextBlock Text="Require immediate review" FontSize="11" Foreground="#FF8A80" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
+
+                <Border Background="#1E3048" CornerRadius="12" Padding="24" Margin="0,16,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Predictive Recall Notifications" FontSize="18" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,8" />
+                        <TextBlock Text="AI-driven suggestions for automated lens updates &amp; critical patient reviews." Foreground="#8BA0B5" FontSize="11" Margin="0,0,0,16" />
+                        
+                        <DataGrid Background="#0F1824" BorderThickness="1" BorderBrush="#2A3F55" 
+                                  Foreground="White" AutoGenerateColumns="False" IsReadOnly="True"
+                                  ItemsSource="{Binding Recalls}" GridLinesVisibility="Horizontal" HeadersVisibility="Column">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Patient" Width="2*" Binding="{Binding PatientName}" />
+                                <DataGridTextColumn Header="Recall Reason" Width="3*" Binding="{Binding Reason}" />
+                                <DataGridTextColumn Header="Target Date" Width="1.5*" Binding="{Binding DueDate}" />
+                                <DataGridTextColumn Header="Urgency Level" Width="1.5*" Binding="{Binding Urgency}" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

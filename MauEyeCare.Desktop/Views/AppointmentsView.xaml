@@ -1,0 +1,88 @@
+<UserControl x:Class="MauEyeCare.Desktop.Views.AppointmentsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="380" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Appointments List -->
+        <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,16,0">
+            <DockPanel>
+                <Grid DockPanel.Dock="Top" Margin="0,0,0,16">
+                    <TextBlock Text="Appointments" Style="{StaticResource HeadingH2}"
+                               HorizontalAlignment="Left" VerticalAlignment="Center" />
+                    <DatePicker HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Width="180" Background="#0F1824"
+                                Foreground="{StaticResource TextPrimaryBrush}"
+                                SelectedDate="{Binding SelectedDate}" />
+                </Grid>
+                <DataGrid Style="{StaticResource DarkDataGrid}"
+                          ItemsSource="{Binding Appointments}"
+                          ColumnHeaderStyle="{StaticResource DarkDataGridColumnHeader}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Time" Width="100" Binding="{Binding Time}" />
+                        <DataGridTextColumn Header="Patient" Width="*" Binding="{Binding PatientName}" />
+                        <DataGridTextColumn Header="Type" Width="120" Binding="{Binding Type}" />
+                        <DataGridTextColumn Header="Status" Width="100" Binding="{Binding Status}" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Border>
+
+        <!-- Quick Actions Column -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Quick Book Panel -->
+            <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Quick Book" Style="{StaticResource HeadingH2}" Margin="0,0,0,16" />
+                    <TextBlock Text="PATIENT" Style="{StaticResource FormLabel}" />
+                    <ComboBox Style="{StaticResource DarkComboBox}" Margin="0,0,0,12" />
+                    <TextBlock Text="TIME" Style="{StaticResource FormLabel}" />
+                    <TextBox Style="{StaticResource DarkTextBox}" Height="42" Margin="0,0,0,12"
+                              Text="09:00 AM" />
+                    <TextBlock Text="TYPE" Style="{StaticResource FormLabel}" />
+                    <ComboBox Style="{StaticResource DarkComboBox}" Margin="0,0,0,20">
+                        <ComboBoxItem Content="Consultation" />
+                        <ComboBoxItem Content="Follow-up" />
+                        <ComboBoxItem Content="Eye Test" />
+                        <ComboBoxItem Content="Emergency" />
+                    </ComboBox>
+                    <Button Style="{StaticResource PrimaryButton}" Content="Book Appointment" Height="44" />
+                </StackPanel>
+            </Border>
+
+            <!-- AI Chatbot Panel -->
+            <Border Grid.Row="1" Style="{StaticResource Card}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="AI Booking Assistant" Style="{StaticResource HeadingH2}" Margin="0,0,0,8" />
+                    <TextBlock DockPanel.Dock="Top" Text="Conversational AI for rescheduling &amp; holds." Foreground="#8BA0B5" FontSize="11" Margin="0,0,0,16" />
+                    
+                    <Grid DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Style="{StaticResource DarkTextBox}" Height="40" 
+                                 Text="{Binding ChatMessage, UpdateSourceTrigger=PropertyChanged}"
+                                 Tag="Ask assistant..."/>
+                        <Button Grid.Column="1" Style="{StaticResource PrimaryButton}" Content="SEND" 
+                                Command="{Binding SendMessageCommand}" Margin="8,0,0,0" Width="70" Height="40" />
+                    </Grid>
+
+                    <Border Background="#0F1824" CornerRadius="8" Padding="12" BorderBrush="#2A3F55" BorderThickness="1">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <TextBlock Text="{Binding ChatReply}" Foreground="#00BFA5" TextWrapping="Wrap" FontSize="13" />
+                        </ScrollViewer>
+                    </Border>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

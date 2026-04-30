@@ -1,0 +1,108 @@
+<UserControl x:Class="MauEyeCare.Desktop.Views.InventoryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="320" />
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,16,0">
+            <DockPanel>
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+                    <TextBlock Text="Inventory Registry" Style="{StaticResource HeadingH2}" VerticalAlignment="Center" />
+                    <CheckBox DockPanel.Dock="Right" Content="Low Stock Only"
+                              Foreground="{StaticResource TextPrimaryBrush}"
+                              IsChecked="{Binding ShowLowStockOnly}"
+                              VerticalAlignment="Center" />
+                </DockPanel>
+                <DataGrid Style="{StaticResource DarkDataGrid}"
+                          ItemsSource="{Binding Items}"
+                          SelectedItem="{Binding SelectedItem}"
+                          AutoGenerateColumns="False"
+                          ColumnHeaderStyle="{StaticResource DarkDataGridColumnHeader}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Name" Width="*" Binding="{Binding Name}" />
+                        <DataGridTextColumn Header="Category" Width="100" Binding="{Binding Category}" />
+                        <DataGridTextColumn Header="Quantity" Width="80" Binding="{Binding Quantity}" />
+                        <DataGridTextColumn Header="Reorder At" Width="90" Binding="{Binding ReorderLevel}" />
+                        <DataGridTextColumn Header="Price (₹)" Width="90" Binding="{Binding UnitPrice, StringFormat=N2}" />
+                        <DataGridTemplateColumn Header="Status" Width="100">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border CornerRadius="8" Padding="8,3" HorizontalAlignment="Center">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#0D2B1E" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsLowStock}" Value="True">
+                                                        <Setter Property="Background" Value="#2B1200" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock FontSize="10" FontWeight="SemiBold">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="In Stock" />
+                                                    <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsLowStock}" Value="True">
+                                                            <Setter Property="Text" Value="Low Stock" />
+                                                            <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Border>
+
+        <Border Grid.Column="1" Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Manage Stock" Style="{StaticResource HeadingH2}" Margin="0,0,0,16" />
+                
+                <TextBlock Text="ITEM NAME *" Style="{StaticResource FormLabel}" />
+                <TextBox Style="{StaticResource DarkTextBox}" Margin="0,0,0,12" Height="36" 
+                         Text="{Binding NewItemName, UpdateSourceTrigger=PropertyChanged}" />
+
+                <TextBlock Text="CATEGORY *" Style="{StaticResource FormLabel}" />
+                <ComboBox Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                          SelectedValue="{Binding NewItemCategory, Mode=TwoWay}"
+                          SelectedValuePath="Content"
+                          Foreground="White" Background="#0F1824" Margin="0,0,0,12" Height="42">
+                    <ComboBoxItem Content="Medicine" />
+                    <ComboBoxItem Content="Frame" />
+                    <ComboBoxItem Content="Other" />
+                </ComboBox>
+
+                <TextBlock Text="QUANTITY" Style="{StaticResource FormLabel}" />
+                <TextBox Style="{StaticResource DarkTextBox}" Margin="0,0,0,12" Height="36" 
+                         Text="{Binding NewItemQuantity, UpdateSourceTrigger=PropertyChanged}" />
+
+                <TextBlock Text="UNIT PRICE (₹)" Style="{StaticResource FormLabel}" />
+                <TextBox Style="{StaticResource DarkTextBox}" Margin="0,0,0,12" Height="36" 
+                         Text="{Binding NewItemPrice, UpdateSourceTrigger=PropertyChanged}" />
+
+                <TextBlock Text="REORDER LEVEL" Style="{StaticResource FormLabel}" />
+                <TextBox Style="{StaticResource DarkTextBox}" Margin="0,0,0,20" Height="36" 
+                         Text="{Binding NewItemReorder, UpdateSourceTrigger=PropertyChanged}" />
+
+                <Button Style="{StaticResource PrimaryButton}" Content="Add Item" 
+                        Command="{Binding AddItemCommand}" Height="40" Margin="0,0,0,12" />
+
+                <Separator Background="#1E3048" Margin="0,10" />
+
+                <Button Style="{StaticResource SecondaryButton}" Content="Remove Selected Item" 
+                        Command="{Binding RemoveItemCommand}" Height="40" Foreground="#FF453A" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,0 +1,86 @@
+<UserControl x:Class="MauEyeCare.Desktop.Views.PrescriptionView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="1000"
+             Background="Transparent">
+    
+    <Grid Margin="20">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="350"/>
+            <ColumnDefinition Width="20"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Left Column: Selection & Status -->
+        <Border Grid.Column="0" Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Generate Prescription" Style="{StaticResource HeadingH2}" Margin="0,0,0,20"/>
+
+                <!-- Patient Selection -->
+                <TextBlock Text="1. Select Patient" Style="{StaticResource FormLabel}"/>
+                <ComboBox ItemsSource="{Binding Patients}" 
+                          SelectedItem="{Binding SelectedPatient}"
+                          DisplayMemberPath="FullName"
+                          Style="{StaticResource DarkComboBox}"
+                          Margin="0,0,0,20"/>
+
+                <!-- Exam Selection -->
+                <TextBlock Text="2. Select Examination" Style="{StaticResource FormLabel}"/>
+                <ComboBox ItemsSource="{Binding Exams}" 
+                          SelectedItem="{Binding SelectedExam}"
+                          Style="{StaticResource DarkComboBox}"
+                          Margin="0,0,0,30">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock>
+                                <Run Text="{Binding Date, StringFormat='{}{0}'}" FontWeight="SemiBold"/>
+                                <Run Text=" - "/>
+                                <Run Text="{Binding Diagnosis}" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            </TextBlock>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <!-- Generate Action -->
+                <Button Command="{Binding GeneratePdfCommand}" 
+                        Style="{StaticResource PrimaryButton}"
+                        Margin="0,0,0,20">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="FilePdfBox" Width="20" Height="20" Margin="0,0,8,0"/>
+                        <TextBlock Text="Generate &amp; View PDF" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Status Panel -->
+                <Border Background="#1A2A3A" CornerRadius="8" Padding="15">
+                    <StackPanel>
+                        <TextBlock Text="Status" Style="{StaticResource FormLabel}" Margin="0,0,0,5"/>
+                        <TextBlock Text="{Binding StatusMessage}" 
+                                   Foreground="{StaticResource TextPrimaryBrush}" 
+                                   TextWrapping="Wrap"/>
+                        <ProgressBar IsIndeterminate="True" 
+                                     Margin="0,10,0,0" 
+                                     Visibility="{Binding IsGenerating, Converter={StaticResource BoolToVis}}"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- Right Column: Instructions / Preview Placeholder -->
+        <Border Grid.Column="2" Style="{StaticResource Card}">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <materialDesign:PackIcon Kind="FileDocumentOutline" Width="80" Height="80" 
+                                         Foreground="#2A3F55" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                <TextBlock Text="PDF Generation" Style="{StaticResource HeadingH1}" 
+                           HorizontalAlignment="Center" Foreground="#8BA0B5"/>
+                <TextBlock Text="Select a patient and examination to generate a printable PDF prescription. The document will automatically open in your default PDF viewer." 
+                           Style="{StaticResource BodyText}" Foreground="{StaticResource TextSecondaryBrush}"
+                           TextAlignment="Center" MaxWidth="400" Margin="0,15,0,0" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
