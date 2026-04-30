@@ -7,11 +7,29 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Text="⚙  System Settings" Style="{StaticResource HeadingH1}" Margin="0,0,0,24" />
 
-        <Grid Grid.Row="1">
+        <!-- Theme Toggle -->
+        <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,0,24">
+            <StackPanel Orientation="Horizontal">
+                <StackPanel Width="400">
+                    <TextBlock Text="Visual Appearance" Style="{StaticResource HeadingH2}" Margin="0,0,0,8" />
+                    <TextBlock Text="Choose between Light and Dark interface themes for optimal visibility." 
+                               Style="{StaticResource CaptionText}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="40,0,0,0">
+                    <TextBlock Text="Light" VerticalAlignment="Center" Margin="0,0,12,0" Style="{StaticResource BodyText}" />
+                    <ToggleButton Style="{StaticResource MaterialDesignSwitchToggleButton}"
+                                  IsChecked="{Binding IsDarkMode}" />
+                    <TextBlock Text="Dark" VerticalAlignment="Center" Margin="12,0,0,0" Style="{StaticResource BodyText}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="24" />
@@ -59,7 +77,7 @@
             </Border>
         </Grid>
 
-        <Border Grid.Row="2" Background="#1E3048" CornerRadius="8" Padding="20" Margin="0,24,0,0" BorderBrush="#2A3F55" BorderThickness="1">
+        <Border Grid.Row="3" Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="20" Margin="0,24,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />

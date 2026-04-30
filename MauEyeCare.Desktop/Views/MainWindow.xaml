@@ -13,7 +13,7 @@
         Loaded="Window_Loaded">
 
     <Border CornerRadius="12" ClipToBounds="True"
-            Background="{StaticResource DarkSurfaceBrush}">
+            Background="{DynamicResource SurfaceBrush}">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220" />      <!-- Sidebar -->
@@ -21,8 +21,8 @@
             </Grid.ColumnDefinitions>
 
             <!-- ══ SIDEBAR ════════════════════════════════════════════════ -->
-            <Border Grid.Column="0" Background="{StaticResource SidebarGradient}"
-                    BorderBrush="#1E3048" BorderThickness="0,0,1,0">
+            <Border Grid.Column="0" Background="{DynamicResource SidebarGradient}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
                 <DockPanel>
                     <!-- Brand header -->
                     <StackPanel DockPanel.Dock="Top" Margin="20,24,20,8"
@@ -41,28 +41,15 @@
                             <StackPanel Margin="14,0,0,0">
                                 <TextBlock Text="MauEyeCare"
                                            FontSize="16" FontWeight="Bold"
-                                           Foreground="{StaticResource TextPrimaryBrush}" />
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
                                 <TextBlock Text="v1.0  •  Clinic Suite"
-                                           FontSize="9" Foreground="#4A6075" />
+                                           FontSize="9" Foreground="{DynamicResource TextSecondaryBrush}" />
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
 
-                    <!-- Window controls -->
-                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal"
-                                HorizontalAlignment="Right" Margin="0,0,12,16">
-                        <Button Content="—" Width="24" Height="24" FontSize="12"
-                                Background="Transparent" BorderThickness="0"
-                                Foreground="#4A6075" Cursor="Hand"
-                                Click="MinimizeButton_Click" />
-                        <Button Content="✕" Width="24" Height="24" FontSize="12"
-                                Background="Transparent" BorderThickness="0"
-                                Foreground="#4A6075" Cursor="Hand"
-                                Click="CloseButton_Click" />
-                    </StackPanel>
-
                     <!-- Divider -->
-                    <Rectangle DockPanel.Dock="Top" Height="1" Fill="#1E3048" Margin="16,0" />
+                    <Rectangle DockPanel.Dock="Top" Height="1" Fill="{DynamicResource BorderBrush}" Margin="16,0" />
 
                     <!-- Navigation items -->
                     <ScrollViewer DockPanel.Dock="Top" VerticalScrollBarVisibility="Auto"
@@ -70,7 +57,7 @@
                         <StackPanel>
                             <!-- Section: Main -->
                             <TextBlock Text="MAIN" FontSize="9" FontWeight="SemiBold"
-                                       Foreground="#4A6075" Margin="24,8,0,4" />
+                                       Foreground="{DynamicResource TextSecondaryBrush}" Margin="24,8,0,4" />
 
                             <Button x:Name="NavDashboard" Style="{StaticResource NavButton}"
                                     Command="{Binding NavigateCommand}" CommandParameter="Dashboard"
@@ -99,7 +86,7 @@
 
                             <!-- Section: Clinical -->
                             <TextBlock Text="CLINICAL" FontSize="9" FontWeight="SemiBold"
-                                       Foreground="#4A6075" Margin="24,16,0,4" />
+                                       Foreground="{DynamicResource TextSecondaryBrush}" Margin="24,16,0,4" />
 
                             <Button Style="{StaticResource NavButton}"
                                     Command="{Binding NavigateCommand}" CommandParameter="Examination">
@@ -131,7 +118,7 @@
 
                             <!-- Section: Admin -->
                             <TextBlock Text="ADMINISTRATION" FontSize="9" FontWeight="SemiBold"
-                                       Foreground="#4A6075" Margin="24,16,0,4" />
+                                       Foreground="{DynamicResource TextSecondaryBrush}" Margin="24,16,0,4" />
 
                             <Button Style="{StaticResource NavButton}"
                                     Command="{Binding NavigateCommand}" CommandParameter="Billing">
@@ -168,30 +155,33 @@
                     </ScrollViewer>
 
                     <!-- Bottom: User info + logout -->
-                    <Border DockPanel.Dock="Bottom" BorderBrush="#1E3048"
-                            BorderThickness="0,1,0,0" Padding="16,12">
-                        <DockPanel>
-                            <Ellipse Width="36" Height="36" DockPanel.Dock="Left">
-                                <Ellipse.Fill>
-                                    <SolidColorBrush Color="#00BFA5" />
-                                </Ellipse.Fill>
-                            </Ellipse>
-                            <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding CurrentUserName}"
-                                           FontSize="12" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextPrimaryBrush}" />
-                                <TextBlock Text="{Binding CurrentUserRole}"
-                                           FontSize="10" Foreground="{StaticResource TealAccentBrush}" />
-                            </StackPanel>
-                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button Content="⏻" Background="Transparent" BorderThickness="0"
-                                        Foreground="#4A6075" FontSize="16" Cursor="Hand"
-                                        Command="{Binding LogoutCommand}" ToolTip="Log Out" />
-                                <Button Content="Exit App" Background="#E57373" BorderThickness="0"
-                                        Foreground="White" FontSize="10" Padding="8,4" Margin="8,0,0,0"
-                                        Cursor="Hand" Click="CloseButton_Click" />
-                            </StackPanel>
-                        </DockPanel>
+                    <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="0,1,0,0" Padding="16,12" Background="{DynamicResource InputBackgroundBrush}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,8">
+                                <Ellipse Width="32" Height="32" DockPanel.Dock="Left">
+                                    <Ellipse.Fill>
+                                        <ImageBrush ImageSource="https://ui-avatars.com/api/?name=Admin&amp;background=00BFA5&amp;color=fff" />
+                                    </Ellipse.Fill>
+                                </Ellipse>
+                                <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding CurrentUserName}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                    <TextBlock Text="{Binding CurrentUserRole}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                </StackPanel>
+                                <Button Content="Log Out" HorizontalAlignment="Right" VerticalAlignment="Center" 
+                                        Background="Transparent" BorderThickness="0" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11"
+                                        Command="{Binding LogoutCommand}" Cursor="Hand" />
+                            </DockPanel>
+                            <Button Content="EXIT APPLICATION" Background="#E57373" Foreground="White" 
+                                    FontWeight="Bold" FontSize="10" Padding="12,8" BorderThickness="0"
+                                    Cursor="Hand" Click="CloseButton_Click" HorizontalAlignment="Stretch">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="4"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+                        </StackPanel>
                     </Border>
                 </DockPanel>
             </Border>
@@ -204,41 +194,47 @@
                 </Grid.RowDefinitions>
 
                 <!-- Top bar -->
-                <Border Grid.Row="0" Background="{StaticResource DarkSurfaceBrush}"
-                        BorderBrush="#1E3048" BorderThickness="0,0,0,1"
-                        Padding="24,12">
-                    <DockPanel>
+                <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1"
+                        Padding="24,12" MouseDown="TitleBar_MouseDown" Height="64">
+                    <Grid>
                         <TextBlock Text="{Binding CurrentPageTitle}"
                                    Style="{StaticResource HeadingH2}"
-                                   DockPanel.Dock="Left" VerticalAlignment="Center" />
+                                   VerticalAlignment="Center" HorizontalAlignment="Left" />
 
-                        <!-- Search bar -->
-                        <Border DockPanel.Dock="Right" Background="#0F1824"
-                                CornerRadius="20" Padding="12,8" MinWidth="260"
-                                BorderBrush="#2A3F55" BorderThickness="1">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🔍" FontSize="13" Foreground="#4A6075"
-                                           VerticalAlignment="Center" Margin="0,0,8,0" />
-                                <TextBox Background="Transparent" BorderThickness="0"
-                                         Foreground="{StaticResource TextPrimaryBrush}"
-                                         Text="{Binding GlobalSearch, UpdateSourceTrigger=PropertyChanged}"
-                                         FontSize="12" MinWidth="200" VerticalAlignment="Center"
-                                         CaretBrush="{StaticResource TealAccentBrush}" />
-                            </StackPanel>
-                        </Border>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <!-- Search bar -->
+                            <Border Background="{DynamicResource InputBackgroundBrush}" CornerRadius="18" Padding="12,6" MinWidth="220"
+                                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,24,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🔍" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox Background="Transparent" BorderThickness="0" Foreground="{DynamicResource TextPrimaryBrush}"
+                                             Text="{Binding GlobalSearch, UpdateSourceTrigger=PropertyChanged}"
+                                             FontSize="12" MinWidth="160" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
 
-                        <!-- Notification bell -->
-                        <Button DockPanel.Dock="Right" Background="Transparent"
-                                BorderThickness="0" Cursor="Hand" Margin="0,0,16,0">
-                            <StackPanel>
-                                <TextBlock Text="🔔" FontSize="18" />
-                                <Ellipse Width="8" Height="8" Fill="#FF5252"
-                                         HorizontalAlignment="Right" Margin="0,-8,0,0"
-                                         Visibility="{Binding HasAlerts,
-                                             Converter={StaticResource BoolToVis}}" />
-                            </StackPanel>
-                        </Button>
-                    </DockPanel>
+                            <!-- Notification -->
+                            <Button Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,0,24,0">
+                                <Grid>
+                                    <TextBlock Text="🔔" FontSize="20" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <Ellipse Width="8" Height="8" Fill="#FF5252" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                             Visibility="{Binding HasAlerts, Converter={StaticResource BoolToVis}}" Margin="0,-2,0,0" />
+                                </Grid>
+                            </Button>
+
+                            <!-- Divider -->
+                            <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Margin="0,0,24,0" />
+
+                            <!-- Window controls -->
+                            <Button Content="—" Width="32" Height="32" FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                    Click="MinimizeButton_Click" />
+                            <Button Content="✕" Width="32" Height="32" FontSize="14" Foreground="#E57373"
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="8,0,0,0"
+                                    Click="CloseButton_Click" />
+                        </StackPanel>
+                    </Grid>
                 </Border>
 
                 <!-- Page Content Frame -->

@@ -5,6 +5,8 @@ using MauEyeCare.Desktop.Views;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Media;
+using MaterialDesignThemes.Wpf;
 
 namespace MauEyeCare.Desktop.ViewModels;
 
@@ -1265,11 +1267,58 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _roleStatus = string.Empty;
     [ObservableProperty] private bool _hasRoleError = false;
 
+    [ObservableProperty] private bool _isDarkMode = true;
     [ObservableProperty] private string _updateStatus = "Application is up to date.";
 
     public SettingsViewModel(IApiService api)
     {
         _api = api;
+    }
+
+    partial void OnIsDarkModeChanged(bool value)
+    {
+        UpdateTheme(value);
+    }
+
+    private void UpdateTheme(bool isDark)
+    {
+        // 1. Update MaterialDesign Theme
+        var paletteHelper = new PaletteHelper();
+        ITheme theme = paletteHelper.GetTheme();
+        theme.SetBaseTheme(isDark ? Theme.Dark : Theme.Light);
+        paletteHelper.SetTheme(theme);
+
+        // 2. Update Custom Brushes in Resources
+        UpdateCustomResources(isDark);
+    }
+
+    private void UpdateCustomResources(bool isDark)
+    {
+        var res = Application.Current.Resources;
+
+        // Semantic Colors
+        res["SurfaceColor"] = isDark ? Color.FromRgb(15, 24, 36) : Color.FromRgb(245, 247, 250);
+        res["CardColor"] = isDark ? Color.FromRgb(30, 45, 61) : Color.FromRgb(255, 255, 255);
+        res["InputBackgroundColor"] = isDark ? Color.FromRgb(13, 19, 28) : Color.FromRgb(255, 255, 255);
+        res["BorderColor"] = isDark ? Color.FromRgb(42, 63, 85) : Color.FromRgb(209, 217, 230);
+        
+        res["TextPrimaryColor"] = isDark ? Color.FromRgb(232, 237, 242) : Color.FromRgb(26, 35, 64);
+        res["TextSecondaryColor"] = isDark ? Color.FromRgb(139, 160, 181) : Color.FromRgb(92, 107, 137);
+
+        // Sidebar Gradient Updates
+        if (res["SidebarGradient"] is LinearGradientBrush sidebarGradient)
+        {
+            if (isDark)
+            {
+                sidebarGradient.GradientStops[0].Color = Color.FromRgb(26, 35, 64); // NavyBlue
+                sidebarGradient.GradientStops[1].Color = Color.FromRgb(15, 24, 36); // DarkSurface
+            }
+            else
+            {
+                sidebarGradient.GradientStops[0].Color = Color.FromRgb(240, 244, 248);
+                sidebarGradient.GradientStops[1].Color = Color.FromRgb(225, 232, 240);
+            }
+        }
     }
 
     [RelayCommand]

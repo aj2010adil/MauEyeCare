@@ -26,10 +26,10 @@
                             Content="+ New Patient" Command="{Binding NewPatientCommand}" />
                 </DockPanel>
 
-                <Border DockPanel.Dock="Top" Background="#0F1824" CornerRadius="8"
-                        Padding="12,8" Margin="0,0,0,16" BorderBrush="#2A3F55" BorderThickness="1">
+                <Border DockPanel.Dock="Top" Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+                        Padding="12,8" Margin="0,0,0,16" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="🔍" Foreground="#4A6075" VerticalAlignment="Center"
+                        <TextBlock Text="🔍" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"
                                    Margin="0,0,8,0" />
                         <TextBox Background="Transparent" BorderThickness="0"
                                  Foreground="{StaticResource TextPrimaryBrush}"
@@ -117,9 +117,9 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0">
                             <TextBlock Text="DATE OF BIRTH *" Style="{StaticResource FormLabel}" />
-                            <DatePicker Background="#0F1824"
-                                        Foreground="{StaticResource TextPrimaryBrush}"
-                                        BorderBrush="#2A3F55" BorderThickness="1"
+                            <DatePicker Background="{DynamicResource SurfaceBrush}"
+                                        Foreground="{DynamicResource TextPrimaryBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                         Height="42" FontSize="13"
                                         SelectedDate="{Binding EditPatient.DateOfBirth}" />
                         </StackPanel>
@@ -130,8 +130,8 @@
                                       materialDesign:HintAssist.Hint="Select Gender"
                                       SelectedValue="{Binding EditPatient.Gender, Mode=TwoWay}"
                                       SelectedValuePath="Content"
-                                      Foreground="White"
-                                      Background="#0F1824">
+                                      Foreground="{DynamicResource TextPrimaryBrush}"
+                                      Background="{DynamicResource SurfaceBrush}">
                                 <ComboBoxItem Content="Male" />
                                 <ComboBoxItem Content="Female" />
                                 <ComboBoxItem Content="Other" />
@@ -162,7 +162,7 @@
                              Text="{Binding EditPatient.Allergies, UpdateSourceTrigger=PropertyChanged}" />
 
                     <CheckBox Content="Explicit Consent for AI Image Analysis"
-                              Foreground="White" Margin="0,0,0,14"
+                              Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,14"
                               IsChecked="{Binding EditPatient.HasAiConsent, Mode=TwoWay}" />
 
                     <DockPanel LastChildFill="False" Margin="0,0,0,4">
@@ -188,7 +188,7 @@
                                 Margin="12,0,0,0" MinWidth="80" />
                     </StackPanel>
 
-                    <Border Background="#0D2B1E" CornerRadius="8" Padding="14,10"
+                    <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="14,10"
                             Margin="0,12,0,0"
                             Visibility="{Binding SaveSuccess, Converter={StaticResource BoolToVis}}">
                         <TextBlock Text="✔  Patient record saved successfully."

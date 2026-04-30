@@ -14,8 +14,8 @@
                     <TextBlock Text="Appointments" Style="{StaticResource HeadingH2}"
                                HorizontalAlignment="Left" VerticalAlignment="Center" />
                     <DatePicker HorizontalAlignment="Right" VerticalAlignment="Center"
-                                Width="180" Background="#0F1824"
-                                Foreground="{StaticResource TextPrimaryBrush}"
+                                Width="180" Background="{DynamicResource SurfaceBrush}"
+                                Foreground="{DynamicResource TextPrimaryBrush}"
                                 SelectedDate="{Binding SelectedDate}" />
                 </Grid>
                 <DataGrid Style="{StaticResource DarkDataGrid}"
@@ -62,7 +62,7 @@
             <Border Grid.Row="1" Style="{StaticResource Card}">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Text="AI Booking Assistant" Style="{StaticResource HeadingH2}" Margin="0,0,0,8" />
-                    <TextBlock DockPanel.Dock="Top" Text="Conversational AI for rescheduling &amp; holds." Foreground="#8BA0B5" FontSize="11" Margin="0,0,0,16" />
+                    <TextBlock DockPanel.Dock="Top" Text="Conversational AI for rescheduling &amp; holds." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,0,0,16" />
                     
                     <Grid DockPanel.Dock="Bottom" Margin="0,8,0,0">
                         <Grid.ColumnDefinitions>
@@ -76,9 +76,9 @@
                                 Command="{Binding SendMessageCommand}" Margin="8,0,0,0" Width="70" Height="40" />
                     </Grid>
 
-                    <Border Background="#0F1824" CornerRadius="8" Padding="12" BorderBrush="#2A3F55" BorderThickness="1">
+                    <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <TextBlock Text="{Binding ChatReply}" Foreground="#00BFA5" TextWrapping="Wrap" FontSize="13" />
+                            <TextBlock Text="{Binding ChatReply}" Foreground="{DynamicResource TealAccentBrush}" TextWrapping="Wrap" FontSize="13" />
                         </ScrollViewer>
                     </Border>
                 </DockPanel>

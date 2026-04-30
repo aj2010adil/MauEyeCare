@@ -56,7 +56,7 @@
                 </Button>
 
                 <!-- Status Panel -->
-                <Border Background="#1A2A3A" CornerRadius="8" Padding="15">
+                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="15">
                     <StackPanel>
                         <TextBlock Text="Status" Style="{StaticResource FormLabel}" Margin="0,0,0,5"/>
                         <TextBlock Text="{Binding StatusMessage}" 
@@ -74,9 +74,9 @@
         <Border Grid.Column="2" Style="{StaticResource Card}">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                 <materialDesign:PackIcon Kind="FileDocumentOutline" Width="80" Height="80" 
-                                         Foreground="#2A3F55" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                                         Foreground="{DynamicResource BorderBrush}" HorizontalAlignment="Center" Margin="0,0,0,20"/>
                 <TextBlock Text="PDF Generation" Style="{StaticResource HeadingH1}" 
-                           HorizontalAlignment="Center" Foreground="#8BA0B5"/>
+                           HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
                 <TextBlock Text="Select a patient and examination to generate a printable PDF prescription. The document will automatically open in your default PDF viewer." 
                            Style="{StaticResource BodyText}" Foreground="{StaticResource TextSecondaryBrush}"
                            TextAlignment="Center" MaxWidth="400" Margin="0,15,0,0" TextWrapping="Wrap"/>

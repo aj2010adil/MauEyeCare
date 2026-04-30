@@ -1,31 +1,38 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- ── Brand Colors ──────────────────────────────────────────────────── -->
+    <!-- ── Theme-Dependent Colors ────────────────────────────────────────── -->
+    <Color x:Key="SurfaceColor">#0F1824</Color>
+    <Color x:Key="CardColor">#1E2D3D</Color>
+    <Color x:Key="InputBackgroundColor">#0D131C</Color>
+    <Color x:Key="BorderColor">#2A3F55</Color>
+    
+    <Color x:Key="TextPrimaryColor">#E8EDF2</Color>
+    <Color x:Key="TextSecondaryColor">#8BA0B5</Color>
+
+    <!-- ── Static Brand Colors ─────────────────────────────────────────── -->
     <Color x:Key="NavyBlue">#1A2340</Color>
     <Color x:Key="TealAccent">#00BFA5</Color>
     <Color x:Key="TealDark">#008E76</Color>
-    <Color x:Key="DarkSurface">#0F1824</Color>
-    <Color x:Key="CardSurface">#1E2D3D</Color>
-    <Color x:Key="TextPrimary">#E8EDF2</Color>
-    <Color x:Key="TextSecondary">#8BA0B5</Color>
     <Color x:Key="ErrorRed">#FF5252</Color>
     <Color x:Key="WarningAmber">#FFB300</Color>
     <Color x:Key="SuccessGreen">#00C853</Color>
-    <Color x:Key="LowStock">#FF6D00</Color>
 
     <!-- ── Brushes ────────────────────────────────────────────────────────── -->
-    <SolidColorBrush x:Key="NavyBlueBrush" Color="{StaticResource NavyBlue}" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{DynamicResource SurfaceColor}" />
+    <SolidColorBrush x:Key="CardBrush" Color="{DynamicResource CardColor}" />
+    <SolidColorBrush x:Key="InputBackgroundBrush" Color="{DynamicResource InputBackgroundColor}" />
+    <SolidColorBrush x:Key="BorderBrush" Color="{DynamicResource BorderColor}" />
+    
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondaryColor}" />
+    
     <SolidColorBrush x:Key="TealAccentBrush" Color="{StaticResource TealAccent}" />
-    <SolidColorBrush x:Key="DarkSurfaceBrush" Color="{StaticResource DarkSurface}" />
-    <SolidColorBrush x:Key="CardSurfaceBrush" Color="{StaticResource CardSurface}" />
-    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimary}" />
-    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}" />
     <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorRed}" />
     <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningAmber}" />
     <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessGreen}" />
 
-    <!-- Gradient for header / sidebar -->
+    <!-- Sidebar Gradients -->
     <LinearGradientBrush x:Key="SidebarGradient" StartPoint="0,0" EndPoint="0,1">
         <GradientStop Color="#1A2340" Offset="0" />
         <GradientStop Color="#0F1824" Offset="1" />

@@ -6,31 +6,31 @@
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
         <Setter Property="FontSize" Value="26" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
     </Style>
 
     <Style x:Key="HeadingH2" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
         <Setter Property="FontSize" Value="18" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
     </Style>
 
     <Style x:Key="BodyText" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
         <Setter Property="FontSize" Value="13" />
-        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
     </Style>
 
     <Style x:Key="CaptionText" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
         <Setter Property="FontSize" Value="11" />
-        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
     </Style>
 
     <!-- ── Card / Panel ──────────────────────────────────────────────────── -->
     <Style x:Key="Card" TargetType="Border">
-        <Setter Property="Background" Value="{StaticResource CardSurfaceBrush}" />
+        <Setter Property="Background" Value="{DynamicResource CardBrush}" />
         <Setter Property="CornerRadius" Value="12" />
         <Setter Property="Padding" Value="20" />
         <Setter Property="Effect">
@@ -42,7 +42,7 @@
 
     <!-- ── KPI Stat Card ──────────────────────────────────────────────────── -->
     <Style x:Key="StatCard" TargetType="Border">
-        <Setter Property="Background" Value="{StaticResource CardSurfaceBrush}" />
+        <Setter Property="Background" Value="{DynamicResource CardBrush}" />
         <Setter Property="CornerRadius" Value="12" />
         <Setter Property="Padding" Value="16,12" />
         <Setter Property="MinWidth" Value="160" />
@@ -91,11 +91,11 @@
     <!-- ── Secondary Button ──────────────────────────────────────────────── -->
     <Style x:Key="SecondaryButton" TargetType="Button">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{StaticResource TealAccentBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TealAccentBrush}" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="Padding" Value="18,10" />
         <Setter Property="BorderThickness" Value="1.5" />
-        <Setter Property="BorderBrush" Value="{StaticResource TealAccentBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource TealAccentBrush}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
             <Setter.Value>
@@ -108,7 +108,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#1A3330" />
+                            <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -119,7 +119,7 @@
     <!-- ── Sidebar Nav Button ────────────────────────────────────────────── -->
     <Style x:Key="NavButton" TargetType="Button">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="#8BA0B5" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="Padding" Value="16,14" />
         <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -135,8 +135,8 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#1E3048" />
-                            <Setter Property="Foreground" Value="#E8EDF2" />
+                            <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -146,13 +146,13 @@
 
     <!-- ── Dark TextBox ──────────────────────────────────────────────────── -->
     <Style x:Key="DarkTextBox" TargetType="TextBox">
-        <Setter Property="Background" Value="#0D131C" />
-        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-        <Setter Property="BorderBrush" Value="#1E2D3D" />
+        <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource CardBrush}" />
         <Setter Property="BorderThickness" Value="1.5" />
         <Setter Property="Padding" Value="12,10" />
         <Setter Property="FontSize" Value="13" />
-        <Setter Property="CaretBrush" Value="{StaticResource TealAccentBrush}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource TealAccentBrush}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
@@ -164,11 +164,8 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsFocused" Value="True">
-                            <Setter Property="BorderBrush" Value="{StaticResource TealAccentBrush}" />
-                            <Setter Property="Background" Value="#0F1824" />
-                        </Trigger>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="BorderBrush" Value="#2A3F55" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource TealAccentBrush}" />
+                            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -178,8 +175,8 @@
 
     <!-- ── ComboBoxItem Implicit Style ────────────────────────────────────────── -->
     <Style TargetType="ComboBoxItem">
-        <Setter Property="Background" Value="#0F1824" />
-        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         <Setter Property="Padding" Value="10,8" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Template">
@@ -191,8 +188,8 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="true">
-                            <Setter TargetName="border" Property="Background" Value="#1A3330" />
-                            <Setter Property="Foreground" Value="White" />
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                         </Trigger>
                         <Trigger Property="IsSelected" Value="true">
                             <Setter TargetName="border" Property="Background" Value="#00BFA5" />
@@ -206,22 +203,22 @@
 
     <!-- ── Dark ComboBox ─────────────────────────────────────────────────── -->
     <Style x:Key="DarkComboBox" TargetType="ComboBox" BasedOn="{StaticResource MaterialDesignOutlinedComboBox}">
-        <Setter Property="Background" Value="#0F1824" />
-        <Setter Property="Foreground" Value="White" />
-        <Setter Property="BorderBrush" Value="#2A3F55" />
+        <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
         <Setter Property="Padding" Value="10,8" />
         <Setter Property="FontSize" Value="13" />
     </Style>
 
     <!-- ── DataGrid ──────────────────────────────────────────────────────── -->
     <Style x:Key="DarkDataGrid" TargetType="DataGrid">
-        <Setter Property="Background" Value="{StaticResource CardSurfaceBrush}" />
-        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="GridLinesVisibility" Value="Horizontal" />
-        <Setter Property="HorizontalGridLinesBrush" Value="#1E3048" />
+        <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource BorderBrush}" />
         <Setter Property="RowBackground" Value="Transparent" />
-        <Setter Property="AlternatingRowBackground" Value="#17253A" />
+        <Setter Property="AlternatingRowBackground" Value="{DynamicResource SurfaceBrush}" />
         <Setter Property="HeadersVisibility" Value="Column" />
         <Setter Property="AutoGenerateColumns" Value="False" />
         <Setter Property="CanUserAddRows" Value="False" />
@@ -229,7 +226,7 @@
     </Style>
 
     <Style x:Key="DarkDataGridColumnHeader" TargetType="DataGridColumnHeader">
-        <Setter Property="Background" Value="#0F1824" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
         <Setter Property="Foreground" Value="{StaticResource TealAccentBrush}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="FontSize" Value="12" />
@@ -241,13 +238,13 @@
     <Style x:Key="FormLabel" TargetType="TextBlock">
         <Setter Property="FontSize" Value="11" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
         <Setter Property="Margin" Value="0,0,0,4" />
     </Style>
 
     <!-- ── AI Disclaimer Banner ──────────────────────────────────────────── -->
     <Style x:Key="AIDisclaimerBanner" TargetType="Border">
-        <Setter Property="Background" Value="#2A1F00" />
+        <Setter Property="Background" Value="{DynamicResource CardBrush}" />
         <Setter Property="BorderBrush" Value="{StaticResource WarningBrush}" />
         <Setter Property="BorderThickness" Value="0,0,0,0" />
         <Setter Property="CornerRadius" Value="8" />

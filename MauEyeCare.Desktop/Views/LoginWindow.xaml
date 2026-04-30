@@ -11,8 +11,8 @@
         Background="Transparent">
 
 
-    <Border CornerRadius="16" Background="{StaticResource DarkSurfaceBrush}"
-            BorderBrush="#1E3048" BorderThickness="1">
+    <Border CornerRadius="16" Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
         <Border.Effect>
             <DropShadowEffect Color="#000000" BlurRadius="40" ShadowDepth="10" Opacity="0.7" />
         </Border.Effect>
@@ -24,7 +24,7 @@
             </Grid.RowDefinitions>
 
             <!-- Drag bar -->
-            <Border Grid.Row="0" Background="#17253A" Height="32"
+            <Border Grid.Row="0" Background="{DynamicResource CardBrush}" Height="32"
                     MouseDown="DragBar_MouseDown">
                 <Button HorizontalAlignment="Right" VerticalAlignment="Center"
                         Width="32" Height="32"
@@ -77,8 +77,8 @@
                 <!-- Password -->
                 <TextBlock Text="PASSWORD" Style="{StaticResource FormLabel}" />
                 <PasswordBox x:Name="PasswordBox" Height="42" Margin="0,0,0,24"
-                             Background="#0F1824" Foreground="{StaticResource TextPrimaryBrush}"
-                             BorderBrush="#2A3F55" BorderThickness="1"
+                             Background="{DynamicResource SurfaceBrush}" Foreground="{StaticResource TextPrimaryBrush}"
+                             BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                              Padding="10,8" FontSize="13"
                              PasswordChanged="PasswordBox_PasswordChanged" />
 
@@ -102,7 +102,7 @@
 
                 <TextBlock Text="Default: admin@maueyecare.com / Admin@12345"
                            HorizontalAlignment="Center" FontSize="10"
-                           Foreground="#4A6075" Margin="0,20,0,0" />
+                           Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,20,0,0" />
             </StackPanel>
         </Grid>
     </Border>
