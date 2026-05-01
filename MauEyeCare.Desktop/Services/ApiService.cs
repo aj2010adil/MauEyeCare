@@ -115,6 +115,8 @@ public interface IApiService
     Task<AiAnalysisResponse?> AnalyzeImageAsync(string imagePath);
     Task<bool> CheckAiServiceHealthAsync();
     Task<string?> GetChatbotReplyAsync(string message);
+    Task<string?> GetOllamaChatReplyAsync(string prompt, string? model = null);
+    string SelectedOllamaModel { get; set; }
     Task<bool> SubmitFeedbackAsync(Guid imageId, string correctLabel, string imageBase64);
 }
 
@@ -402,6 +404,34 @@ public class ApiService : IApiService
             return res?.reply;
         }
         catch { return "Failed to reach booking assistant."; }
+    }
+
+    public string SelectedOllamaModel { get; set; } = "llama3";
+
+    public async Task<string?> GetOllamaChatReplyAsync(string prompt, string? model = null)
+    {
+        try
+        {
+            var targetModel = model ?? SelectedOllamaModel;
+            var requestBody = new
+            {
+                model = targetModel,
+                prompt = prompt,
+                stream = false
+            };
+            // Use a local client for Ollama
+            using var ollamaHttp = new HttpClient { BaseAddress = new Uri("http://localhost:11434"), Timeout = TimeSpan.FromSeconds(30) };
+            var response = await ollamaHttp.PostAsJsonAsync("/api/generate", requestBody);
+            if (!response.IsSuccessStatusCode) return "Ollama returned error: " + response.StatusCode;
+
+            var json = await response.Content.ReadAsStringAsync();
+            dynamic? res = JsonConvert.DeserializeObject(json);
+            return res?.response;
+        }
+        catch (Exception ex)
+        {
+            return $"Ollama unreachable on localhost:11434. Error: {ex.Message}";
+        }
     }
 
     public async Task<bool> SubmitFeedbackAsync(Guid imageId, string correctLabel, string imageBase64)

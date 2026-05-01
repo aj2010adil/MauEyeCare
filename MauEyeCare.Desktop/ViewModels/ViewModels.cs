@@ -558,12 +558,22 @@ public partial class AppointmentsViewModel : ObservableObject
         
         var msg = ChatMessage;
         ChatMessage = string.Empty;
-        ChatReply = "Thinking...";
+        ChatReply = "AI Thinking...";
         
         try
         {
-            var reply = await _api.GetChatbotReplyAsync(msg);
-            ChatReply = reply ?? "Unable to formulate response ranges.";
+            // Use Ollama by default if available
+            var reply = await _api.GetOllamaChatReplyAsync(msg);
+            if (reply != null && !reply.Contains("unreachable"))
+            {
+                ChatReply = reply;
+            }
+            else
+            {
+                // Fallback to legacy chatbot or error message
+                var fallback = await _api.GetChatbotReplyAsync(msg);
+                ChatReply = fallback ?? "Ollama is offline and cloud fallback failed.";
+            }
         }
         catch (Exception ex)
         {
@@ -1345,6 +1355,15 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty] private bool _isDarkMode = true;
     [ObservableProperty] private string _updateStatus = "Application is up to date.";
+
+    // Ollama Settings
+    [ObservableProperty] private string _ollamaModel = "llama3";
+    [ObservableProperty] private bool _useOllama = true;
+
+    partial void OnOllamaModelChanged(string value)
+    {
+        _api.SelectedOllamaModel = value;
+    }
 
     public SettingsViewModel(IApiService api)
     {
