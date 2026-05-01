@@ -1,49 +1,57 @@
 #!/usr/bin/env pwsh
-<#
-.SYNOPSIS
-    MauEyeCare — Rebuild and Run Suite
-    Cleans, builds, and starts all dependencies (API, Desktop, AI Microservice).
-#>
-
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $apiDir = Join-Path $root "MauEyeCare.API"
 $desktopDir = Join-Path $root "MauEyeCare.Desktop"
 $aiDir = Join-Path $root "MauEyeCare.AI"
+$mcpDir = Join-Path $root "MauEyeCare.MCP"
 
 Write-Host "══════════════════════════════════════════" -ForegroundColor Cyan
-Write-Host "  MauEyeCare — Clean and Build Protocol" -ForegroundColor Cyan
+Write-Host "  MauEyeCare — Robust Bootstrapper" -ForegroundColor Cyan
 Write-Host "══════════════════════════════════════════" -ForegroundColor Cyan
 
-# 1. Rebuild API
-Write-Host "`n[1/3] Building API..." -ForegroundColor Green
-dotnet clean "$apiDir\MauEyeCare.API.csproj"
+# 0. Kill existing processes
+Write-Host "Cleaning up existing processes..." -ForegroundColor Yellow
+Stop-Process -Name "dotnet", "python", "MauEyeCare.Desktop", "MauEyeCare.API" -Force -ErrorAction SilentlyContinue
+
+# 1. Build everything
+Write-Host "`n[1/4] Building API..." -ForegroundColor Green
 dotnet build "$apiDir\MauEyeCare.API.csproj"
 
-# 2. Rebuild Desktop
-Write-Host "`n[2/3] Building Desktop App..." -ForegroundColor Green
-dotnet clean "$desktopDir\MauEyeCare.Desktop.csproj"
+Write-Host "`n[2/4] Building Desktop..." -ForegroundColor Green
 dotnet build "$desktopDir\MauEyeCare.Desktop.csproj"
 
-# 3. Build MCP Clinical Server
-Write-Host "`n[NEW] Building MCP Clinical Server..." -ForegroundColor Green
-dotnet build "$root\MauEyeCare.MCP\MauEyeCare.MCP.csproj"
+Write-Host "`n[3/4] Building MCP Server..." -ForegroundColor Green
+dotnet build "$mcpDir\MauEyeCare.MCP.csproj"
 
-# 3. Start AI Microservice
-Write-Host "`n[3/3] Launching AI and Continuous Learning Pipelines..." -ForegroundColor Green
-if (Test-Path "$aiDir\venv") {
-    Start-Process "$aiDir\venv\Scripts\python.exe" -ArgumentList "$aiDir\app.py" -WorkingDirectory $aiDir -NoNewWindow
+Write-Host "`n[4/4] Building AI dependencies..." -ForegroundColor Green
+# (Assume python is in path and requirements are met)
+
+# 2. Start AI in a new window
+Write-Host "`nLaunching AI Service..." -ForegroundColor Green
+$aiCmd = "cd `"$aiDir`" ; python app.py"
+Start-Process "powershell" -ArgumentList "-NoExit", "-Command", "$aiCmd"
+
+# 3. Start API in a new window
+Write-Host "Launching API Backend..." -ForegroundColor Green
+$apiCmd = "cd `"$root`" ; dotnet run --project `"$apiDir\MauEyeCare.API.csproj`""
+Start-Process "powershell" -ArgumentList "-NoExit", "-Command", "$apiCmd"
+
+# 4. Start MCP Server in a new window (Optional, for developer use)
+Write-Host "Launching MCP Server..." -ForegroundColor Green
+$mcpCmd = "cd `"$mcpDir`" ; dotnet run"
+Start-Process "powershell" -ArgumentList "-NoExit", "-Command", "$mcpCmd"
+
+# 5. Start Desktop App
+Write-Host "Launching WPF Frontend..." -ForegroundColor Green
+$desktopExe = Join-Path $desktopDir "bin\Debug\net8.0-windows\MauEyeCare.Desktop.exe"
+if (Test-Path $desktopExe) {
+    Start-Process $desktopExe -WorkingDirectory $root
 } else {
-    Start-Process "python" -ArgumentList "$aiDir\app.py" -WorkingDirectory $aiDir -NoNewWindow
+    Write-Host "Desktop EXE not found, using dotnet run..." -ForegroundColor Yellow
+    dotnet run --project "$desktopDir\MauEyeCare.Desktop.csproj" --no-build
 }
 
-# 4. Run API in background
-Write-Host "`nStarting API Backend..." -ForegroundColor Green
-$apiProc = Start-Process "dotnet" -ArgumentList "run --project `"$apiDir\MauEyeCare.API.csproj`"" -WorkingDirectory $root -PassThru -NoNewWindow
-
-# 5. Run Desktop
-Write-Host "`nLaunching WPF Frontend..." -ForegroundColor Green
-Start-Process "dotnet" -ArgumentList "run --project `"$desktopDir\MauEyeCare.Desktop.csproj`"" -WorkingDirectory $root
-
-Write-Host "`n✔ MauEyeCare Clinical Suite Bootstrapped!" -ForegroundColor Green
+Write-Host "`n✔ MauEyeCare Suite is starting!" -ForegroundColor Green
+Write-Host "Check the newly opened terminal windows for logs." -ForegroundColor White
