@@ -153,6 +153,14 @@
                             </Button>
 
                             <Button Style="{StaticResource NavButton}"
+                                    Command="{Binding NavigateCommand}" CommandParameter="HowTo">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📖" FontSize="16" Width="24" />
+                                    <TextBlock Text="User Guide" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button Style="{StaticResource NavButton}"
                                     Command="{Binding NavigateCommand}" CommandParameter="ReleaseNotes"
                                     Margin="0,20,0,0">
                                 <StackPanel Orientation="Horizontal">
@@ -236,14 +244,17 @@
                             <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Margin="0,0,24,0" />
 
                             <!-- Window controls -->
-                            <Button Content="—" Width="32" Height="32" FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                            <Button Content="—" Width="36" Height="36" FontSize="16" Foreground="{DynamicResource TextSecondaryBrush}"
                                     Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                    Style="{StaticResource MaterialDesignFlatButton}"
                                     Click="MinimizeButton_Click" />
-                            <Button x:Name="MaximizeButton" Content="▢" Width="32" Height="32" FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                            <Button x:Name="MaximizeButton" Content="▢" Width="36" Height="36" FontSize="16" Foreground="{DynamicResource TextSecondaryBrush}"
                                     Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="4,0"
+                                    Style="{StaticResource MaterialDesignFlatButton}"
                                     Click="MaximizeRestoreButton_Click" />
-                            <Button Content="✕" Width="32" Height="32" FontSize="14" Foreground="#E57373"
+                            <Button Content="✕" Width="36" Height="36" FontSize="16" Foreground="#FF5252"
                                     Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="4,0,0,0"
+                                    Style="{StaticResource MaterialDesignFlatButton}"
                                     Click="CloseButton_Click" />
                         </StackPanel>
                     </Grid>

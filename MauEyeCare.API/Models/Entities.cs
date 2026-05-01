@@ -91,27 +91,39 @@ public class Exam
     [Required] public string DoctorUserId { get; set; } = string.Empty;
     [Required] public DateTime ExamDate { get; set; }
 
-    // Right Eye (OD)
-    [Column(TypeName = "decimal(5,2)")] public decimal? OD_Sphere { get; set; }
-    [Column(TypeName = "decimal(5,2)")] public decimal? OD_Cylinder { get; set; }
-    public int? OD_Axis { get; set; }
-    [MaxLength(10)] public string? OD_VA { get; set; }
-    [Column(TypeName = "decimal(5,1)")] public decimal? OD_IOP { get; set; }
-    [MaxLength(10)] public string? OD_Add { get; set; }
+    // Without Glasses (WOG)
+    [Column(TypeName = "decimal(5,2)")] public decimal? WOG_OD_Sphere { get; set; }
+    [Column(TypeName = "decimal(5,2)")] public decimal? WOG_OD_Cylinder { get; set; }
+    public int? WOG_OD_Axis { get; set; }
+    [MaxLength(10)] public string? WOG_OD_VA { get; set; }
+    [Column(TypeName = "decimal(5,1)")] public decimal? WOG_OD_IOP { get; set; }
+    [MaxLength(10)] public string? WOG_OD_Add { get; set; }
 
-    // Left Eye (OS)
-    [Column(TypeName = "decimal(5,2)")] public decimal? OS_Sphere { get; set; }
-    [Column(TypeName = "decimal(5,2)")] public decimal? OS_Cylinder { get; set; }
-    public int? OS_Axis { get; set; }
-    [MaxLength(10)] public string? OS_VA { get; set; }
-    [Column(TypeName = "decimal(5,1)")] public decimal? OS_IOP { get; set; }
-    [MaxLength(10)] public string? OS_Add { get; set; }
+    [Column(TypeName = "decimal(5,2)")] public decimal? WOG_OS_Sphere { get; set; }
+    [Column(TypeName = "decimal(5,2)")] public decimal? WOG_OS_Cylinder { get; set; }
+    public int? WOG_OS_Axis { get; set; }
+    [MaxLength(10)] public string? WOG_OS_VA { get; set; }
+    [Column(TypeName = "decimal(5,1)")] public decimal? WOG_OS_IOP { get; set; }
+    [MaxLength(10)] public string? WOG_OS_Add { get; set; }
 
-    // NV (Near Vision)
+    // With Glasses (WG)
+    [Column(TypeName = "decimal(5,2)")] public decimal? WG_OD_Sphere { get; set; }
+    [Column(TypeName = "decimal(5,2)")] public decimal? WG_OD_Cylinder { get; set; }
+    public int? WG_OD_Axis { get; set; }
+    [MaxLength(10)] public string? WG_OD_VA { get; set; }
+    [Column(TypeName = "decimal(5,1)")] public decimal? WG_OD_IOP { get; set; }
+    [MaxLength(10)] public string? WG_OD_Add { get; set; }
+
+    [Column(TypeName = "decimal(5,2)")] public decimal? WG_OS_Sphere { get; set; }
+    [Column(TypeName = "decimal(5,2)")] public decimal? WG_OS_Cylinder { get; set; }
+    public int? WG_OS_Axis { get; set; }
+    [MaxLength(10)] public string? WG_OS_VA { get; set; }
+    [Column(TypeName = "decimal(5,1)")] public decimal? WG_OS_IOP { get; set; }
+    [MaxLength(10)] public string? WG_OS_Add { get; set; }
+
+    // NV (Near Vision) & PD (Pupillary Distance)
     [MaxLength(10)] public string? OD_NV { get; set; }
     [MaxLength(10)] public string? OS_NV { get; set; }
-
-    // PD (Pupillary Distance)
     [MaxLength(10)] public string? OD_PD { get; set; }
     [MaxLength(10)] public string? OS_PD { get; set; }
 

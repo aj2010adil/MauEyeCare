@@ -23,6 +23,10 @@ try
 
     // Fix single-file publish configuration path
     var exeDir = Path.GetDirectoryName(System.Environment.ProcessPath) ?? AppContext.BaseDirectory;
+    if (!File.Exists(Path.Combine(exeDir, "appsettings.json")))
+    {
+        exeDir = Directory.GetCurrentDirectory();
+    }
     builder.Configuration.SetBasePath(exeDir);
     builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 

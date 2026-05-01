@@ -108,16 +108,16 @@ public class PrescriptionPdfService : IPrescriptionPdfService
                         HeaderCell("Axis"); HeaderCell("VA");
 
                         DataCell("OD (Right)");
-                        DataCell(exam.OD_Sphere?.ToString("+0.00;-0.00;0.00") ?? "Plano");
-                        DataCell(exam.OD_Cylinder?.ToString("+0.00;-0.00;0.00") ?? "-");
-                        DataCell(exam.OD_Axis?.ToString() ?? "-");
-                        DataCell(exam.OD_VA ?? "-");
+                        DataCell(exam.WOG_OD_Sphere?.ToString("+0.00;-0.00;0.00") ?? "Plano");
+                        DataCell(exam.WOG_OD_Cylinder?.ToString("+0.00;-0.00;0.00") ?? "-");
+                        DataCell(exam.WOG_OD_Axis?.ToString() ?? "-");
+                        DataCell(exam.WOG_OD_VA ?? "-");
 
                         DataCell("OS (Left)");
-                        DataCell(exam.OS_Sphere?.ToString("+0.00;-0.00;0.00") ?? "Plano");
-                        DataCell(exam.OS_Cylinder?.ToString("+0.00;-0.00;0.00") ?? "-");
-                        DataCell(exam.OS_Axis?.ToString() ?? "-");
-                        DataCell(exam.OS_VA ?? "-");
+                        DataCell(exam.WOG_OS_Sphere?.ToString("+0.00;-0.00;0.00") ?? "Plano");
+                        DataCell(exam.WOG_OS_Cylinder?.ToString("+0.00;-0.00;0.00") ?? "-");
+                        DataCell(exam.WOG_OS_Axis?.ToString() ?? "-");
+                        DataCell(exam.WOG_OS_VA ?? "-");
                     });
 
                     if (!string.IsNullOrEmpty(exam.Diagnosis))

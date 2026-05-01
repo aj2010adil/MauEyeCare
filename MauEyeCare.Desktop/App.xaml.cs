@@ -51,20 +51,20 @@ public partial class App : Application
         services.AddSingleton<IAuthService, AuthService>();
 
         // ViewModels
-        services.AddTransient<LoginViewModel>();
-        services.AddTransient<MainViewModel>();
-        services.AddTransient<DashboardViewModel>();
-        services.AddTransient<PatientsViewModel>();
-        services.AddTransient<AppointmentsViewModel>();
-        services.AddTransient<ExaminationViewModel>();
-        services.AddTransient<PrescriptionViewModel>();
-        services.AddTransient<AiViewModel>();
-        services.AddTransient<InventoryViewModel>();
-        services.AddTransient<BillingViewModel>();
-        services.AddTransient<ReportsViewModel>();
-        services.AddTransient<SettingsViewModel>();
-        services.AddTransient<ReleaseNotesViewModel>();
-        services.AddTransient<HowToViewModel>();
+        services.AddSingleton<LoginViewModel>();
+        services.AddSingleton<MainViewModel>();
+        services.AddSingleton<DashboardViewModel>();
+        services.AddSingleton<PatientsViewModel>();
+        services.AddSingleton<AppointmentsViewModel>();
+        services.AddSingleton<ExaminationViewModel>();
+        services.AddSingleton<PrescriptionViewModel>();
+        services.AddSingleton<AiViewModel>();
+        services.AddSingleton<InventoryViewModel>();
+        services.AddSingleton<BillingViewModel>();
+        services.AddSingleton<ReportsViewModel>();
+        services.AddSingleton<SettingsViewModel>();
+        services.AddSingleton<ReleaseNotesViewModel>();
+        services.AddSingleton<HowToViewModel>();
 
         Services = services.BuildServiceProvider();
         Log("DI Container built.");

@@ -28,6 +28,7 @@ public partial class PatientFormModel : ObservableObject
     [ObservableProperty] private string? _allergies;
     [ObservableProperty] private bool _hasAiConsent;
     [ObservableProperty] private string? _referralLetterText;
+    [ObservableProperty] private int _age;
     public string FullName => $"{FirstName} {LastName}";
 }
 
@@ -432,6 +433,12 @@ public partial class PatientsViewModel : ObservableObject
         HasFormError = false; SaveSuccess = false;
         try
         {
+            // Calculate DOB from Age if it's a new patient or if Age was explicitly set
+            if (EditPatient.Age > 0)
+            {
+                EditPatient.DateOfBirth = new DateTime(DateTime.Today.Year - EditPatient.Age, 1, 1);
+            }
+
             if (_editingId is null)
                 await _api.CreatePatientAsync(EditPatient);
             else
@@ -440,7 +447,6 @@ public partial class PatientsViewModel : ObservableObject
             SaveSuccess = true;
             await LoadPatientsAsync();
             NewPatient();
-            MessageBox.Show("Save succeeded!", "Debug");
         }
         catch (Exception ex)
         {
@@ -537,13 +543,12 @@ public partial class PatientsViewModel : ObservableObject
     [RelayCommand]
     private async Task ExportPatients()
     {
-        var dlg = new Microsoft.Win32.SaveFileDialog { Filter = "Excel Files|*.xlsx", FileName = "Patient_Registry.xlsx" };
+        var dlg = new Microsoft.Win32.SaveFileDialog { Filter = "Excel Files|*.xlsx", FileName = $"Patient_Registry_{DateTime.Now:yyyyMMdd}.xlsx" };
         if (dlg.ShowDialog() == true)
         {
             try
             {
-                // Fetch first 100 patients for export (current page + more)
-                var result = await _api.GetPatientsAsync(null, 1, 100);
+                var result = await _api.GetPatientsAsync(null, 1, 1000);
                 
                 using var workbook = new XLWorkbook();
                 var ws = workbook.Worksheets.Add("Patients");
@@ -554,7 +559,7 @@ public partial class PatientsViewModel : ObservableObject
                     ws.Cell(1, i + 1).Value = headers[i];
                 }
                 ws.Range(1, 1, 1, headers.Length).Style.Font.Bold = true;
-                ws.Range(1, 1, 1, headers.Length).Style.Fill.BackgroundColor = XLColor.LightBlue;
+                ws.Range(1, 1, 1, headers.Length).Style.Fill.BackgroundColor = XLColor.FromHtml("#E3F2FD");
 
                 int row = 2;
                 foreach (var p in result.Items)
@@ -573,7 +578,13 @@ public partial class PatientsViewModel : ObservableObject
 
                 ws.Columns().AdjustToContents();
                 workbook.SaveAs(dlg.FileName);
-                MessageBox.Show($"Patient registry exported to {dlg.FileName}", "Success");
+                MessageBox.Show($"Patient registry exported successfully to {dlg.FileName}", "Success");
+
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = dlg.FileName,
+                    UseShellExecute = true
+                });
             }
             catch (Exception ex)
             {
@@ -810,7 +821,12 @@ public partial class ExaminationViewModel : ObservableObject
     private void StartExam()
     {
         if (SelectedPatient is null) return;
-        Exam = new ExamFormModel { PatientId = SelectedPatient.PatientId };
+        
+        // Only reset if it's a DIFFERENT patient or no exam started
+        if (Exam.PatientId != SelectedPatient.PatientId)
+        {
+            Exam = new ExamFormModel { PatientId = SelectedPatient.PatientId };
+        }
     }
 
     [RelayCommand]
@@ -1229,6 +1245,12 @@ public partial class InventoryViewModel : ObservableObject
                 ws.Columns().AdjustToContents();
                 workbook.SaveAs(dlg.FileName);
                 MessageBox.Show($"Inventory exported to {dlg.FileName}", "Success");
+
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = dlg.FileName,
+                    UseShellExecute = true
+                });
             }
             catch (Exception ex)
             {
@@ -1470,7 +1492,13 @@ public partial class ReportsViewModel : ObservableObject
 
                 ws.Columns().AdjustToContents();
                 workbook.SaveAs(dlg.FileName);
-                MessageBox.Show($"{type} revenue report exported to {dlg.FileName}", "Success");
+                MessageBox.Show($"{type} revenue report exported successfully to {dlg.FileName}", "Success");
+
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = dlg.FileName,
+                    UseShellExecute = true
+                });
             }
             catch (Exception ex)
             {
@@ -1825,3 +1853,5 @@ public partial class ReleaseNotesViewModel : ObservableObject
 }
 
 public record ChangeGroup(string Title, string[] Items, string ThemeColor);
+
+

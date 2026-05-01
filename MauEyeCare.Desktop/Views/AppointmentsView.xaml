@@ -48,6 +48,8 @@
                               ItemsSource="{Binding Patients}"
                               SelectedItem="{Binding SelectedPatientForBooking}"
                               DisplayMemberPath="FullName"
+                              IsEditable="True"
+                              TextSearch.TextPath="FullName"
                               Margin="0,0,0,12" />
 
                     <TextBlock Text="TYPE" Style="{StaticResource FormLabel}" />

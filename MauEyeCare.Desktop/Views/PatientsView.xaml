@@ -122,12 +122,9 @@
                             <ColumnDefinition Width="120" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="DATE OF BIRTH *" Style="{StaticResource FormLabel}" />
-                            <DatePicker Background="{DynamicResource SurfaceBrush}"
-                                        Foreground="{DynamicResource TextPrimaryBrush}"
-                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                                        Height="42" FontSize="13"
-                                        SelectedDate="{Binding EditPatient.DateOfBirth}" />
+                            <TextBlock Text="AGE *" Style="{StaticResource FormLabel}" />
+                            <TextBox Style="{StaticResource DarkTextBox}" Height="42" FontSize="13"
+                                     Text="{Binding EditPatient.Age, UpdateSourceTrigger=PropertyChanged}" />
                         </StackPanel>
                         <StackPanel Grid.Column="2">
                             <TextBlock Text="GENDER" Style="{StaticResource FormLabel}" />

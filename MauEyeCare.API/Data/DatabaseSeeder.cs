@@ -101,8 +101,8 @@ public static class DatabaseSeeder
                         DoctorUserId = doctorId,
                         ExamDate = scheduledDate,
                         Diagnosis = conditions[random.Next(conditions.Length)],
-                        OD_Sphere = (decimal)(random.Next(-600, 400) / 100.0),
-                        OS_Sphere = (decimal)(random.Next(-600, 400) / 100.0),
+                        WOG_OD_Sphere = (decimal)(random.Next(-600, 400) / 100.0),
+                        WOG_OS_Sphere = (decimal)(random.Next(-600, 400) / 100.0),
                         DoctorNotes = "Standard clinical examination performed. No acute distress."
                     };
                     exams.Add(exam);

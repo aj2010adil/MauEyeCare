@@ -9,10 +9,15 @@ namespace MauEyeCare.API.Services;
 public record ExamDto(
     Guid ExamId, Guid PatientId, string PatientName,
     Guid? AppointmentId, string DoctorUserId, DateTime ExamDate,
-    decimal? OD_Sphere, decimal? OD_Cylinder, int? OD_Axis, string? OD_VA,
-    decimal? OD_IOP, string? OD_Add, string? OD_NV,
-    decimal? OS_Sphere, decimal? OS_Cylinder, int? OS_Axis, string? OS_VA,
-    decimal? OS_IOP, string? OS_Add, string? OS_NV,
+    decimal? WOG_OD_Sphere, decimal? WOG_OD_Cylinder, int? WOG_OD_Axis, string? WOG_OD_VA,
+    decimal? WOG_OD_IOP, string? WOG_OD_Add,
+    decimal? WOG_OS_Sphere, decimal? WOG_OS_Cylinder, int? WOG_OS_Axis, string? WOG_OS_VA,
+    decimal? WOG_OS_IOP, string? WOG_OS_Add,
+    decimal? WG_OD_Sphere, decimal? WG_OD_Cylinder, int? WG_OD_Axis, string? WG_OD_VA,
+    decimal? WG_OD_IOP, string? WG_OD_Add,
+    decimal? WG_OS_Sphere, decimal? WG_OS_Cylinder, int? WG_OS_Axis, string? WG_OS_VA,
+    decimal? WG_OS_IOP, string? WG_OS_Add,
+    string? OD_NV, string? OS_NV, string? OD_PD, string? OS_PD,
     string? Diagnosis, string? DoctorNotes, string? PrescriptionPdfPath,
     IEnumerable<ImageDto> Images, DateTime CreatedAt);
 
@@ -21,10 +26,15 @@ public record ImageDto(
 
 public record CreateExamRequest(
     Guid PatientId, Guid? AppointmentId, string DoctorUserId, DateTime ExamDate,
-    decimal? OD_Sphere, decimal? OD_Cylinder, int? OD_Axis, string? OD_VA,
-    decimal? OD_IOP, string? OD_Add, string? OD_NV,
-    decimal? OS_Sphere, decimal? OS_Cylinder, int? OS_Axis, string? OS_VA,
-    decimal? OS_IOP, string? OS_Add, string? OS_NV,
+    decimal? WOG_OD_Sphere, decimal? WOG_OD_Cylinder, int? WOG_OD_Axis, string? WOG_OD_VA,
+    decimal? WOG_OD_IOP, string? WOG_OD_Add,
+    decimal? WOG_OS_Sphere, decimal? WOG_OS_Cylinder, int? WOG_OS_Axis, string? WOG_OS_VA,
+    decimal? WOG_OS_IOP, string? WOG_OS_Add,
+    decimal? WG_OD_Sphere, decimal? WG_OD_Cylinder, int? WG_OD_Axis, string? WG_OD_VA,
+    decimal? WG_OD_IOP, string? WG_OD_Add,
+    decimal? WG_OS_Sphere, decimal? WG_OS_Cylinder, int? WG_OS_Axis, string? WG_OS_VA,
+    decimal? WG_OS_IOP, string? WG_OS_Add,
+    string? OD_NV, string? OS_NV, string? OD_PD, string? OS_PD,
     string? Diagnosis, string? DoctorNotes);
 
 // ── AI Result DTO ─────────────────────────────────────────────────────────────
@@ -85,12 +95,20 @@ public class ExamService : IExamService
             AppointmentId = req.AppointmentId,
             DoctorUserId = req.DoctorUserId,
             ExamDate = req.ExamDate,
-            OD_Sphere = req.OD_Sphere, OD_Cylinder = req.OD_Cylinder,
-            OD_Axis = req.OD_Axis, OD_VA = req.OD_VA, OD_IOP = req.OD_IOP,
-            OD_Add = req.OD_Add, OD_NV = req.OD_NV,
-            OS_Sphere = req.OS_Sphere, OS_Cylinder = req.OS_Cylinder,
-            OS_Axis = req.OS_Axis, OS_VA = req.OS_VA, OS_IOP = req.OS_IOP,
-            OS_Add = req.OS_Add, OS_NV = req.OS_NV,
+            WOG_OD_Sphere = req.WOG_OD_Sphere, WOG_OD_Cylinder = req.WOG_OD_Cylinder,
+            WOG_OD_Axis = req.WOG_OD_Axis, WOG_OD_VA = req.WOG_OD_VA, WOG_OD_IOP = req.WOG_OD_IOP,
+            WOG_OD_Add = req.WOG_OD_Add,
+            WOG_OS_Sphere = req.WOG_OS_Sphere, WOG_OS_Cylinder = req.WOG_OS_Cylinder,
+            WOG_OS_Axis = req.WOG_OS_Axis, WOG_OS_VA = req.WOG_OS_VA, WOG_OS_IOP = req.WOG_OS_IOP,
+            WOG_OS_Add = req.WOG_OS_Add,
+            WG_OD_Sphere = req.WG_OD_Sphere, WG_OD_Cylinder = req.WG_OD_Cylinder,
+            WG_OD_Axis = req.WG_OD_Axis, WG_OD_VA = req.WG_OD_VA, WG_OD_IOP = req.WG_OD_IOP,
+            WG_OD_Add = req.WG_OD_Add,
+            WG_OS_Sphere = req.WG_OS_Sphere, WG_OS_Cylinder = req.WG_OS_Cylinder,
+            WG_OS_Axis = req.WG_OS_Axis, WG_OS_VA = req.WG_OS_VA, WG_OS_IOP = req.WG_OS_IOP,
+            WG_OS_Add = req.WG_OS_Add,
+            OD_NV = req.OD_NV, OS_NV = req.OS_NV,
+            OD_PD = req.OD_PD, OS_PD = req.OS_PD,
             Diagnosis = req.Diagnosis, DoctorNotes = req.DoctorNotes
         };
         _db.Exams.Add(exam);
@@ -122,8 +140,11 @@ public class ExamService : IExamService
         e.ExamId, e.PatientId,
         $"{e.Patient?.FirstName} {e.Patient?.LastName}",
         e.AppointmentId, e.DoctorUserId, e.ExamDate,
-        e.OD_Sphere, e.OD_Cylinder, e.OD_Axis, e.OD_VA, e.OD_IOP, e.OD_Add, e.OD_NV,
-        e.OS_Sphere, e.OS_Cylinder, e.OS_Axis, e.OS_VA, e.OS_IOP, e.OS_Add, e.OS_NV,
+        e.WOG_OD_Sphere, e.WOG_OD_Cylinder, e.WOG_OD_Axis, e.WOG_OD_VA, e.WOG_OD_IOP, e.WOG_OD_Add,
+        e.WOG_OS_Sphere, e.WOG_OS_Cylinder, e.WOG_OS_Axis, e.WOG_OS_VA, e.WOG_OS_IOP, e.WOG_OS_Add,
+        e.WG_OD_Sphere, e.WG_OD_Cylinder, e.WG_OD_Axis, e.WG_OD_VA, e.WG_OD_IOP, e.WG_OD_Add,
+        e.WG_OS_Sphere, e.WG_OS_Cylinder, e.WG_OS_Axis, e.WG_OS_VA, e.WG_OS_IOP, e.WG_OS_Add,
+        e.OD_NV, e.OS_NV, e.OD_PD, e.OS_PD,
         e.Diagnosis, e.DoctorNotes, e.PrescriptionPdfPath,
         e.Images.Select(img => new ImageDto(
             img.ImageId, img.ImageType, img.FilePath, img.DicomUID, img.AiStatus, img.UploadedAt)),

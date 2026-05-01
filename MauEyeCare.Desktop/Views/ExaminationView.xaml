@@ -78,23 +78,23 @@
                         <ComboBox Grid.Column="1" Style="{StaticResource DarkComboBox}" Margin="4,0" Height="36"
                                   ItemsSource="{Binding DataContext.SphereValues, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                   Text="{Binding Exam.OD_Sphere, UpdateSourceTrigger=PropertyChanged}"
-                                  IsEditable="True" HorizontalContentAlignment="Center" />
+                                  IsEditable="False" HorizontalContentAlignment="Center" />
                         <ComboBox Grid.Column="2" Style="{StaticResource DarkComboBox}" Margin="4,0" Height="36"
                                   ItemsSource="{Binding DataContext.CylinderValues, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                   Text="{Binding Exam.OD_Cylinder, UpdateSourceTrigger=PropertyChanged}"
-                                  IsEditable="True" HorizontalContentAlignment="Center" />
+                                  IsEditable="False" HorizontalContentAlignment="Center" />
                         <ComboBox Grid.Column="3" Style="{StaticResource DarkComboBox}" Margin="4,0" Height="36"
                                   ItemsSource="{Binding DataContext.AxisValues, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                   Text="{Binding Exam.OD_Axis, UpdateSourceTrigger=PropertyChanged}"
-                                  IsEditable="True" HorizontalContentAlignment="Center" />
+                                  IsEditable="False" HorizontalContentAlignment="Center" />
                         <ComboBox Grid.Column="4" Style="{StaticResource DarkComboBox}" Margin="4,0" Height="36"
                                   ItemsSource="{Binding DataContext.VaValues, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                   Text="{Binding Exam.OD_VA, UpdateSourceTrigger=PropertyChanged}"
-                                  IsEditable="True" HorizontalContentAlignment="Center" />
+                                  IsEditable="False" HorizontalContentAlignment="Center" />
                         <ComboBox Grid.Column="5" Style="{StaticResource DarkComboBox}" Margin="4,0" Height="36"
                                   ItemsSource="{Binding DataContext.IopValues, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                   Text="{Binding Exam.OD_IOP, UpdateSourceTrigger=PropertyChanged}"
-                                  IsEditable="True" HorizontalContentAlignment="Center" />
+                                  IsEditable="False" HorizontalContentAlignment="Center" />
                     </Grid>
 
                     <!-- OS Row -->
@@ -115,23 +115,23 @@
                         <ComboBox Grid.Column="1" Style="{StaticResource DarkComboBox}" Margin="4,0" Height="36"
                                   ItemsSource="{Binding DataContext.SphereValues, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                   Text="{Binding Exam.OS_Sphere, UpdateSourceTrigger=PropertyChanged}"
-                                  IsEditable="True" HorizontalContentAlignment="Center" />
+                                  IsEditable="False" HorizontalContentAlignment="Center" />
                         <ComboBox Grid.Column="2" Style="{StaticResource DarkComboBox}" Margin="4,0" Height="36"
                                   ItemsSource="{Binding DataContext.CylinderValues, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                   Text="{Binding Exam.OS_Cylinder, UpdateSourceTrigger=PropertyChanged}"
-                                  IsEditable="True" HorizontalContentAlignment="Center" />
+                                  IsEditable="False" HorizontalContentAlignment="Center" />
                         <ComboBox Grid.Column="3" Style="{StaticResource DarkComboBox}" Margin="4,0" Height="36"
                                   ItemsSource="{Binding DataContext.AxisValues, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                   Text="{Binding Exam.OS_Axis, UpdateSourceTrigger=PropertyChanged}"
-                                  IsEditable="True" HorizontalContentAlignment="Center" />
+                                  IsEditable="False" HorizontalContentAlignment="Center" />
                         <ComboBox Grid.Column="4" Style="{StaticResource DarkComboBox}" Margin="4,0" Height="36"
                                   ItemsSource="{Binding DataContext.VaValues, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                   Text="{Binding Exam.OS_VA, UpdateSourceTrigger=PropertyChanged}"
-                                  IsEditable="True" HorizontalContentAlignment="Center" />
+                                  IsEditable="False" HorizontalContentAlignment="Center" />
                         <ComboBox Grid.Column="5" Style="{StaticResource DarkComboBox}" Margin="4,0" Height="36"
                                   ItemsSource="{Binding DataContext.IopValues, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                   Text="{Binding Exam.OS_IOP, UpdateSourceTrigger=PropertyChanged}"
-                                  IsEditable="True" HorizontalContentAlignment="Center" />
+                                  IsEditable="False" HorizontalContentAlignment="Center" />
                     </Grid>
 
                     <!-- Add power row -->
@@ -146,14 +146,14 @@
                             <ComboBox Style="{StaticResource DarkComboBox}" Height="36"
                                       ItemsSource="{Binding AddValues}"
                                       Text="{Binding Exam.OD_Add, UpdateSourceTrigger=PropertyChanged}"
-                                      IsEditable="True" />
+                                      IsEditable="False" />
                         </StackPanel>
                         <StackPanel Grid.Column="2">
                             <TextBlock Text="OS ADD POWER" Style="{StaticResource FormLabel}" />
                             <ComboBox Style="{StaticResource DarkComboBox}" Height="36"
                                       ItemsSource="{Binding AddValues}"
                                       Text="{Binding Exam.OS_Add, UpdateSourceTrigger=PropertyChanged}"
-                                      IsEditable="True" />
+                                      IsEditable="False" />
                         </StackPanel>
                     </Grid>
 
