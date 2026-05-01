@@ -146,6 +146,7 @@ public partial class MainViewModel : ObservableObject
             "Billing" => "💰  Billing & Invoices",
             "Inventory" => "📦  Inventory",
             "Reports" => "📊  Reports",
+            "ReleaseNotes" => "📜  Release Notes — v1.2.0",
             _ => page
         };
 
@@ -161,6 +162,7 @@ public partial class MainViewModel : ObservableObject
             "Billing" => CreateView<BillingView, BillingViewModel>(),
             "Reports" => CreateView<ReportsView, ReportsViewModel>(),
             "Settings" => CreateView<SettingsView, SettingsViewModel>(),
+            "ReleaseNotes" => CreateView<ReleaseNotesView, ReleaseNotesViewModel>(),
             _ => new System.Windows.Controls.TextBlock
             {
                 Text = $"{page} module — coming soon",
@@ -1376,3 +1378,45 @@ public record AiResultItem(string Condition, double Confidence)
 {
     public string ConfidencePercent => $"{Confidence * 100:F1}%";
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Release Notes ViewModel
+// ────────────────────────────────────────────────────────────────────────────
+public partial class ReleaseNotesViewModel : ObservableObject
+{
+    [ObservableProperty] private string _version = "v1.2.0-STABLE";
+    [ObservableProperty] private string _lastUpdate = "May 1, 2026";
+    
+    public ObservableCollection<ChangeGroup> Changes { get; } = new();
+
+    public ReleaseNotesViewModel()
+    {
+        LoadNotes();
+    }
+
+    private void LoadNotes()
+    {
+        Changes.Add(new ChangeGroup("🚀 New Features", [
+            "MCP Infrastructure: Integrated .NET and Python Model Context Protocol servers for advanced AI tool discovery.",
+            "AI Decision Support: Integrated PyTorch-based retinal analysis for automated condition detection.",
+            "Theme System: Full implementation of DynamicResource-based Light and Dark mode switching.",
+            "Automated Seeding: One-click population of 1000+ clinical records for development and testing."
+        ], "Green"));
+
+        Changes.Add(new ChangeGroup("🛠 Improvements & Tools", [
+            "Robust Bootstrapper: Enhanced 'rebuild_and_run_all.ps1' with process cleanup and persistent log windows.",
+            "Diagnostic Tools: Added get_patient_summary and check_ai_service_health tools via MCP.",
+            "Database Diagnostics: New diagnostic routines for verifying clinical database integrity.",
+            "Developer Experience: Standardized terminal outputs for better background service monitoring."
+        ], "Blue"));
+
+        Changes.Add(new ChangeGroup("🐛 Bug Fixes", [
+            "Fixed hidden background processes failing to close on app exit.",
+            "Resolved CS1998 warnings in clinical ViewModels for cleaner builds.",
+            "Corrected hardcoded colors in Dashboard tiles to support Dark mode.",
+            "Fixed startup race conditions between API and Desktop client."
+        ], "Orange"));
+    }
+}
+
+public record ChangeGroup(string Title, string[] Items, string ThemeColor);

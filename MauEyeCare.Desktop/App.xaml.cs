@@ -63,6 +63,7 @@ public partial class App : Application
         services.AddTransient<BillingViewModel>();
         services.AddTransient<ReportsViewModel>();
         services.AddTransient<SettingsViewModel>();
+        services.AddTransient<ReleaseNotesViewModel>();
 
         Services = services.BuildServiceProvider();
         Log("DI Container built.");
