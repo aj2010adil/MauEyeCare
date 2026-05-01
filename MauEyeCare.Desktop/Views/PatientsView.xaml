@@ -22,8 +22,14 @@
                 <DockPanel DockPanel.Dock="Top" Margin="0,0,0,16">
                     <TextBlock Text="Patient Registry" Style="{StaticResource HeadingH2}"
                                VerticalAlignment="Center" />
-                    <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}"
-                            Content="+ New Patient" Command="{Binding NewPatientCommand}" />
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Style="{StaticResource SecondaryButton}" Content="Import Excel" 
+                                Command="{Binding ImportPatientsCommand}" Margin="0,0,8,0" />
+                        <Button Style="{StaticResource SecondaryButton}" Content="Export Excel" 
+                                Command="{Binding ExportPatientsCommand}" Margin="0,0,8,0" />
+                        <Button Style="{StaticResource PrimaryButton}"
+                                Content="+ New Patient" Command="{Binding NewPatientCommand}" />
+                    </StackPanel>
                 </DockPanel>
 
                 <Border DockPanel.Dock="Top" Background="{DynamicResource SurfaceBrush}" CornerRadius="8"

@@ -101,7 +101,18 @@
                 <Separator Background="{DynamicResource BorderBrush}" Margin="0,10" />
 
                 <Button Style="{StaticResource SecondaryButton}" Content="Remove Selected Item" 
-                        Command="{Binding RemoveItemCommand}" Height="40" Foreground="#FF453A" />
+                        Command="{Binding RemoveItemCommand}" Height="40" Foreground="#FF453A" Margin="0,0,0,8" />
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button Style="{StaticResource SecondaryButton}" Content="Import Excel" 
+                            Command="{Binding ImportInventoryCommand}" Margin="0,0,4,0" Height="36" FontSize="11" />
+                    <Button Grid.Column="1" Style="{StaticResource SecondaryButton}" Content="Export Excel" 
+                            Command="{Binding ExportInventoryCommand}" Margin="4,0,0,0" Height="36" FontSize="11" />
+                </Grid>
             </StackPanel>
         </Border>
     </Grid>

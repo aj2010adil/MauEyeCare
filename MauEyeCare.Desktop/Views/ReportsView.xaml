@@ -21,7 +21,9 @@
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="SHOP REVENUE" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
                             <TextBlock Text="{Binding ShopRevenue}" FontSize="36" FontWeight="Bold" Foreground="{DynamicResource TealAccentBrush}" HorizontalAlignment="Center" Margin="0,8" />
-                            <TextBlock Text="Ready for disbursement" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
+                            <Button Style="{StaticResource SecondaryButton}" Content="Download Excel" 
+                                    Command="{Binding ExportShopRevenueCommand}" FontSize="10" Padding="8,2" />
+                            <TextBlock Text="Ready for disbursement" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" />
                         </StackPanel>
                     </Border>
 
@@ -29,7 +31,9 @@
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="CLINICAL REVENUE" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
                             <TextBlock Text="{Binding ClinicalRevenue}" FontSize="36" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" Margin="0,8" />
-                            <TextBlock Text="Excl. tax" FontSize="11" Foreground="#00BFA5" HorizontalAlignment="Center" />
+                            <Button Style="{StaticResource SecondaryButton}" Content="Download Excel" 
+                                    Command="{Binding ExportClinicalRevenueCommand}" FontSize="10" Padding="8,2" />
+                            <TextBlock Text="Excl. tax" FontSize="11" Foreground="#00BFA5" HorizontalAlignment="Center" Margin="0,4,0,0" />
                         </StackPanel>
                     </Border>
 
