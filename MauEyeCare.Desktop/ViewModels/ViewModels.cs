@@ -28,7 +28,7 @@ public partial class PatientFormModel : ObservableObject
     [ObservableProperty] private string? _allergies;
     [ObservableProperty] private bool _hasAiConsent;
     [ObservableProperty] private string? _referralLetterText;
-    [ObservableProperty] private int _age;
+    [ObservableProperty] private int _age = 30;
     public string FullName => $"{FirstName} {LastName}";
 }
 
@@ -309,9 +309,11 @@ public partial class PatientsViewModel : ObservableObject
     [ObservableProperty] private string _pageInfo = "Page 1";
     [ObservableProperty] private ObservableCollection<ExamHistoryItem> _selectedPatientExams = [];
 
-    public PatientsViewModel(IApiService api)
+    private readonly MainViewModel _mainVm;
+
+    public PatientsViewModel(IApiService api, MainViewModel mainVm)
     {
-        _api = api;
+        _api = api; _mainVm = mainVm;
         _ = LoadPatientsAsync();
     }
 
@@ -489,7 +491,21 @@ public partial class PatientsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void NewExam(PatientListItem p) { /* Navigate to Exam with patient pre-selected */ }
+    private void NewExam(PatientListItem p) 
+    {
+        if (p is null) return;
+        
+        // Navigate to Exam
+        _mainVm.NavigateCommand.Execute("Examination");
+        
+        // Find the Exam VM and set the patient
+        var examVm = App.Services.GetService(typeof(ExaminationViewModel)) as ExaminationViewModel;
+        if (examVm != null)
+        {
+            examVm.SelectedPatient = p;
+            examVm.StartExamCommand.Execute(null);
+        }
+    }
 
     [RelayCommand]
     private async Task ImportPatients()
@@ -905,7 +921,7 @@ public partial class ExaminationViewModel : ObservableObject
         try
         {
             var notes = Exam.DoctorNotes ?? "Routine eye examination.";
-            var context = $"OD: {Exam.OD_Sphere}/{Exam.OD_Cylinder}x{Exam.OD_Axis}. OS: {Exam.OS_Sphere}/{Exam.OS_Cylinder}x{Exam.OS_Axis}.";
+            var context = $"WOG OD: {Exam.WOG_OD_Sphere}/{Exam.WOG_OD_Cylinder}x{Exam.WOG_OD_Axis}. OS: {Exam.WOG_OS_Sphere}/{Exam.WOG_OS_Cylinder}x{Exam.WOG_OS_Axis}.";
             
             var suggestion = await _api.GetRxSuggestionsAsync(notes, context);
             if (!string.IsNullOrEmpty(suggestion))
@@ -1013,22 +1029,43 @@ public partial class ExaminationViewModel : ObservableObject
 public partial class ExamFormModel : ObservableObject
 {
     public Guid PatientId { get; set; }
-    [ObservableProperty] private string? _oD_Sphere;
-    [ObservableProperty] private string? _oD_Cylinder;
-    [ObservableProperty] private string? _oD_Axis;
-    [ObservableProperty] private string? _oD_VA;
-    [ObservableProperty] private string? _oD_IOP;
-    [ObservableProperty] private string? _oD_Add;
-    [ObservableProperty] private string? _oS_Sphere;
-    [ObservableProperty] private string? _oS_Cylinder;
-    [ObservableProperty] private string? _oS_Axis;
-    [ObservableProperty] private string? _oS_VA;
-    [ObservableProperty] private string? _oS_IOP;
-    [ObservableProperty] private string? _oS_Add;
+    
+    // Without Glasses (WOG)
+    [ObservableProperty] private string? _wOG_OD_Sphere;
+    [ObservableProperty] private string? _wOG_OD_Cylinder;
+    [ObservableProperty] private string? _wOG_OD_Axis;
+    [ObservableProperty] private string? _wOG_OD_VA;
+    [ObservableProperty] private string? _wOG_OD_IOP;
+    [ObservableProperty] private string? _wOG_OD_Add;
+
+    [ObservableProperty] private string? _wOG_OS_Sphere;
+    [ObservableProperty] private string? _wOG_OS_Cylinder;
+    [ObservableProperty] private string? _wOG_OS_Axis;
+    [ObservableProperty] private string? _wOG_OS_VA;
+    [ObservableProperty] private string? _wOG_OS_IOP;
+    [ObservableProperty] private string? _wOG_OS_Add;
+
+    // With Glasses (WG)
+    [ObservableProperty] private string? _wG_OD_Sphere;
+    [ObservableProperty] private string? _wG_OD_Cylinder;
+    [ObservableProperty] private string? _wG_OD_Axis;
+    [ObservableProperty] private string? _wG_OD_VA;
+    [ObservableProperty] private string? _wG_OD_IOP;
+    [ObservableProperty] private string? _wG_OD_Add;
+
+    [ObservableProperty] private string? _wG_OS_Sphere;
+    [ObservableProperty] private string? _wG_OS_Cylinder;
+    [ObservableProperty] private string? _wG_OS_Axis;
+    [ObservableProperty] private string? _wG_OS_VA;
+    [ObservableProperty] private string? _wG_OS_IOP;
+    [ObservableProperty] private string? _wG_OS_Add;
+
+    // NV & PD
     [ObservableProperty] private string? _oD_NV;
     [ObservableProperty] private string? _oS_NV;
     [ObservableProperty] private string? _oD_PD;
     [ObservableProperty] private string? _oS_PD;
+
     [ObservableProperty] private string? _diagnosis;
     [ObservableProperty] private string? _doctorNotes;
     [ObservableProperty] private string? _bloodPressure;

@@ -177,10 +177,18 @@ public class ApiService : IApiService
     public async Task<PatientResponse> CreatePatientAsync(PatientFormModel model)
     {
         AddAuthHeader();
+        
+        // Calculate DOB if Age was provided and it's a new patient registration flow
+        var dob = model.DateOfBirth;
+        if (model.Age > 0)
+        {
+            dob = new DateTime(DateTime.Today.Year - model.Age, 1, 1);
+        }
+
         var response = await _http.PostAsJsonAsync("/api/v1/patients", new
         {
             model.FirstName, model.LastName,
-            DateOfBirth = DateOnly.FromDateTime(model.DateOfBirth),
+            DateOfBirth = DateOnly.FromDateTime(dob),
             model.Gender, model.Phone, model.Email, model.Address,
             model.MedicalHistory, model.Allergies,
             HasAiConsent = model.HasAiConsent, model.ReferralLetterText
@@ -233,14 +241,32 @@ public class ApiService : IApiService
             model.PatientId,
             DoctorUserId = _auth.CurrentUserName,
             ExamDate = DateTime.UtcNow,
-            OD_Sphere = ParseDecimal(model.OD_Sphere),
-            OD_Cylinder = ParseDecimal(model.OD_Cylinder),
-            OD_Axis = ParseInt(model.OD_Axis),
-            OD_VA = model.OD_VA, OD_IOP = ParseDecimal(model.OD_IOP), OD_Add = model.OD_Add,
-            OS_Sphere = ParseDecimal(model.OS_Sphere),
-            OS_Cylinder = ParseDecimal(model.OS_Cylinder),
-            OS_Axis = ParseInt(model.OS_Axis),
-            OS_VA = model.OS_VA, OS_IOP = ParseDecimal(model.OS_IOP), OS_Add = model.OS_Add,
+            
+            // WOG
+            WOG_OD_Sphere = ParseDecimal(model.WOG_OD_Sphere),
+            WOG_OD_Cylinder = ParseDecimal(model.WOG_OD_Cylinder),
+            WOG_OD_Axis = ParseInt(model.WOG_OD_Axis),
+            WOG_OD_VA = model.WOG_OD_VA, WOG_OD_IOP = ParseDecimal(model.WOG_OD_IOP), WOG_OD_Add = model.WOG_OD_Add,
+            
+            WOG_OS_Sphere = ParseDecimal(model.WOG_OS_Sphere),
+            WOG_OS_Cylinder = ParseDecimal(model.WOG_OS_Cylinder),
+            WOG_OS_Axis = ParseInt(model.WOG_OS_Axis),
+            WOG_OS_VA = model.WOG_OS_VA, WOG_OS_IOP = ParseDecimal(model.WOG_OS_IOP), WOG_OS_Add = model.WOG_OS_Add,
+            
+            // WG
+            WG_OD_Sphere = ParseDecimal(model.WG_OD_Sphere),
+            WG_OD_Cylinder = ParseDecimal(model.WG_OD_Cylinder),
+            WG_OD_Axis = ParseInt(model.WG_OD_Axis),
+            WG_OD_VA = model.WG_OD_VA, WG_OD_IOP = ParseDecimal(model.WG_OD_IOP), WG_OD_Add = model.WG_OD_Add,
+            
+            WG_OS_Sphere = ParseDecimal(model.WG_OS_Sphere),
+            WG_OS_Cylinder = ParseDecimal(model.WG_OS_Cylinder),
+            WG_OS_Axis = ParseInt(model.WG_OS_Axis),
+            WG_OS_VA = model.WG_OS_VA, WG_OS_IOP = ParseDecimal(model.WG_OS_IOP), WG_OS_Add = model.WG_OS_Add,
+            
+            // NV & PD
+            model.OD_NV, model.OS_NV, model.OD_PD, model.OS_PD,
+
             model.Diagnosis, model.DoctorNotes
         });
         response.EnsureSuccessStatusCode();
