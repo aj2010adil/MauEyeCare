@@ -42,12 +42,20 @@
             <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,16">
                 <StackPanel>
                     <TextBlock Text="Quick Book" Style="{StaticResource HeadingH2}" Margin="0,0,0,16" />
-                    <TextBlock Text="PATIENT" Style="{StaticResource FormLabel}" />
-                    <ComboBox Style="{StaticResource DarkComboBox}" Margin="0,0,0,12" />
-                    <TextBlock Text="TIME" Style="{StaticResource FormLabel}" />
-                    <TextBox Style="{StaticResource DarkTextBox}" Height="42" Margin="0,0,0,12"
-                              Text="09:00 AM" />
-                    <TextBlock Text="TYPE" Style="{StaticResource FormLabel}" />
+                    <TextBlock Text="PATIENT" Foreground="{DynamicResource TextSecondaryColor}" FontSize="10" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <ComboBox Style="{StaticResource DarkComboBox}" 
+                              ItemsSource="{Binding Patients}"
+                              SelectedItem="{Binding SelectedPatientForBooking}"
+                              DisplayMemberPath="FullName"
+                              Margin="0,0,0,12" />
+
+                    <TextBlock Text="TIME" Foreground="{DynamicResource TextSecondaryColor}" FontSize="10" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBox Style="{StaticResource DarkTextBox}" Text="{Binding BookingTime}" Margin="0,0,0,12" />
+
+                    <Button Content="Book Appointment" 
+                            Command="{Binding BookAppointmentCommand}"
+                            Style="{StaticResource PrimaryButtonStyle}" 
+                            Height="40" Margin="0,10,0,0"/>
                     <ComboBox Style="{StaticResource DarkComboBox}" Margin="0,0,0,20">
                         <ComboBoxItem Content="Consultation" />
                         <ComboBoxItem Content="Follow-up" />

@@ -11,25 +11,25 @@
                 <UniformGrid Columns="4" Margin="0,0,0,24">
                     <Border Background="{DynamicResource CardBrush}" CornerRadius="12" Margin="0,0,16,16" Padding="20">
                         <StackPanel HorizontalAlignment="Center">
-                            <TextBlock Text="TOTAL EXAMS" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
-                            <TextBlock Text="1,450" FontSize="36" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" Margin="0,8" />
-                            <TextBlock Text="+12% from last month" FontSize="11" Foreground="#00BFA5" HorizontalAlignment="Center" />
+                            <TextBlock Text="TOTAL REVENUE" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding TotalRevenue}" FontSize="36" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" Margin="0,8" />
+                            <TextBlock Text="{Binding GrowthRate}" FontSize="11" Foreground="#00BFA5" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Border>
                     
                     <Border Background="{DynamicResource CardBrush}" CornerRadius="12" Margin="0,0,16,16" Padding="20">
                         <StackPanel HorizontalAlignment="Center">
-                            <TextBlock Text="AI ACCURACY" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
-                            <TextBlock Text="94.2%" FontSize="36" FontWeight="Bold" Foreground="{StaticResource TealAccentBrush}" HorizontalAlignment="Center" Margin="0,8" />
-                            <TextBlock Text="Model: ResNet-Ophth v2" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
+                            <TextBlock Text="SHOP REVENUE" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding ShopRevenue}" FontSize="36" FontWeight="Bold" Foreground="{DynamicResource TealAccentBrush}" HorizontalAlignment="Center" Margin="0,8" />
+                            <TextBlock Text="Ready for disbursement" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Border>
 
                     <Border Background="{DynamicResource CardBrush}" CornerRadius="12" Margin="0,0,16,16" Padding="20">
                         <StackPanel HorizontalAlignment="Center">
-                            <TextBlock Text="SHOP REVENUE" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
-                            <TextBlock Text="₹45,210" FontSize="36" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" Margin="0,8" />
-                            <TextBlock Text="Ready for disbursement" FontSize="11" Foreground="#00BFA5" HorizontalAlignment="Center" />
+                            <TextBlock Text="CLINICAL REVENUE" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding ClinicalRevenue}" FontSize="36" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" Margin="0,8" />
+                            <TextBlock Text="Excl. tax" FontSize="11" Foreground="#00BFA5" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Border>
 

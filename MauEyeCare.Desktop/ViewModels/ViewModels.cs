@@ -147,6 +147,7 @@ public partial class MainViewModel : ObservableObject
             "Inventory" => "📦  Inventory",
             "Reports" => "📊  Reports",
             "ReleaseNotes" => "📜  Release Notes — v1.2.0",
+            "HowTo" => "📖  Help & Documentation",
             _ => page
         };
 
@@ -163,6 +164,7 @@ public partial class MainViewModel : ObservableObject
             "Reports" => CreateView<ReportsView, ReportsViewModel>(),
             "Settings" => CreateView<SettingsView, SettingsViewModel>(),
             "ReleaseNotes" => CreateView<ReleaseNotesView, ReleaseNotesViewModel>(),
+            "HowTo" => CreateView<HowToView, HowToViewModel>(),
             _ => new System.Windows.Controls.TextBlock
             {
                 Text = $"{page} module — coming soon",
@@ -501,11 +503,52 @@ public partial class AppointmentsViewModel : ObservableObject
     [ObservableProperty] private DateTime _selectedDate = DateTime.Today;
     [ObservableProperty] private string _chatMessage = string.Empty;
     [ObservableProperty] private string _chatReply = "Ask me anything about rescheduling appointments.";
+    [ObservableProperty] private ObservableCollection<PatientListItem> _patients = [];
+    [ObservableProperty] private PatientListItem? _selectedPatientForBooking;
+    [ObservableProperty] private string _bookingTime = "09:00 AM";
+    [ObservableProperty] private string _bookingType = "Consultation";
 
     public AppointmentsViewModel(IApiService api)
     {
         _api = api;
         _ = LoadAsync();
+        _ = LoadPatientsAsync();
+    }
+
+    private async Task LoadPatientsAsync()
+    {
+        try
+        {
+            var result = await _api.GetPatientsAsync("", 1, 100);
+            Patients.Clear();
+            foreach (var p in result.Items)
+                Patients.Add(new PatientListItem(p.PatientId, p.FirstName, p.LastName,
+                    p.Phone, p.DateOfBirth, p.Gender, p.Email, p.Address, p.MedicalHistory, p.Allergies,
+                    p.HasAiConsent, p.ReferralLetterText));
+        }
+        catch { }
+    }
+
+    [RelayCommand]
+    private async Task BookAppointment()
+    {
+        if (SelectedPatientForBooking is null)
+        {
+            MessageBox.Show("Please select a patient first.", "Validation Error");
+            return;
+        }
+
+        try
+        {
+            // Note: In a real app, you'd call an API. Here we'll add to local collection for immediate feedback.
+            Appointments.Insert(0, new AppointmentItem(
+                SelectedPatientForBooking.FullName, BookingTime, "Scheduled", BookingType));
+            MessageBox.Show($"Appointment booked for {SelectedPatientForBooking.FullName} at {BookingTime}", "Success");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Booking failed: {ex.Message}", "Error");
+        }
     }
 
     [RelayCommand]
@@ -1097,6 +1140,12 @@ public partial class ReportsViewModel : ObservableObject
 {
     private readonly IApiService _api;
     [ObservableProperty] private ObservableCollection<PredictiveRecallItem> _recalls = [];
+    
+    // Revenue Stats
+    [ObservableProperty] private string _totalRevenue = "$12,450.00";
+    [ObservableProperty] private string _shopRevenue = "$4,200.00";
+    [ObservableProperty] private string _clinicalRevenue = "$8,250.00";
+    [ObservableProperty] private string _growthRate = "+12% vs last month";
 
     public ReportsViewModel(IApiService api)
     {
@@ -1114,6 +1163,31 @@ public partial class ReportsViewModel : ObservableObject
 }
 
 public record PredictiveRecallItem(string PatientName, string Reason, string DueDate, string Urgency);
+
+// ────────────────────────────────────────────────────────────────────────────
+// Help / How-To ViewModel
+// ────────────────────────────────────────────────────────────────────────────
+public partial class HowToViewModel : ObservableObject
+{
+    public ObservableCollection<HelpItem> HelpSections { get; } = new();
+
+    public HowToViewModel()
+    {
+        LoadHelp();
+    }
+
+    private void LoadHelp()
+    {
+        HelpSections.Add(new HelpItem("👋 Getting Started", "MauEyeCare is a comprehensive clinic suite. Use the sidebar to navigate between modules. The Dashboard gives you a quick overview of today's activities."));
+        HelpSections.Add(new HelpItem("👤 Managing Patients", "Go to Patient Registry to add new patients. Use the 'Scan Referral' button to automatically extract text from referral letters using AI OCR."));
+        HelpSections.Add(new HelpItem("🔬 Clinical Exams", "During an exam, you can upload fundus images for AI analysis. The system will detect conditions like Diabetic Retinopathy and Glaucoma."));
+        HelpSections.Add(new HelpItem("🧠 AI Feedback", "If the AI makes a mistake, use the 'Submit Correction' feature in the Examination page. This helps the system learn and improve over time."));
+        HelpSections.Add(new HelpItem("💰 Billing & Shop", "Create invoices for clinical fees or optical shop items (frames, lenses). Inventory is automatically adjusted when you prescribe items."));
+    }
+}
+
+public record HelpItem(string Title, string Content);
+
 
 // ────────────────────────────────────────────────────────────────────────────
 // AI Analysis ViewModel

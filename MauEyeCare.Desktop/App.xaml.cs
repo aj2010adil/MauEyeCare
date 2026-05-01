@@ -64,6 +64,7 @@ public partial class App : Application
         services.AddTransient<ReportsViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<ReleaseNotesViewModel>();
+        services.AddTransient<HowToViewModel>();
 
         Services = services.BuildServiceProvider();
         Log("DI Container built.");

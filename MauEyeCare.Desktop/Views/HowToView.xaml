@@ -1,0 +1,53 @@
+<UserControl x:Class="MauEyeCare.Desktop.Views.HowToView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d" 
+             d:DesignHeight="800" d:DesignWidth="1000">
+    <Grid Margin="30">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,30">
+            <TextBlock Text="Help &amp; Documentation" 
+                       FontSize="32" FontWeight="Bold" 
+                       Foreground="{DynamicResource TextPrimaryColor}"/>
+            <TextBlock Text="Comprehensive guide to using the MauEyeCare Clinical Suite" 
+                       FontSize="16" Foreground="{DynamicResource TextSecondaryColor}" Margin="0,5,0,0"/>
+        </StackPanel>
+
+        <!-- Help Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding HelpSections}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{DynamicResource CardColor}" 
+                                CornerRadius="16" Margin="0,0,0,20" 
+                                BorderThickness="1" BorderBrush="{DynamicResource BorderColor}">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="15" Direction="-90" RenderingBias="Quality" ShadowDepth="2" Opacity="0.1"/>
+                            </Border.Effect>
+                            <Border Padding="25">
+                                <StackPanel>
+                                <TextBlock Text="{Binding Title}" 
+                                           FontSize="22" FontWeight="SemiBold" 
+                                           Foreground="{DynamicResource PrimaryHueMidBrush}" 
+                                           Margin="0,0,0,10"/>
+                                <TextBlock Text="{Binding Content}" 
+                                           FontSize="15" LineHeight="24"
+                                           TextWrapping="Wrap" 
+                                           Foreground="{DynamicResource TextPrimaryColor}"/>
+                                </StackPanel>
+                            </Border>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
