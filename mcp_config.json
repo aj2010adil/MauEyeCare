@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "MauEyeCare_Clinical": {
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "c:/Users/DELL/MauEyecare/MauEyeCare/MauEyeCare.MCP/MauEyeCare.MCP.csproj"
+      ],
+      "env": {}
+    },
+    "MauEyeCare_AI": {
+      "command": "python",
+      "args": [
+        "c:/Users/DELL/MauEyecare/MauEyeCare/MauEyeCare.AI/mcp_server.py"
+      ],
+      "env": {}
+    }
+  }
+}

@@ -26,6 +26,10 @@ Write-Host "`n[2/3] Building Desktop App..." -ForegroundColor Green
 dotnet clean "$desktopDir\MauEyeCare.Desktop.csproj"
 dotnet build "$desktopDir\MauEyeCare.Desktop.csproj"
 
+# 3. Build MCP Clinical Server
+Write-Host "`n[NEW] Building MCP Clinical Server..." -ForegroundColor Green
+dotnet build "$root\MauEyeCare.MCP\MauEyeCare.MCP.csproj"
+
 # 3. Start AI Microservice
 Write-Host "`n[3/3] Launching AI and Continuous Learning Pipelines..." -ForegroundColor Green
 if (Test-Path "$aiDir\venv") {
