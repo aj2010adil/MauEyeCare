@@ -44,14 +44,14 @@ public class PrescriptionPdfServiceTests
             PatientId = patient.PatientId,
             Patient = patient,
             ExamDate = DateTime.UtcNow,
-            OD_Sphere = -2.50m,
-            OD_Cylinder = -0.75m,
-            OD_Axis = 180,
-            OD_VA = "6/6",
-            OS_Sphere = -2.25m,
-            OS_Cylinder = -0.50m,
-            OS_Axis = 165,
-            OS_VA = "6/6",
+            WOG_OD_Sphere = -2.50m,
+            WOG_OD_Cylinder = -0.75m,
+            WOG_OD_Axis = 180,
+            WOG_OD_VA = "6/6",
+            WOG_OS_Sphere = -2.25m,
+            WOG_OS_Cylinder = -0.50m,
+            WOG_OS_Axis = 165,
+            WOG_OS_VA = "6/6",
             Diagnosis = "Bilateral Myopia with Astigmatism",
             DoctorNotes = "Wear corrective spectacles continuously. Follow-up in 6 months."
         };
@@ -403,7 +403,13 @@ public class ExamServiceTests
         await db.SaveChangesAsync();
 
         var service = new ExamService(db);
-        var req = new CreateExamRequest(patient.PatientId, null, "doc1", DateTime.UtcNow, null, null, null, null, null, null, null, null, null, null, null, null, null, null, "Diagnosis", "Notes");
+        var req = new CreateExamRequest(patient.PatientId, null, "doc1", DateTime.UtcNow, 
+            null, null, null, null, null, null, // WOG OD
+            null, null, null, null, null, null, // WOG OS
+            null, null, null, null, null, null, // WG OD
+            null, null, null, null, null, null, // WG OS
+            null, null, null, null, // NV/PD
+            "Diagnosis", "Notes");
         var exam = await service.CreateAsync(req);
 
         Assert.NotEqual(Guid.Empty, exam.ExamId);
@@ -419,7 +425,13 @@ public class ExamServiceTests
         await db.SaveChangesAsync();
 
         var service = new ExamService(db);
-        var req = new CreateExamRequest(patient.PatientId, null, "doc1", DateTime.UtcNow, null, null, null, null, null, null, null, null, null, null, null, null, null, null, "Diagnosis", "Notes");
+        var req = new CreateExamRequest(patient.PatientId, null, "doc1", DateTime.UtcNow, 
+            null, null, null, null, null, null, 
+            null, null, null, null, null, null, 
+            null, null, null, null, null, null, 
+            null, null, null, null, null, null, 
+            null, null, null, null, 
+            "Diagnosis", "Notes");
         await service.CreateAsync(req);
 
         var exams = await service.GetByPatientAsync(patient.PatientId);
@@ -435,7 +447,13 @@ public class ExamServiceTests
         await db.SaveChangesAsync();
 
         var service = new ExamService(db);
-        var req = new CreateExamRequest(patient.PatientId, null, "doc1", DateTime.UtcNow, null, null, null, null, null, null, null, null, null, null, null, null, null, null, "Old", "Old");
+        var req = new CreateExamRequest(patient.PatientId, null, "doc1", DateTime.UtcNow, 
+            null, null, null, null, null, null, 
+            null, null, null, null, null, null, 
+            null, null, null, null, null, null, 
+            null, null, null, null, null, null, 
+            null, null, null, null, 
+            "Old", "Old");
         var exam = await service.CreateAsync(req);
 
         var success = await service.UpdateNotesAsync(exam.ExamId, "NewNotes", "NewDiag");

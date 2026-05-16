@@ -37,10 +37,10 @@ try
         .Enrich.FromLogContext()
         .Enrich.WithProperty("Application", "MauEyeCare.API"));
 
-    // ── EF Core + PostgreSQL ──────────────────────────────────────────────────
+    // ── EF Core + SQLite ──────────────────────────────────────────────────
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(
-            builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseSqlite(
+            builder.Configuration.GetConnectionString("SqliteConnection")));
 
     // ── ASP.NET Identity ─────────────────────────────────────────────────────
     builder.Services.AddIdentity<ApplicationUser, IdentityRole>(opts =>
