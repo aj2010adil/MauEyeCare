@@ -409,7 +409,7 @@ public class ExamServiceTests
             null, null, null, null, null, null, // WG OD
             null, null, null, null, null, null, // WG OS
             null, null, null, null, // NV/PD
-            "Diagnosis", "Notes");
+            "Diagnosis", "Notes", null, null);
         var exam = await service.CreateAsync(req);
 
         Assert.NotEqual(Guid.Empty, exam.ExamId);
@@ -431,7 +431,7 @@ public class ExamServiceTests
             null, null, null, null, null, null, 
             null, null, null, null, null, null, 
             null, null, null, null, 
-            "Diagnosis", "Notes");
+            "Diagnosis", "Notes", null, null);
         await service.CreateAsync(req);
 
         var exams = await service.GetByPatientAsync(patient.PatientId);
@@ -453,7 +453,7 @@ public class ExamServiceTests
             null, null, null, null, null, null, 
             null, null, null, null, null, null, 
             null, null, null, null, 
-            "Old", "Old");
+            "Old", "Old", null, null);
         var exam = await service.CreateAsync(req);
 
         var success = await service.UpdateNotesAsync(exam.ExamId, "NewNotes", "NewDiag");

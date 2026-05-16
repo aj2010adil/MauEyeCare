@@ -759,6 +759,8 @@ public partial class ExaminationViewModel : ObservableObject
     public ObservableCollection<string> VaValues { get; } = new();
     public ObservableCollection<string> IopValues { get; } = new();
     public ObservableCollection<string> AddValues { get; } = new();
+    public ObservableCollection<string> ComplaintValues { get; } = new();
+    public ObservableCollection<string> MedicalHistoryValues { get; } = new();
 
     public ExaminationViewModel(IApiService api)
     {
@@ -793,6 +795,27 @@ public partial class ExaminationViewModel : ObservableObject
         // ADD: 0.00 to +4.00
         for (double ad = 0.00; ad <= 4.00; ad += 0.25)
             AddValues.Add($"+{ad:F2}");
+
+        _ = LoadClinicalOptionsAsync();
+    }
+
+    private async Task LoadClinicalOptionsAsync()
+    {
+        try {
+            var complaints = await _api.GetClinicalOptionsAsync("Complaint");
+            ComplaintValues.Clear();
+            foreach (var c in complaints) ComplaintValues.Add(c);
+
+            var medHist = await _api.GetClinicalOptionsAsync("MedicalHistory");
+            MedicalHistoryValues.Clear();
+            foreach (var m in medHist) MedicalHistoryValues.Add(m);
+
+            var va = await _api.GetClinicalOptionsAsync("VA");
+            if (va.Any()) {
+                VaValues.Clear();
+                foreach (var v in va) VaValues.Add(v);
+            }
+        } catch { }
     }
 
     private async Task LoadInventoryAsync()
@@ -841,7 +864,11 @@ public partial class ExaminationViewModel : ObservableObject
         // Only reset if it's a DIFFERENT patient or no exam started
         if (Exam.PatientId != SelectedPatient.PatientId)
         {
-            Exam = new ExamFormModel { PatientId = SelectedPatient.PatientId };
+            Exam = new ExamFormModel 
+            { 
+                PatientId = SelectedPatient.PatientId,
+                MedicalHistory = SelectedPatient.MedicalHistory 
+            };
         }
     }
 
@@ -870,8 +897,20 @@ public partial class ExaminationViewModel : ObservableObject
             notes += $"\n\n--- Standard Checks & Prescriptions ---\nBlood Pressure: {Exam.BloodPressure}\nBlood Sugar: {Exam.BloodSugar}\nMedicines: {Exam.MedicinesPrescribed}\nFrames: {Exam.FramesPrescribed}";
             Exam.DoctorNotes = notes;
 
+            // Check and Add New Clinical Options
+            if (!string.IsNullOrWhiteSpace(Exam.Complaints) && !ComplaintValues.Contains(Exam.Complaints))
+                await _api.AddClinicalOptionAsync("Complaint", Exam.Complaints);
+            
+            if (!string.IsNullOrWhiteSpace(Exam.MedicalHistory) && !MedicalHistoryValues.Contains(Exam.MedicalHistory))
+                await _api.AddClinicalOptionAsync("MedicalHistory", Exam.MedicalHistory);
+
+            if (!string.IsNullOrWhiteSpace(Exam.WG_OD_VA) && !VaValues.Contains(Exam.WG_OD_VA))
+                await _api.AddClinicalOptionAsync("VA", Exam.WG_OD_VA);
+            if (!string.IsNullOrWhiteSpace(Exam.WG_OS_VA) && !VaValues.Contains(Exam.WG_OS_VA))
+                await _api.AddClinicalOptionAsync("VA", Exam.WG_OS_VA);
+
             await _api.CreateExamAsync(Exam); 
-            await LoadInventoryAsync();
+            _ = LoadClinicalOptionsAsync(); // Refresh lists            await LoadInventoryAsync();
         }
         catch { }
     }
@@ -1072,6 +1111,8 @@ public partial class ExamFormModel : ObservableObject
     [ObservableProperty] private string? _bloodSugar;
     [ObservableProperty] private string? _medicinesPrescribed;
     [ObservableProperty] private string? _framesPrescribed;
+    [ObservableProperty] private string? _complaints;
+    [ObservableProperty] private string? _medicalHistory;
 }
 
 public record AiSuggestionItem(string Condition, string ConfidenceDisplay, double Confidence);

@@ -98,6 +98,8 @@ public interface IApiService
     Task CreateExamAsync(ExamFormModel model);
     Task<IEnumerable<ExamListItem>> GetExamsByPatientAsync(Guid patientId);
     Task<byte[]?> GeneratePrescriptionPdfAsync(Guid examId);
+    Task<IEnumerable<string>> GetClinicalOptionsAsync(string category);
+    Task AddClinicalOptionAsync(string category, string value);
 
     // Inventory
     Task<IEnumerable<InventoryResponse>> GetInventoryAsync(string? category, bool? lowStockOnly);
@@ -267,7 +269,7 @@ public class ApiService : IApiService
             // NV & PD
             model.OD_NV, model.OS_NV, model.OD_PD, model.OS_PD,
 
-            model.Diagnosis, model.DoctorNotes
+            model.Diagnosis, model.DoctorNotes, model.Complaints, model.MedicalHistory
         });
         response.EnsureSuccessStatusCode();
     }
@@ -278,6 +280,18 @@ public class ApiService : IApiService
         var response = await _http.GetAsync($"/api/v1/exams/{examId}/pdf");
         if (!response.IsSuccessStatusCode) return null;
         return await response.Content.ReadAsByteArrayAsync();
+    }
+
+    public async Task<IEnumerable<string>> GetClinicalOptionsAsync(string category)
+    {
+        AddAuthHeader();
+        return await _http.GetFromJsonAsync<IEnumerable<string>>($"/api/v1/exams/options/{category}") ?? [];
+    }
+
+    public async Task AddClinicalOptionAsync(string category, string value)
+    {
+        AddAuthHeader();
+        await _http.PostAsJsonAsync("/api/v1/exams/options", new { Category = category, Value = value });
     }
 
     public async Task<IEnumerable<ExamListItem>> GetExamsByPatientAsync(Guid patientId)

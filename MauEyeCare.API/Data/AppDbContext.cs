@@ -21,6 +21,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<AuditEntry> AuditLog { get; set; } = null!;
     public DbSet<AiConsentAuditLog> AiConsentAuditLogs { get; set; } = null!;
     public DbSet<TrainingFeedback> TrainingFeedbacks { get; set; } = null!;
+    public DbSet<ClinicalOption> ClinicalOptions { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

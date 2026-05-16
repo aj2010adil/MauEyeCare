@@ -131,6 +131,7 @@ public class Exam
     [MaxLength(2000)] public string? Diagnosis { get; set; }
     [MaxLength(500)] public string? PrescriptionPdfPath { get; set; }
     public string? DoctorNotes { get; set; }
+    public string? Complaints { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool IsDeleted { get; set; } = false;
 
@@ -268,4 +269,16 @@ public class TrainingFeedback
     [Required, MaxLength(200)] public string CorrectLabel { get; set; } = string.Empty;
     [MaxLength(200)] public string? SubmittedBy { get; set; }
     public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Clinical Options (Dropdowns)
+// ────────────────────────────────────────────────────────────────────────────
+public class ClinicalOption
+{
+    [Key]
+    public Guid OptionId { get; set; }
+    [Required, MaxLength(100)] public string Category { get; set; } = string.Empty;
+    [Required, MaxLength(200)] public string Value { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

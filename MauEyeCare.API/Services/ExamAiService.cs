@@ -18,7 +18,7 @@ public record ExamDto(
     decimal? WG_OS_Sphere, decimal? WG_OS_Cylinder, int? WG_OS_Axis, string? WG_OS_VA,
     decimal? WG_OS_IOP, string? WG_OS_Add,
     string? OD_NV, string? OS_NV, string? OD_PD, string? OS_PD,
-    string? Diagnosis, string? DoctorNotes, string? PrescriptionPdfPath,
+    string? Diagnosis, string? DoctorNotes, string? Complaints, string? MedicalHistory, string? PrescriptionPdfPath,
     IEnumerable<ImageDto> Images, DateTime CreatedAt);
 
 public record ImageDto(
@@ -35,7 +35,7 @@ public record CreateExamRequest(
     decimal? WG_OS_Sphere, decimal? WG_OS_Cylinder, int? WG_OS_Axis, string? WG_OS_VA,
     decimal? WG_OS_IOP, string? WG_OS_Add,
     string? OD_NV, string? OS_NV, string? OD_PD, string? OS_PD,
-    string? Diagnosis, string? DoctorNotes);
+    string? Diagnosis, string? DoctorNotes, string? Complaints, string? MedicalHistory);
 
 // ── AI Result DTO ─────────────────────────────────────────────────────────────
 public record AiResultDto(
@@ -109,8 +109,20 @@ public class ExamService : IExamService
             WG_OS_Add = req.WG_OS_Add,
             OD_NV = req.OD_NV, OS_NV = req.OS_NV,
             OD_PD = req.OD_PD, OS_PD = req.OS_PD,
-            Diagnosis = req.Diagnosis, DoctorNotes = req.DoctorNotes
+            Diagnosis = req.Diagnosis, DoctorNotes = req.DoctorNotes,
+            Complaints = req.Complaints
         };
+
+        // Update Patient's Medical History if provided
+        if (!string.IsNullOrWhiteSpace(req.MedicalHistory))
+        {
+            var patient = await _db.Patients.FindAsync(req.PatientId);
+            if (patient != null)
+            {
+                patient.MedicalHistory = req.MedicalHistory;
+            }
+        }
+
         _db.Exams.Add(exam);
         await _db.SaveChangesAsync();
         await _db.Entry(exam).Reference(e => e.Patient).LoadAsync();
@@ -145,7 +157,7 @@ public class ExamService : IExamService
         e.WG_OD_Sphere, e.WG_OD_Cylinder, e.WG_OD_Axis, e.WG_OD_VA, e.WG_OD_IOP, e.WG_OD_Add,
         e.WG_OS_Sphere, e.WG_OS_Cylinder, e.WG_OS_Axis, e.WG_OS_VA, e.WG_OS_IOP, e.WG_OS_Add,
         e.OD_NV, e.OS_NV, e.OD_PD, e.OS_PD,
-        e.Diagnosis, e.DoctorNotes, e.PrescriptionPdfPath,
+        e.Diagnosis, e.DoctorNotes, e.Complaints, e.Patient?.MedicalHistory, e.PrescriptionPdfPath,
         e.Images.Select(img => new ImageDto(
             img.ImageId, img.ImageType, img.FilePath, img.DicomUID, img.AiStatus, img.UploadedAt)),
         e.CreatedAt);

@@ -58,8 +58,8 @@ public class PrescriptionPdfService : IPrescriptionPdfService
                     {
                         row.RelativeItem().Column(headerCol =>
                         {
-                            headerCol.Item().Text("MauEyeCare SuperSpecialty Clinic").Bold().FontSize(18).FontColor("#1A2340");
-                            headerCol.Item().Text("Dr. Danish Jawed,  (Ophthalmology)").FontSize(10).Italic().FontColor("#2A3F55");
+                            headerCol.Item().Text("Mau Eye Care and Optical Center").Bold().FontSize(18).FontColor("#1A2340");
+                            headerCol.Item().Text("Dr M Danish, (Ophthalmology)").FontSize(10).Italic().FontColor("#2A3F55");
                             headerCol.Item().Text("Reg No: 54321-OPHTH | Contact: +91 9235647410").FontSize(9).FontColor("#888888");
                         });
                         row.ConstantItem(80).Text("Rx").Bold().FontSize(32).FontColor("#00BFA5").AlignRight();
@@ -89,13 +89,26 @@ public class PrescriptionPdfService : IPrescriptionPdfService
 
                 page.Content().PaddingVertical(15).Column(col =>
                 {
-                    col.Item().Text("Refraction Details").Bold().FontSize(12).FontColor("#1A2340");
+                    if (!string.IsNullOrEmpty(exam.Complaints))
+                    {
+                        col.Item().PaddingTop(10).Text("Chief Complaints").Bold().FontSize(12).FontColor("#1A2340");
+                        col.Item().PaddingTop(4).Text(exam.Complaints).FontSize(10);
+                    }
+
+                    if (exam.Patient != null && !string.IsNullOrEmpty(exam.Patient.MedicalHistory))
+                    {
+                        col.Item().PaddingTop(10).Text("Medical History").Bold().FontSize(12).FontColor("#1A2340");
+                        col.Item().PaddingTop(4).Text(exam.Patient.MedicalHistory).FontSize(10);
+                    }
+
+                    col.Item().PaddingTop(15).Text("Refraction Details").Bold().FontSize(12).FontColor("#1A2340");
                     col.Item().PaddingTop(6).Table(table =>
                     {
                         table.ColumnsDefinition(cols =>
                         {
                             cols.ConstantColumn(80);
                             cols.RelativeColumn(); cols.RelativeColumn();
+                            cols.RelativeColumn(); cols.RelativeColumn(); 
                             cols.RelativeColumn(); cols.RelativeColumn();
                         });
 
@@ -104,20 +117,24 @@ public class PrescriptionPdfService : IPrescriptionPdfService
                         void DataCell(string text) => table.Cell().BorderBottom(0.5f).BorderColor("#E0E0E0")
                             .Padding(6).Text(text).FontSize(10);
 
-                        HeaderCell("Eye"); HeaderCell("Sphere (SPH)"); HeaderCell("Cylinder (CYL)");
-                        HeaderCell("Axis"); HeaderCell("VA");
+                        HeaderCell("Eye"); HeaderCell("Distant (SPH)"); HeaderCell("Cyl");
+                        HeaderCell("Axis"); HeaderCell("VA"); HeaderCell("IOP"); HeaderCell("Near (Add)");
 
                         DataCell("OD (Right)");
-                        DataCell(exam.WOG_OD_Sphere?.ToString("+0.00;-0.00;0.00") ?? "Plano");
-                        DataCell(exam.WOG_OD_Cylinder?.ToString("+0.00;-0.00;0.00") ?? "-");
-                        DataCell(exam.WOG_OD_Axis?.ToString() ?? "-");
-                        DataCell(exam.WOG_OD_VA ?? "-");
+                        DataCell(exam.WG_OD_Sphere?.ToString("+0.00;-0.00;0.00") ?? "Plano");
+                        DataCell(exam.WG_OD_Cylinder?.ToString("+0.00;-0.00;0.00") ?? "-");
+                        DataCell(exam.WG_OD_Axis?.ToString() ?? "-");
+                        DataCell(exam.WG_OD_VA ?? "-");
+                        DataCell(exam.WG_OD_IOP?.ToString() ?? "-");
+                        DataCell(exam.WG_OD_Add ?? "-");
 
                         DataCell("OS (Left)");
-                        DataCell(exam.WOG_OS_Sphere?.ToString("+0.00;-0.00;0.00") ?? "Plano");
-                        DataCell(exam.WOG_OS_Cylinder?.ToString("+0.00;-0.00;0.00") ?? "-");
-                        DataCell(exam.WOG_OS_Axis?.ToString() ?? "-");
-                        DataCell(exam.WOG_OS_VA ?? "-");
+                        DataCell(exam.WG_OS_Sphere?.ToString("+0.00;-0.00;0.00") ?? "Plano");
+                        DataCell(exam.WG_OS_Cylinder?.ToString("+0.00;-0.00;0.00") ?? "-");
+                        DataCell(exam.WG_OS_Axis?.ToString() ?? "-");
+                        DataCell(exam.WG_OS_VA ?? "-");
+                        DataCell(exam.WG_OS_IOP?.ToString() ?? "-");
+                        DataCell(exam.WG_OS_Add ?? "-");
                     });
 
                     if (!string.IsNullOrEmpty(exam.Diagnosis))
@@ -159,7 +176,7 @@ public class PrescriptionPdfService : IPrescriptionPdfService
                         row.RelativeItem().AlignRight().Column(c =>
                         {
                             c.Item().PaddingBottom(20).Text("Digitally Signed by").FontSize(9).FontColor("#2A3F55");
-                            c.Item().Text("Dr. Maurice Eyecare").Bold().FontSize(11).FontColor("#1A2340");
+                            c.Item().Text("Dr M Danish").Bold().FontSize(11).FontColor("#1A2340");
                             c.Item().LineHorizontal(0.5f).LineColor("#1A2340");
                             c.Item().AlignRight().Text("Authorized Signatory").FontSize(9).FontColor("#888888");
                         });
