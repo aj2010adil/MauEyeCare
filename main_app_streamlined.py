@@ -797,14 +797,14 @@ def main():
     <title>Mau Eye Care Prescription - {patient_name}</title>
     <style>
         @page {{ margin: 0.3in; size: A4; }}
-        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 12px; line-height: 1.3; }}
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 36px; line-height: 1.3; }}
         .header {{ background: #2E86AB; color: white; padding: 8px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }}
         .header-left {{ text-align: left; flex: 1; }}
         .header-center {{ text-align: center; flex: 1; }}
         .header-right {{ text-align: right; flex: 1; }}
-        .header h1 {{ margin: 2px 0; font-size: 20px; font-weight: bold; }}
-        .header h2 {{ margin: 2px 0; font-size: 13px; font-weight: bold; }}
-        .header p {{ margin: 1px 0; font-size: 10px; }}
+        .header h1 {{ margin: 2px 0; font-size: 40px; font-weight: bold; }}
+        .header h2 {{ margin: 2px 0; font-size: 30px; font-weight: bold; }}
+        .header p {{ margin: 1px 0; font-size: 20px; }}
         .urdu {{ font-family: 'Noto Nastaliq Urdu', 'Arial Unicode MS', sans-serif; }}
         .patient-info {{ background: #f8f9ff; padding: 6px; margin: 4px 0; font-size: 11px; }}
         .patient-info h3 {{ margin: 2px 0; font-size: 12px; }}
@@ -834,13 +834,13 @@ def main():
         <div class="header-center">
             <p style="font-size: 11px; margin: 1px 0;">Computer and AI assisted Refraction and Contact Lens Center</p>
             <h1>Mau Eye Care</h1>
-            <p>Pura Khizir,( Near Mubarakpur Marraige Hall,Nai Pani ki tanki) Roadways Mubarakpur ,Azamgarh</p>
-            <p>📧 mau.eye.care.404@gmail.com | Mon-Sat: 10 AM-4 PM</p>
+            <p>Pura Khizir,( Near Mubarakpur Marraige Hall,Nai Pani ki tanki) Roadways Mubarakpur ,Azamgarh (U.P.) 276404</p>
+            <p>📧 mau.eye.care.404@gmail.com | Mon-Sat: 10 AM-2 PM and 5 PM- 7PM | Sunday Closed</p>
         </div>
         <div class="header-right">
-            <h2 class="urdu">ڈاکٹر دانش</h2>
-            <p class="urdu">بی ایس سی آپٹومیٹری</p>
-            <p class="urdu">آنکھوں کے ماہر</p>
+            <h2 class="urdu" style="font-size: 90px;">ڈاکٹر دانش</h2>
+            <p class="urdu" style="font-size: 60px;">بی ایس سی آپٹومیٹری</p>
+            <p class="urdu" style="font-size: 60px;">آنکھوں کے ماہر</p>
         </div>
     </div>
 
