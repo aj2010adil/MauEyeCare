@@ -831,11 +831,11 @@ def main():
             <p>Reg. No.: UPS 2908</p>
             <p>📞 +91 92356-47410</p>
         </div>
-        <div class="header-center">
+        <div class="header">
             <p style="font-size: 11px; margin: 1px 0;">Computer and AI assisted Refraction and Contact Lens Center</p>
             <h1>Mau Eye Care</h1>
             <p>Pura Khizir,( Near Mubarakpur Marraige Hall,Nai Pani ki tanki) Roadways Mubarakpur ,Azamgarh (U.P.) 276404</p>
-            <p>📧 mau.eye.care.404@gmail.com | Mon-Sat: 10 AM-2 PM and 5 PM- 7PM | Sunday Closed</p>
+            <p>📧 mau.eye.care.404@gmail.com | Mon-Sat: 10 AM-2 PM and 5 PM- 7PM | Sunday Closed | 📞+91 9235647410 |Appointment:+91 8299461251</p>
         </div>
         <div class="header-right">
             <h2 class="urdu" style="font-size: 40px;">ڈاکٹر دانش</h2>
