@@ -796,30 +796,33 @@ def main():
 <head>
     <title>Mau Eye Care Prescription - {patient_name}</title>
     <style>
-        @page {{ margin: 0.3in; size: A4; }}
-        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 25px; line-height: 1.3; }}
-        .header {{ background: #2E86AB; color: white; padding: 8px; margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center; }}
-        .header-left {{ text-align: left; flex: 1; }}
-        .header-center {{ text-align: center; flex: 1; }}
-        .header-right {{ text-align: right; flex: 1; }}
-        .header h1 {{ margin: 2px 0; font-size: 40px; font-weight: bold; }}
-        .header h2 {{ margin: 2px 0; font-size: 30px; font-weight: bold; }}
-        .header p {{ margin: 1px 0; font-size: 20px; }}
+        @page {{ margin: 0.5in; size: A4; }}
+        body {{ font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; font-size: 11pt; line-height: 1.4; color: #333; }}
+        .header {{ background: #1a4f66; color: white; padding: 15px 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
+        .header-left, .header-right {{ flex: 1; }}
+        .header-center {{ text-align: center; flex: 2; padding: 0 10px; }}
+        .header-left {{ text-align: left; }}
+        .header-right {{ text-align: right; }}
+        .header h1 {{ margin: 0; font-size: 24pt; font-weight: 800; letter-spacing: 1px; }}
+        .header h2 {{ margin: 2px 0; font-size: 14pt; font-weight: bold; }}
+        .header p {{ margin: 2px 0; font-size: 10pt; opacity: 0.9; }}
         .urdu {{ font-family: 'Noto Nastaliq Urdu', 'Arial Unicode MS', sans-serif; }}
-        .patient-info {{ background: #f8f9ff; padding: 3px; margin: 3px 0; font-size: 15px; }}
-        .patient-info h3 {{ margin: 2px 0; font-size: 20px; }}
-        .content {{ display: flex; gap: 12px; }}
+        .patient-info {{ background: #f4f6fc; border-left: 5px solid #2E86AB; padding: 12px 15px; margin: 15px 0; font-size: 11pt; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }}
+        .patient-info h3 {{ margin: 0 0 8px 0; font-size: 13pt; color: #1a4f66; }}
+        .patient-info p {{ margin: 4px 0; }}
+        .content {{ display: flex; gap: 20px; }}
         .left-section {{ flex: 1; }}
         .right-section {{ flex: 1; }}
-        .section {{ padding: 4px; margin: 3px 0; }}
-        .section h3 {{ margin: 2px 0; font-size: 20px; }}
-        .item {{ background: #f0f8ff; padding: 4px; margin: 2px 0; font-size: 20px; }}
-        .vision-table {{ width: 100%; border-collapse: collapse; margin: 4px 0; }}
-        .vision-table th, .vision-table td {{ border: 1px solid #ccc; padding: 3px; text-align: center; font-size: 10px; }}
-        .medicine-item {{ background: #fff8f0; padding: 4px; margin: 2px 0; font-size: 20px; border-left: 3px solid #ff9800; }}
-        .spectacle-item {{ background: #f0fff0; padding: 4px; margin: 2px 0; font-size: 20px; border-left: 3px solid #4caf50; }}
-        .signature {{ text-align: right; margin-top: 10px; font-size: 11px; }}
-        .footer {{ margin-top: 8px; text-align: center; font-size: 10px; color: #666; }}
+        .section {{ background: white; padding: 12px; margin: 10px 0; border: 1px solid #e0e6ed; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }}
+        .section h3 {{ margin: 0 0 10px 0; font-size: 13pt; color: #2E86AB; border-bottom: 2px solid #f0f4f8; padding-bottom: 5px; }}
+        .item {{ background: #f8fafc; padding: 10px; margin: 6px 0; border-radius: 4px; border-left: 3px solid #64748b; font-size: 11pt; }}
+        .vision-table {{ width: 100%; border-collapse: collapse; margin: 10px 0; }}
+        .vision-table th, .vision-table td {{ border: 1px solid #e2e8f0; padding: 8px; text-align: center; font-size: 10.5pt; }}
+        .vision-table th {{ background: #f1f5f9; color: #334155; font-weight: bold; }}
+        .medicine-item {{ background: #fffaf0; padding: 12px; margin: 8px 0; font-size: 11pt; border-left: 4px solid #f59e0b; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }}
+        .spectacle-item {{ background: #f0fdf4; padding: 12px; margin: 8px 0; font-size: 11pt; border-left: 4px solid #22c55e; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }}
+        .signature {{ text-align: right; margin-top: 30px; font-size: 12pt; font-weight: bold; padding-top: 15px; border-top: 1px dashed #cbd5e1; }}
+        .footer {{ margin-top: 25px; padding-top: 10px; text-align: center; font-size: 9pt; color: #64748b; border-top: 1px solid #e2e8f0; }}
     </style>
 </head>
 <body>
@@ -831,16 +834,16 @@ def main():
             <p>Reg. No.: UPS 2908</p>
             <p>📞 +91 92356-47410</p>
         </div>
-        <div class="header">
-            <p style="font-size: 11px; margin: 1px 0;">Computer and AI assisted Refraction and Contact Lens Center</p>
+        <div class="header-center">
+            <p style="font-size: 10pt; margin: 1px 0;">Computer and AI assisted Refraction and Contact Lens Center</p>
             <h1>Mau Eye Care</h1>
             <p>Pura Khizir,( Near Mubarakpur Marraige Hall,Nai Pani ki tanki) Roadways Mubarakpur ,Azamgarh (U.P.) 276404</p>
             <p>📧 mau.eye.care.404@gmail.com | Mon-Sat: 10 AM-2 PM and 5 PM- 7PM | Sunday Closed | 📞+91 9235647410 |Appointment:+91 8299461251</p>
         </div>
         <div class="header-right">
-            <h2 class="urdu" style="font-size: 40px;">ڈاکٹر دانش</h2>
-            <p class="urdu" style="font-size: 20px;">بی ایس سی آپٹومیٹری</p>
-            <p class="urdu" style="font-size: 20px;">آنکھوں کے ماہر</p>
+            <h2 class="urdu" style="font-size: 28pt;">ڈاکٹر دانش</h2>
+            <p class="urdu" style="font-size: 18pt;">بی ایس سی آپٹومیٹری</p>
+            <p class="urdu" style="font-size: 18pt;">آنکھوں کے ماہر</p>
         </div>
     </div>
 
