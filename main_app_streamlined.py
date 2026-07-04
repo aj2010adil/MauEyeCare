@@ -834,7 +834,7 @@ def main():
         <div class="header-center">
             <p style="font-size: 11px; margin: 1px 0;">Computer and AI assisted Refraction and Contact Lens Center</p>
             <h1>Mau Eye Care</h1>
-            <p>Pura Sofi Bhonu Kuraishi Dasai Kuwa, Mubarakpur, Azamgarh, UP</p>
+            <p>Pura Khizir,( Near Mubarakpur Marraige Hall,Nai Pani ki tanki) Roadways Mubarakpur ,Azamgarh</p>
             <p>📧 mau.eye.care.404@gmail.com | Mon-Sat: 10 AM-4 PM</p>
         </div>
         <div class="header-right">
