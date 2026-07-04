@@ -797,8 +797,8 @@ def main():
     <title>Mau Eye Care Prescription - {patient_name}</title>
     <style>
         @page {{ margin: 0.3in; size: A4; }}
-        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 36px; line-height: 1.3; }}
-        .header {{ background: #2E86AB; color: white; padding: 8px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }}
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 25px; line-height: 1.3; }}
+        .header {{ background: #2E86AB; color: white; padding: 8px; margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center; }}
         .header-left {{ text-align: left; flex: 1; }}
         .header-center {{ text-align: center; flex: 1; }}
         .header-right {{ text-align: right; flex: 1; }}
@@ -806,18 +806,18 @@ def main():
         .header h2 {{ margin: 2px 0; font-size: 30px; font-weight: bold; }}
         .header p {{ margin: 1px 0; font-size: 20px; }}
         .urdu {{ font-family: 'Noto Nastaliq Urdu', 'Arial Unicode MS', sans-serif; }}
-        .patient-info {{ background: #f8f9ff; padding: 6px; margin: 4px 0; font-size: 11px; }}
-        .patient-info h3 {{ margin: 2px 0; font-size: 12px; }}
+        .patient-info {{ background: #f8f9ff; padding: 3px; margin: 3px 0; font-size: 15px; }}
+        .patient-info h3 {{ margin: 2px 0; font-size: 20px; }}
         .content {{ display: flex; gap: 12px; }}
         .left-section {{ flex: 1; }}
         .right-section {{ flex: 1; }}
         .section {{ padding: 4px; margin: 3px 0; }}
-        .section h3 {{ margin: 2px 0; font-size: 12px; }}
-        .item {{ background: #f0f8ff; padding: 4px; margin: 2px 0; font-size: 11px; }}
+        .section h3 {{ margin: 2px 0; font-size: 20px; }}
+        .item {{ background: #f0f8ff; padding: 4px; margin: 2px 0; font-size: 20px; }}
         .vision-table {{ width: 100%; border-collapse: collapse; margin: 4px 0; }}
         .vision-table th, .vision-table td {{ border: 1px solid #ccc; padding: 3px; text-align: center; font-size: 10px; }}
-        .medicine-item {{ background: #fff8f0; padding: 4px; margin: 2px 0; font-size: 11px; border-left: 3px solid #ff9800; }}
-        .spectacle-item {{ background: #f0fff0; padding: 4px; margin: 2px 0; font-size: 11px; border-left: 3px solid #4caf50; }}
+        .medicine-item {{ background: #fff8f0; padding: 4px; margin: 2px 0; font-size: 20px; border-left: 3px solid #ff9800; }}
+        .spectacle-item {{ background: #f0fff0; padding: 4px; margin: 2px 0; font-size: 20px; border-left: 3px solid #4caf50; }}
         .signature {{ text-align: right; margin-top: 10px; font-size: 11px; }}
         .footer {{ margin-top: 8px; text-align: center; font-size: 10px; color: #666; }}
     </style>
@@ -838,9 +838,9 @@ def main():
             <p>📧 mau.eye.care.404@gmail.com | Mon-Sat: 10 AM-2 PM and 5 PM- 7PM | Sunday Closed</p>
         </div>
         <div class="header-right">
-            <h2 class="urdu" style="font-size: 90px;">ڈاکٹر دانش</h2>
-            <p class="urdu" style="font-size: 60px;">بی ایس سی آپٹومیٹری</p>
-            <p class="urdu" style="font-size: 60px;">آنکھوں کے ماہر</p>
+            <h2 class="urdu" style="font-size: 40px;">ڈاکٹر دانش</h2>
+            <p class="urdu" style="font-size: 20px;">بی ایس سی آپٹومیٹری</p>
+            <p class="urdu" style="font-size: 20px;">آنکھوں کے ماہر</p>
         </div>
     </div>
 
