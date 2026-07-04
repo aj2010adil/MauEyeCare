@@ -24,52 +24,45 @@ class SyncManager:
             return {'success': False, 'message': f'Connection test failed: {str(e)}'}
     
     def sync_local_to_google_sheets(self):
-        """Prepare local data for manual Google Sheets sync"""
+        """Sync pending local data automatically to Google Sheets using Service Account"""
         try:
-            sync_results = {
-                'patients_prepared': 0,
-                'prescriptions_prepared': 0,
-                'inventory_updates': 0,
-                'errors': [],
-                'success': True
-            }
+            st.info("📤 Syncing local data to Google Sheets...")
+            sync_results = self.api.sync_pending_data()
             
-            # Count pending data
-            pending_patients = st.session_state.get('pending_patients', [])
-            pending_prescriptions = st.session_state.get('pending_prescriptions', [])
+            if sync_results.get('errors'):
+                for err in sync_results['errors']:
+                    st.error(f"❌ Error: {err}")
+                    
+            patients_synced = sync_results.get('patients', 0)
+            prescriptions_synced = sync_results.get('prescriptions', 0)
             
-            sync_results['patients_prepared'] = len(pending_patients)
-            sync_results['prescriptions_prepared'] = len(pending_prescriptions)
-            
-            if pending_patients or pending_prescriptions:
-                st.info("📋 Data prepared for manual Google Sheets sync")
-                st.info("💡 Use the 'Export for Google Sheets' section below to download CSV files")
-                st.info("📤 Then manually upload the CSV data to your Google Sheets")
-                
-                # Update sync timestamp
-                sync_info = {
-                    'last_sync_attempt': datetime.now().isoformat(),
-                    'patients_prepared': sync_results['patients_prepared'],
-                    'prescriptions_prepared': sync_results['prescriptions_prepared'],
-                    'status': 'manual_sync_required',
-                    'message': 'Data prepared for manual sync - Google Sheets API key only allows reading'
-                }
-                self.local_manager.save_json_data('last_sync.json', sync_info)
+            if patients_synced > 0 or prescriptions_synced > 0:
+                st.success(f"✅ Synced {patients_synced} patients and {prescriptions_synced} prescriptions to Google Sheets!")
             else:
                 st.info("📊 No pending data to sync")
-                sync_results['success'] = True
+                
+            sync_results['success'] = len(sync_results.get('errors', [])) == 0
+            
+            # Update sync timestamp
+            sync_info = {
+                'last_sync_attempt': datetime.now().isoformat(),
+                'patients_synced': patients_synced,
+                'prescriptions_synced': prescriptions_synced,
+                'status': 'success' if sync_results['success'] else 'partial',
+                'message': 'Automated sync via Service Account completed'
+            }
+            self.local_manager.save_json_data('last_sync.json', sync_info)
             
             return sync_results
             
         except Exception as e:
             error_result = {
-                'patients_prepared': 0,
-                'prescriptions_prepared': 0,
-                'inventory_updates': 0,
+                'patients': 0,
+                'prescriptions': 0,
                 'errors': [str(e)],
                 'success': False
             }
-            st.error(f"❌ Sync preparation failed: {str(e)}")
+            st.error(f"❌ Sync to Google Sheets failed: {str(e)}")
             return error_result
     
     def sync_google_sheets_to_local(self):
@@ -122,7 +115,7 @@ class SyncManager:
             # First, sync from Google Sheets to get latest data
             sheets_to_local = self.sync_google_sheets_to_local()
             
-            # Then, prepare local changes for manual sync
+            # Then, sync local changes back to Google Sheets automatically
             local_to_sheets = self.sync_local_to_google_sheets()
             
             if sheets_to_local and local_to_sheets['success']:
@@ -179,17 +172,16 @@ class SyncManager:
                         st.error(f"❌ {result['message']}")
         
         with col2:
-            if st.button("📤 Prepare for Sheets", use_container_width=True):
-                with st.spinner("Preparing data for Google Sheets sync..."):
+            if st.button("📤 Sync to Sheets", use_container_width=True):
+                with st.spinner("Syncing data to Google Sheets..."):
                     result = self.sync_local_to_google_sheets()
                     if result['success']:
-                        if result['patients_prepared'] > 0 or result['prescriptions_prepared'] > 0:
-                            st.success("✅ Data prepared for manual sync!")
-                            st.info("📋 Use export buttons below to download CSV files")
+                        if result.get('patients', 0) > 0 or result.get('prescriptions', 0) > 0:
+                            st.success("✅ Data automatically synced to Google Sheets!")
                         else:
                             st.info("📊 No data to sync")
                     else:
-                        st.error("❌ Data preparation failed!")
+                        st.error("❌ Sync to Sheets failed!")
         
         with col3:
             if st.button("📥 Sync from Sheets", use_container_width=True):
@@ -207,7 +199,7 @@ class SyncManager:
                     if success:
                         st.success("✅ Full sync completed!")
                         st.info("📋 Local data updated from Google Sheets")
-                        st.info("📤 Pending data prepared for manual upload")
+                        st.info("📤 Pending data automatically uploaded to Google Sheets")
         
         # Show errors if any
         if status['last_sync_errors']:

@@ -839,7 +839,7 @@ def main():
             <h1>Mau Eye Care</h1>
             <p>Pura Khizir,(Near Mubarakpur Marraige Hall,Nai Pani ki tanki), Roadways Mubarakpur ,Azamgarh (U.P.)</p>
             <p> Mon-Sat: 10 AM-2 PM and 5 PM- 7PM | Sunday Closed |</p> 
-            <p> 📞+91 9235647410 |Appointment:+91 8299461251 |📧 mau.eye.care.404@gmail.com |</p>
+            <p> 📞9235647410 |Appointment:8299461251 |📧 mau.eye.care.404@gmail.com</p>
         </div>
         <div class="header-right">
             <h2 class="urdu" style="font-size: 28pt;">ڈاکٹر دانش</h2>
@@ -973,7 +973,6 @@ def main():
     </div>
     
     <div class="footer">
-        <p>This prescription is computer generated and valid for 30 days from date of issue.</p>
         <p><strong>Our Services:</strong> Eye Examinations • Prescription Glasses • Contact Lens Fitting • Computer Vision Syndrome Care • Diabetic Eye Screening • Glaucoma Testing</p>
         <p><strong>Specialties:</strong> Refraction • Vision Therapy • Dry Eye Treatment • Pediatric Eye Care • Low Vision Aids • Eye Disease Management</p>
     </div>
