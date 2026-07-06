@@ -10,34 +10,89 @@ def generate_simple_prescription_docx(prescription, doctor_name, patient_name, a
     try:
         from docx import Document
         from docx.enum.text import WD_ALIGN_PARAGRAPH
-        
+        from docx.shared import Pt, Inches
+
         # Create document
         doc = Document()
+
+        # Estimate content size to pick a starting font size so document fits one page
+        content_preview = ''
+        content_preview += f"{patient_name}{age}{gender}"
+        if rx_table:
+            for eye in ['OD', 'OS']:
+                eye_data = rx_table.get(eye, {})
+                content_preview += ''.join([str(v) for v in eye_data.values()])
+        if prescription:
+            for item, qty in prescription.items():
+                content_preview += f"{item}{qty}"
+                if dosages and item in dosages:
+                    dosage_info = dosages[item]
+                    content_preview += dosage_info.get('dosage','') + dosage_info.get('timing','')
+        if advice:
+            content_preview += advice
+
+        length = len(content_preview)
+        # base size: 11pt, shrink for larger content
+        if length <= 1200:
+            base_font_pt = 11
+        elif length <= 2000:
+            base_font_pt = 10
+        elif length <= 3000:
+            base_font_pt = 9
+        else:
+            base_font_pt = 8
         
+        # Reduce margins to maximize printable area and set default fonts
+        section = doc.sections[0]
+        section.top_margin = Inches(0.4)
+        section.bottom_margin = Inches(0.4)
+        section.left_margin = Inches(0.4)
+        section.right_margin = Inches(0.4)
+
+        # Apply default normal style
+        try:
+            normal_style = doc.styles['Normal']
+            normal_style.font.name = 'Arial'
+            normal_style.font.size = Pt(base_font_pt)
+        except Exception:
+            pass
+
         # Header
         header = doc.add_heading('MauEyeCare Optical Center', 0)
         header.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        header.runs[0].font.size = Pt(base_font_pt + 3)
         
         # Clinic info
         clinic_para = doc.add_paragraph()
         clinic_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        clinic_para.add_run('Dr. Danish - Eye Care Specialist\n').bold = True
-        clinic_para.add_run('Phone: +91 92356-47410 | Email: info@maueyecare.com')
+        r = clinic_para.add_run('Dr. Danish - Eye Care Specialist\n')
+        r.bold = True
+        r.font.size = Pt(base_font_pt)
+        r2 = clinic_para.add_run('Phone: +91 92356-47410 | Email: info@maueyecare.com')
+        r2.font.size = Pt(base_font_pt)
         
         # Date
         timestamp = datetime.datetime.now()
         date_para = doc.add_paragraph()
         date_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        date_para.add_run(f'Date: {timestamp.strftime("%d/%m/%Y")}\n')
-        date_para.add_run(f'Prescription No: RX-{timestamp.strftime("%Y%m%d%H%M")}')
+        d1 = date_para.add_run(f'Date: {timestamp.strftime("%d/%m/%Y")}\n')
+        d1.font.size = Pt(base_font_pt)
+        d2 = date_para.add_run(f'Prescription No: RX-{timestamp.strftime("%Y%m%d%H%M")}')
+        d2.font.size = Pt(base_font_pt)
         
         # Patient info
-        doc.add_paragraph(f'Patient Name: {patient_name}')
-        doc.add_paragraph(f'Age: {age} years | Gender: {gender}')
+        p1 = doc.add_paragraph(f'Patient Name: {patient_name}')
+        p1.runs[0].font.size = Pt(base_font_pt)
+        p2 = doc.add_paragraph(f'Age: {age} years | Gender: {gender}')
+        p2.runs[0].font.size = Pt(base_font_pt)
         
         # RX Details
         if rx_table:
-            doc.add_heading('Prescription Details:', level=2)
+            hdr = doc.add_heading('Prescription Details:', level=2)
+            try:
+                hdr.runs[0].font.size = Pt(base_font_pt + 1)
+            except Exception:
+                pass
             for eye in ['OD', 'OS']:
                 eye_data = rx_table.get(eye, {})
                 if eye_data.get('Sphere'):
@@ -48,24 +103,44 @@ def generate_simple_prescription_docx(prescription, doctor_name, patient_name, a
                         rx_line += f"CYL {eye_data['Cylinder']} "
                     if eye_data.get('Axis'):
                         rx_line += f"AXIS {eye_data['Axis']}"
-                    doc.add_paragraph(rx_line)
+                    p = doc.add_paragraph(rx_line)
+                    try:
+                        p.runs[0].font.size = Pt(base_font_pt)
+                    except Exception:
+                        pass
         
         # Medicines
         if prescription:
-            doc.add_heading('Prescribed Medications:', level=2)
+            hdr = doc.add_heading('Prescribed Medications:', level=2)
+            try:
+                hdr.runs[0].font.size = Pt(base_font_pt + 1)
+            except Exception:
+                pass
             for item, qty in prescription.items():
                 med_para = doc.add_paragraph()
-                med_para.add_run(f'• {item} - Quantity: {qty}').bold = True
-                
+                r = med_para.add_run(f'• {item} - Quantity: {qty}')
+                r.bold = True
+                r.font.size = Pt(base_font_pt)
+
                 if dosages and item in dosages:
                     dosage_info = dosages[item]
-                    med_para.add_run(f'\n  Dosage: {dosage_info.get("dosage", "As directed")}')
-                    med_para.add_run(f'\n  Timing: {dosage_info.get("timing", "As directed")}')
+                    d1 = med_para.add_run(f'\n  Dosage: {dosage_info.get("dosage", "As directed")}')
+                    d1.font.size = Pt(base_font_pt)
+                    d2 = med_para.add_run(f'\n  Timing: {dosage_info.get("timing", "As directed")}')
+                    d2.font.size = Pt(base_font_pt)
         
         # Advice
         if advice:
-            doc.add_heading('Doctor\'s Advice:', level=2)
-            doc.add_paragraph(advice)
+            hdr = doc.add_heading('Doctor\'s Advice:', level=2)
+            try:
+                hdr.runs[0].font.size = Pt(base_font_pt + 1)
+            except Exception:
+                pass
+            a_para = doc.add_paragraph(advice)
+            try:
+                a_para.runs[0].font.size = Pt(base_font_pt)
+            except Exception:
+                pass
         
         # Instructions
         doc.add_heading('Instructions:', level=2)
@@ -81,7 +156,11 @@ def generate_simple_prescription_docx(prescription, doctor_name, patient_name, a
         # Signature
         signature_para = doc.add_paragraph()
         signature_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        signature_para.add_run('\n\nDr. Danish\nEye Care Specialist')
+        sig = signature_para.add_run('\n\nDr. Danish\nEye Care Specialist')
+        try:
+            sig.font.size = Pt(base_font_pt)
+        except Exception:
+            pass
         
         # Save to buffer
         buffer = BytesIO()

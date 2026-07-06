@@ -18,7 +18,7 @@ from io import BytesIO
 import os
 import sys
 
-def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age, gender, advice, rx_table, recommendations):
+def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age, gender, advice, rx_table, recommendations, include_back_page=False):
     if not PDF_AVAILABLE:
         return b"PDF generation not available - fpdf2 not installed"
     pdf = FPDF()
@@ -174,27 +174,28 @@ def generate_pdf(prescription, dosage, eye_test, doctor_name, patient_name, age,
     pdf.set_text_color(0,0,0)
 
     # --- BACK PAGE: Hospital Info ---
-    pdf.add_page()
-    pdf.set_font('Arial', 'B', 16)
-    
-    # Hospital name in English
-    pdf.set_xy(20, 30)
-    pdf.set_text_color(41, 71, 226)
-    pdf.cell(0, 12, 'Mau Eye Care Optical Center', ln=1, align='C')
-    pdf.set_text_color(0,0,0)
-    
-    # Hospital details in English
-    pdf.set_font('Arial', '', 12)
-    pdf.ln(10)
-    pdf.multi_cell(0, 8, 'Premium Eye Care & Optical Solutions\nMubarakPur, Azamgarh\nPhone: 92356-47410\nWebsite: www.maueyeycare.com\nEmail: info@maueyeycare.com', align='C')
-    
-    pdf.ln(10)
-    pdf.set_font('Arial', 'B', 12)
-    pdf.cell(0, 8, 'Services Offered:', ln=1, align='C')
-    pdf.set_font('Arial', '', 10)
-    services = ['Eye Examinations', 'Prescription Glasses', 'Contact Lens Fitting', 'Eye Disease Treatment', 'Vision Therapy']
-    for service in services:
-        pdf.cell(0, 6, f'- {service}', ln=1, align='C')
+    if include_back_page:
+        pdf.add_page()
+        pdf.set_font('Arial', 'B', 16)
+        
+        # Hospital name in English
+        pdf.set_xy(20, 30)
+        pdf.set_text_color(41, 71, 226)
+        pdf.cell(0, 12, 'Mau Eye Care Optical Center', ln=1, align='C')
+        pdf.set_text_color(0,0,0)
+        
+        # Hospital details in English
+        pdf.set_font('Arial', '', 12)
+        pdf.ln(10)
+        pdf.multi_cell(0, 8, 'Premium Eye Care & Optical Solutions\nMubarakPur, Azamgarh\nPhone: 92356-47410\nWebsite: www.maueyeycare.com\nEmail: info@maueyeycare.com', align='C')
+        
+        pdf.ln(10)
+        pdf.set_font('Arial', 'B', 12)
+        pdf.cell(0, 8, 'Services Offered:', ln=1, align='C')
+        pdf.set_font('Arial', '', 10)
+        services = ['Eye Examinations', 'Prescription Glasses', 'Contact Lens Fitting', 'Eye Disease Treatment', 'Vision Therapy']
+        for service in services:
+            pdf.cell(0, 6, f'- {service}', ln=1, align='C')
 
     # Return PDF as bytes - ensure bytes format for Streamlit
     try:
