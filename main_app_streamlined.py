@@ -800,7 +800,7 @@ def main():
         body {{ font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; font-size: 11pt; line-height: 1.4; color: #333; }}
         .header {{ background: #1a4f66; color: white; padding: 15px 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
         .header-left, .header-right {{ flex: 1; }}
-        .header-center {{ text-align: center; flex: 2; padding: 0 10px; }}
+        .header-center {{ text-align: center; flex: 2; padding: 0 5px; }}
         .header-left {{ text-align: left; }}
         .header-right {{ text-align: right; }}
         .header h1 {{ margin: 0; font-size: 24pt; font-weight: 800; letter-spacing: 1px; }}
@@ -810,7 +810,7 @@ def main():
         .patient-info {{ background: #f4f6fc; border-left: 5px solid #2E86AB; padding: 12px 15px; margin: 15px 0; font-size: 11pt; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }}
         .patient-info h3 {{ margin: 0 0 8px 0; font-size: 13pt; color: #1a4f66; }}
         .patient-info p {{ margin: 4px 0; }}
-        .content {{ display: flex; gap: 20px; }}
+        .content {{ display: flex; gap: 15px; }}
         .left-section {{ flex: 1; }}
         .right-section {{ flex: 1; }}
         .section {{ background: white; padding: 12px; margin: 10px 0; border: 1px solid #e0e6ed; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }}
