@@ -796,33 +796,33 @@ def main():
 <head>
     <title>Mau Eye Care Prescription - {patient_name}</title>
     <style>
-        @page {{ margin: 0.5in; size: A4; }}
-        body {{ font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; font-size: 11pt; line-height: 1.4; color: #333; }}
-        .header {{ background: #1a4f66; color: white; padding: 15px 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
+        @page {{ margin: 0.3in; size: A4; }}
+        body {{ font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; line-height: 1.2; color: #333; }}
+        .header {{ background: #1a4f66; color: white; padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
         .header-left, .header-right {{ flex: 1; }}
-        .header-center {{ text-align: center; flex: 2; padding: 0 5px; }}
+        .header-center {{ text-align: center; flex: 2; padding: 0 3px; }}
         .header-left {{ text-align: left; }}
         .header-right {{ text-align: right; }}
-        .header h1 {{ margin: 0; font-size: 24pt; font-weight: 800; letter-spacing: 1px; }}
-        .header h2 {{ margin: 2px 0; font-size: 14pt; font-weight: bold; }}
-        .header p {{ margin: 2px 0; font-size: 10pt; opacity: 0.9; }}
+        .header h1 {{ margin: 0; font-size: 18pt; font-weight: 800; letter-spacing: 0.5px; }}
+        .header h2 {{ margin: 1px 0; font-size: 11pt; font-weight: bold; }}
+        .header p {{ margin: 1px 0; font-size: 8pt; opacity: 0.9; }}
         .urdu {{ font-family: 'Noto Nastaliq Urdu', 'Arial Unicode MS', sans-serif; }}
-        .patient-info {{ background: #f4f6fc; border-left: 5px solid #2E86AB; padding: 12px 15px; margin: 15px 0; font-size: 11pt; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }}
-        .patient-info h3 {{ margin: 0 0 8px 0; font-size: 13pt; color: #1a4f66; }}
-        .patient-info p {{ margin: 4px 0; }}
-        .content {{ display: flex; gap: 15px; }}
+        .patient-info {{ background: #f4f6fc; border-left: 5px solid #2E86AB; padding: 8px 10px; margin: 6px 0; font-size: 10pt; border-radius: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }}
+        .patient-info h3 {{ margin: 0 0 4px 0; font-size: 11pt; color: #1a4f66; }}
+        .patient-info p {{ margin: 2px 0; }}
+        .content {{ display: flex; gap: 8px; }}
         .left-section {{ flex: 1; }}
         .right-section {{ flex: 1; }}
-        .section {{ background: white; padding: 12px; margin: 10px 0; border: 1px solid #e0e6ed; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }}
-        .section h3 {{ margin: 0 0 10px 0; font-size: 13pt; color: #2E86AB; border-bottom: 2px solid #f0f4f8; padding-bottom: 5px; }}
-        .item {{ background: #f8fafc; padding: 10px; margin: 6px 0; border-radius: 4px; border-left: 3px solid #64748b; font-size: 11pt; }}
-        .vision-table {{ width: 100%; border-collapse: collapse; margin: 10px 0; }}
-        .vision-table th, .vision-table td {{ border: 1px solid #e2e8f0; padding: 8px; text-align: center; font-size: 10.5pt; }}
+        .section {{ background: white; padding: 8px; margin: 5px 0; border: 1px solid #e0e6ed; border-radius: 3px; box-shadow: 0 1px 1px rgba(0,0,0,0.02); }}
+        .section h3 {{ margin: 0 0 6px 0; font-size: 11pt; color: #2E86AB; border-bottom: 1px solid #f0f4f8; padding-bottom: 3px; }}
+        .item {{ background: #f8fafc; padding: 6px; margin: 3px 0; border-radius: 2px; border-left: 3px solid #64748b; font-size: 10pt; }}
+        .vision-table {{ width: 100%; border-collapse: collapse; margin: 6px 0; }}
+        .vision-table th, .vision-table td {{ border: 1px solid #e2e8f0; padding: 4px; text-align: center; font-size: 9.5pt; }}
         .vision-table th {{ background: #f1f5f9; color: #334155; font-weight: bold; }}
-        .medicine-item {{ background: #fffaf0; padding: 12px; margin: 8px 0; font-size: 11pt; border-left: 4px solid #f59e0b; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }}
-        .spectacle-item {{ background: #f0fdf4; padding: 12px; margin: 8px 0; font-size: 11pt; border-left: 4px solid #22c55e; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }}
-        .signature {{ text-align: right; margin-top: 30px; font-size: 12pt; font-weight: bold; padding-top: 15px; border-top: 1px dashed #cbd5e1; }}
-        .footer {{ margin-top: 25px; padding-top: 10px; text-align: center; font-size: 9pt; color: #64748b; border-top: 1px solid #e2e8f0; }}
+        .medicine-item {{ background: #fffaf0; padding: 6px; margin: 3px 0; font-size: 9.5pt; border-left: 3px solid #f59e0b; border-radius: 2px; box-shadow: 0 1px 1px rgba(0,0,0,0.02); line-height: 1.3; }}
+        .spectacle-item {{ background: #f0fdf4; padding: 6px; margin: 3px 0; font-size: 9.5pt; border-left: 3px solid #22c55e; border-radius: 2px; box-shadow: 0 1px 1px rgba(0,0,0,0.02); line-height: 1.3; }}
+        .signature {{ text-align: right; margin-top: 8px; font-size: 10pt; font-weight: bold; padding-top: 8px; border-top: 1px dashed #cbd5e1; }}
+        .footer {{ margin-top: 8px; padding-top: 6px; text-align: center; font-size: 8pt; color: #64748b; border-top: 1px solid #e2e8f0; line-height: 1.2; }}
     </style>
 </head>
 <body>
@@ -835,16 +835,16 @@ def main():
            
         </div>
         <div class="header-center">
-            <p style="font-size: 10pt; margin: 1px 0;">Computer and AI assisted Refraction and Contact Lens Center</p>
+            <p style="font-size: 8pt; margin: 0.5px 0;">Computer and AI assisted Refraction and Contact Lens Center</p>
             <h1>Mau Eye Care</h1>
-            <p>Pura Khizir,(Near Mubarakpur Marraige Hall,Nai Pani ki tanki), Roadways Mubarakpur ,Azamgarh (U.P.)</p>
-            <p> Mon-Sat: 10 AM-2 PM and 5 PM- 7PM | Sunday Closed |</p> 
-            <p> 📞9235647410 |Appointment:8299461251 |📧 mau.eye.care.404@gmail.com</p>
+            <p style="margin: 1px 0; font-size: 8pt;">Pura Khizir,(Near Mubarakpur Marraige Hall,Nai Pani ki tanki), Roadways Mubarakpur ,Azamgarh (U.P.)</p>
+            <p style="margin: 1px 0; font-size: 8pt;"> Mon-Sat: 10 AM-2 PM and 5 PM- 7PM | Sunday Closed |</p> 
+            <p style="margin: 1px 0; font-size: 8pt;"> 📞9235647410 |Appointment:8299461251 |📧 mau.eye.care.404@gmail.com</p>
         </div>
         <div class="header-right">
-            <h2 class="urdu" style="font-size: 28pt;">ڈاکٹر دانش</h2>
-            <p class="urdu" style="font-size: 18pt;">بی ایس سی آپٹومیٹری</p>
-            <p class="urdu" style="font-size: 18pt;">آنکھوں کے ماہر</p>
+            <h2 class="urdu" style="font-size: 18pt;">ڈاکٹر دانش</h2>
+            <p class="urdu" style="font-size: 12pt;">بی ایس سی آپٹومیٹری</p>
+            <p class="urdu" style="font-size: 12pt;">آنکھوں کے ماہر</p>
         </div>
     </div>
 
@@ -969,12 +969,11 @@ def main():
 
                     prescription_html += """
     <div class="signature">
-        <p>Doctor Signature: ___________________________</p>
+        <p style="margin: 4px 0; font-size: 9pt;">Doctor Signature: ___________________________</p>
     </div>
     
     <div class="footer">
-        <p><strong>Our Services:</strong> Eye Examinations • Prescription Glasses • Contact Lens Fitting • Computer Vision Syndrome Care • Diabetic Eye Screening • Glaucoma Testing</p>
-        <p><strong>Specialties:</strong> Refraction • Vision Therapy • Dry Eye Treatment • Pediatric Eye Care • Low Vision Aids • Eye Disease Management</p>
+        <p style="margin: 1px 0;"><strong>Services:</strong> Refraction • Glasses • Contact Lens • Eye Screening • Treatment</p>
     </div>
 </body>
 </html>"""
@@ -986,15 +985,22 @@ def main():
 <head>
     <title>Mau Eye Care Receipt - {patient_name}</title>
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 20px; }}
-        .header {{ text-align: center; background: #2E86AB; color: white; padding: 10px; margin-bottom: 20px; }}
-        .receipt-item {{ background: #f0f8ff; padding: 8px; margin: 5px 0; border-left: 4px solid #2E86AB; }}
-        .total {{ background: #e8f5e8; padding: 10px; font-weight: bold; text-align: center; margin: 10px 0; }}
+        @page {{ margin: 0.3in; }}
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 8px; font-size: 10pt; line-height: 1.3; }}
+        .header {{ text-align: center; background: #2E86AB; color: white; padding: 8px; margin-bottom: 10px; border-radius: 3px; }}
+        .header h2 {{ margin: 2px 0; font-size: 12pt; }}
+        .header p {{ margin: 2px 0; font-size: 9pt; }}
+        h3 {{ margin: 6px 0 4px 0; font-size: 10pt; color: #2E86AB; }}
+        .receipt-item {{ background: #f0f8ff; padding: 6px; margin: 4px 0; border-left: 3px solid #2E86AB; font-size: 9.5pt; border-radius: 2px; }}
+        .receipt-item strong {{ font-size: 10pt; }}
+        .receipt-item br + * {{ margin-top: 2px; }}
+        .total {{ background: #e8f5e8; padding: 8px; font-weight: bold; text-align: center; margin: 8px 0; border-radius: 3px; }}
+        .total h2 {{ margin: 4px 0; font-size: 12pt; }}
     </style>
 </head>
 <body>
     <div class="header">
-        <h2>Mau Eye Care - Payment Receipt</h2>
+        <h2>Mau Eye Care - Receipt</h2>
         <p>Patient: {patient_name} | Date: {current_time.strftime('%d/%m/%Y %I:%M %p')}</p>
     </div>
     
@@ -1006,9 +1012,8 @@ def main():
                             total_med_cost += details['total_cost']
                             receipt_html += f"""
     <div class="receipt-item">
-        <strong>{med_name}</strong><br>
-        Quantity: {details['quantity']} | Unit Price: ₹{details['price']} | Total: ₹{details['total_cost']}<br>
-        Dosage: {details.get('dosage', 'As directed')} | Timing: {details.get('timing', 'As directed')}
+        <strong>{med_name}</strong> • Qty: {details['quantity']} @ ₹{details['price']} = ₹{details['total_cost']}<br>
+        <span style="font-size: 9pt;">{details.get('dosage', 'As directed')} • {details.get('timing', 'As directed')}</span>
     </div>"""
 
                     consultation_fee = st.session_state.get('consultation_fee', 0)
