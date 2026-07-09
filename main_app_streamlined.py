@@ -304,64 +304,57 @@ Then click **🔄 Sync Google Sheets** above to test.
             existing_patients = []
 
         # ── Quick Patient Lookup (always visible, outside form for live smart-search) ──
-        with st.expander("🔍 Find Existing Patient (smart search)", expanded=False):
+        with st.expander("🔍 Find Existing Patient (smart search)", expanded=True):
             if not ranked_names:
                 st.info("🔗 Connect Google Sheets to enable patient lookup. New patients: fill the form below.")
             else:
-                st.caption("Type initials or any part of the name/mobile — e.g. 'RS' finds 'Rahul Sharma'")
-                lcol, rcol = st.columns(2)
+                st.caption("🔍 Type a name or mobile number — results appear instantly")
+                search_q = st.text_input(
+                    "Search patient:",
+                    placeholder="e.g. 'Adil', '6363' or initials 'RS' for Rahul Sharma…",
+                    key="lookup_search_q",
+                    label_visibility="collapsed"
+                )
 
-                with lcol:
-                    name_q = st.text_input(
-                        "Search by Name:",
-                        placeholder="Type name or initials…",
-                        key="lookup_name_q"
-                    )
-                    filtered_names = smart_word_filter(name_q, ranked_names) if name_q else ranked_names[:30]
-                    if filtered_names:
-                        chosen_name = st.selectbox(
-                            f"Matching names ({len(filtered_names)} found):",
-                            filtered_names,
-                            index=None,
-                            placeholder="Select to pre-fill form…",
-                            key="lookup_name_select"
+                # Build combined search list: names and mobiles
+                all_candidates = ranked_names + [m for m in ranked_mobiles if m not in ranked_names]
+                if search_q:
+                    filtered_names = smart_word_filter(search_q, ranked_names, max_results=15)
+                    filtered_mobs  = smart_word_filter(search_q, ranked_mobiles, max_results=10)
+                else:
+                    filtered_names = ranked_names[:15]
+                    filtered_mobs  = []
+
+                # Show matching patients as cards
+                if filtered_names:
+                    st.markdown(f"**{len(filtered_names)} patient(s) found:**")
+                    for pname in filtered_names:
+                        # Find patient record
+                        p_record = next(
+                            (p for p in existing_patients if isinstance(p, dict)
+                             and p.get('name', '').strip().lower() == pname.strip().lower()),
+                            None
                         )
-                    else:
-                        st.info("No names match — will register as new patient.")
-                        chosen_name = None
+                        mob_display = p_record.get('mobile', '—') if p_record else '—'
+                        age_display = p_record.get('age', '—') if p_record else '—'
+                        gender_display = p_record.get('gender', '—') if p_record else '—'
 
-                with rcol:
-                    mob_q = st.text_input(
-                        "Search by Mobile:",
-                        placeholder="Type mobile digits…",
-                        key="lookup_mob_q"
-                    )
-                    filtered_mobs = smart_word_filter(mob_q, ranked_mobiles) if mob_q else ranked_mobiles[:30]
-                    if filtered_mobs:
-                        chosen_mob = st.selectbox(
-                            f"Matching mobiles ({len(filtered_mobs)} found):",
-                            filtered_mobs,
-                            index=None,
-                            placeholder="Select to pre-fill form…",
-                            key="lookup_mob_select"
-                        )
-                    else:
-                        st.info("No mobiles match.")
-                        chosen_mob = None
-
-                if st.button("✅ Pre-fill form with selected patient", key="prefill_btn"):
-                    if chosen_name:
-                        st.session_state['prefill_name'] = chosen_name
-                    if chosen_mob:
-                        st.session_state['prefill_mob'] = chosen_mob
-                    # Auto-fill age/gender from existing records
-                    for p in existing_patients:
-                        if isinstance(p, dict) and p.get('name', '').strip() == (chosen_name or '').strip():
-                            st.session_state['prefill_age'] = p.get('age', 30)
-                            st.session_state['prefill_gender'] = p.get('gender', 'Male')
-                            break
-                    st.success(f"✅ Form pre-filled with: {chosen_name or ''} / {chosen_mob or ''}")
-                    st.rerun()
+                        pcol1, pcol2 = st.columns([4, 1])
+                        with pcol1:
+                            st.markdown(
+                                f"👤 **{pname}** &nbsp;|&nbsp; 📱 {mob_display} &nbsp;|&nbsp; "
+                                f"Age {age_display} &nbsp;|&nbsp; {gender_display}"
+                            )
+                        with pcol2:
+                            if st.button("✅ Select", key=f"prefill_{pname}"):
+                                st.session_state['prefill_name']   = pname
+                                st.session_state['prefill_mob']    = mob_display if mob_display != '—' else ''
+                                st.session_state['prefill_age']    = age_display if age_display != '—' else 30
+                                st.session_state['prefill_gender'] = gender_display if gender_display != '—' else 'Male'
+                                st.success(f"✅ Pre-filled: {pname} / {mob_display}")
+                                st.rerun()
+                elif search_q:
+                    st.info("No patients found — fill the form below to register as new patient.")
 
         with st.form("patient_form"):
             col1, col2 = st.columns(2)
@@ -379,8 +372,12 @@ Then click **🔄 Sync Google Sheets** above to test.
                     key="form_patient_name"
                 )
 
-                age = st.number_input("Age", min_value=0, max_value=120, value=30)
-                gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+                _default_age = int(st.session_state.get('prefill_age', 30))
+                age = st.number_input("Age", min_value=0, max_value=120, value=_default_age)
+                _gender_opts = ["Male", "Female", "Other"]
+                _default_gender = st.session_state.get('prefill_gender', 'Male')
+                _gender_idx = _gender_opts.index(_default_gender) if _default_gender in _gender_opts else 0
+                gender = st.selectbox("Gender", _gender_opts, index=_gender_idx)
 
                 # Address fields for demographics with defaults
                 address = st.text_input("Address", placeholder="Street address")
@@ -777,23 +774,23 @@ Then click **🔄 Sync Google Sheets** above to test.
             else:
                 final_spectacle = None
 
-                if final_spectacle:
-                    # Reset dropdown on selection save
-                    if st.button(f"➕ Add {final_spectacle} to Prescription", key=f"add_spec_btn_{_spec_key}"):
-                        st.session_state['selected_spectacles'] = [final_spectacle]
-                        st.session_state['spec_selector_key'] += 1
-                        st.rerun()
+            if final_spectacle:
+                # Reset dropdown on selection save
+                if st.button(f"➕ Add {final_spectacle} to Prescription", key=f"add_spec_btn_{_spec_key}"):
+                    st.session_state['selected_spectacles'] = [final_spectacle]
+                    st.session_state['spec_selector_key'] += 1
+                    st.rerun()
 
-                    # Show already confirmed spectacle
-                    if st.session_state.get('selected_spectacles'):
-                        st.success(f"✅ Spectacle confirmed: {st.session_state['selected_spectacles'][0]}")
+            # Show already confirmed spectacle
+            if st.session_state.get('selected_spectacles'):
+                st.success(f"✅ Spectacle confirmed: {st.session_state['selected_spectacles'][0]}")
 
-                    # Add spectacle usage instructions for first-time users
-                    st.markdown("**Spectacle Usage Instructions:**")
-                    first_time_user = st.checkbox("First time spectacle user?", key="first_time_spec")
+                # Add spectacle usage instructions for first-time users
+                st.markdown("**Spectacle Usage Instructions:**")
+                first_time_user = st.checkbox("First time spectacle user?", key="first_time_spec")
 
-                    if first_time_user:
-                        st.session_state['spectacle_instructions'] = """• Start by wearing glasses for 2-3 hours daily, gradually increase usage
+                if first_time_user:
+                    st.session_state['spectacle_instructions'] = """• Start by wearing glasses for 2-3 hours daily, gradually increase usage
 • Clean lenses with microfiber cloth and lens cleaner only
 • Store in protective case when not in use
 • Avoid placing glasses lens-down on surfaces
