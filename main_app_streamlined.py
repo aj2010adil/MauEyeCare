@@ -314,17 +314,27 @@ def main():
                 med_names = list(medicine_options.keys())
                 med_dropdown_options = ["-- Select Medicine --"] + med_names
 
+                # --- Professional Reset Pattern ---
+                # A counter key is used to force Streamlit to re-create the
+                # selectbox and text_input widgets fresh after each "Add" action,
+                # effectively clearing the selection/search text automatically.
+                if 'med_selector_key' not in st.session_state:
+                    st.session_state['med_selector_key'] = 0
+
+                _sel_key = st.session_state['med_selector_key']
+
                 selected_med_dropdown = st.selectbox(
                     "Select Medicine from Inventory:",
                     med_dropdown_options,
-                    key="med_dropdown"
+                    index=0,  # Always default to placeholder
+                    key=f"med_dropdown_{_sel_key}"
                 )
 
                 # Allow custom medicine entry
                 custom_medicine = st.text_input(
                     "Or enter custom medicine:",
                     placeholder="Type medicine name if not in dropdown",
-                    key="custom_med"
+                    key=f"custom_med_{_sel_key}"
                 )
 
                 # Determine final medicine selection
@@ -339,10 +349,15 @@ def main():
                     if 'selected_medicines_list' not in st.session_state:
                         st.session_state['selected_medicines_list'] = []
 
-                    if st.button(f"➕ Add {final_medicine}", key=f"add_{final_medicine}"):
+                    if st.button(f"➕ Add {final_medicine}", key=f"add_med_btn_{_sel_key}"):
                         if final_medicine not in st.session_state['selected_medicines_list']:
                             st.session_state['selected_medicines_list'].append(final_medicine)
-                            st.success(f"Added {final_medicine}")
+                            st.success(f"✅ {final_medicine} added to prescription")
+                        else:
+                            st.warning(f"⚠️ {final_medicine} is already in the list")
+                        # ✅ Reset both widgets by bumping the counter key
+                        st.session_state['med_selector_key'] += 1
+                        st.rerun()
 
                 # Show selected medicines with quantities and dosage
                 if st.session_state.get('selected_medicines_list'):
