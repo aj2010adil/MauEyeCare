@@ -312,7 +312,6 @@ def main():
             if medicine_options:
                 # Combined dropdown + custom medicine selection
                 med_names = list(medicine_options.keys())
-                med_dropdown_options = ["-- Select Medicine --"] + med_names
 
                 # --- Professional Reset Pattern ---
                 # A counter key is used to force Streamlit to re-create the
@@ -323,10 +322,13 @@ def main():
 
                 _sel_key = st.session_state['med_selector_key']
 
+                # index=None + placeholder: user can type immediately to filter —
+                # no placeholder text to delete, instant search experience.
                 selected_med_dropdown = st.selectbox(
                     "Select Medicine from Inventory:",
-                    med_dropdown_options,
-                    index=0,  # Always default to placeholder
+                    med_names,
+                    index=None,
+                    placeholder="🔍 Type to search medicine...",
                     key=f"med_dropdown_{_sel_key}"
                 )
 
@@ -338,7 +340,7 @@ def main():
                 )
 
                 # Determine final medicine selection
-                if selected_med_dropdown != "-- Select Medicine --":
+                if selected_med_dropdown is not None:
                     final_medicine = selected_med_dropdown
                 elif custom_medicine:
                     final_medicine = custom_medicine
