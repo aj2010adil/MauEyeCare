@@ -228,7 +228,21 @@ def main():
             st.success("✅ Google Sheets Connected (Service Account)")
         else:
             st.error("❌ Google Sheets Not Connected")
-            st.caption("Check credentials.json in modules/ folder.")
+            with st.expander("🔧 Setup Instructions"):
+                st.markdown("""
+**Option A – credentials.json file (local dev):**
+1. Download your Service Account JSON key from [Google Cloud Console](https://console.cloud.google.com/) → IAM & Admin → Service Accounts → Keys
+2. Rename it `credentials.json`
+3. Place it in `modules/` folder or project root
+4. Share your Google Sheet with the Service Account email
+
+**Option B – secrets.toml (Streamlit Cloud):**
+1. Open `.streamlit/secrets.toml`
+2. Fill in the `[gcp_service_account]` fields from your downloaded JSON key
+3. Share your Google Sheet with the Service Account email
+
+Then click **🔄 Sync Google Sheets** above to test.
+""")
 
         # Low stock alerts for doctor
         try:

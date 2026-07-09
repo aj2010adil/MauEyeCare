@@ -19,17 +19,38 @@ class GoogleSheetsAPI:
         self.service = self._authenticate()
         
     def _authenticate(self):
-        """Authenticate using Service Account"""
+        """Authenticate using Service Account.
+
+        Tries in order:
+        1. st.secrets["gcp_service_account"]  (Streamlit Cloud / secrets.toml)
+        2. credentials.json next to this file  (modules/credentials.json)
+        3. credentials.json in project root
+        """
         try:
-            if os.path.exists(self.credentials_path):
-                creds = Credentials.from_service_account_file(self.credentials_path, scopes=self.scopes)
+            # ── 1. Streamlit secrets (preferred for Cloud deployment) ──────────
+            if "gcp_service_account" in st.secrets:
+                creds = Credentials.from_service_account_info(
+                    dict(st.secrets["gcp_service_account"]),
+                    scopes=self.scopes
+                )
                 return build('sheets', 'v4', credentials=creds, cache_discovery=False)
-            else:
-                st.error("Service Account credentials.json not found!")
-                return None
-        except Exception as e:
-            st.error(f"Failed to authenticate with Google Sheets: {str(e)}")
-            return None
+        except Exception:
+            pass
+
+        # ── 2. credentials.json file (local development) ─────────────────────
+        candidate_paths = [
+            self.credentials_path,                                                          # modules/credentials.json
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), 'credentials.json'),  # project root
+        ]
+        for path in candidate_paths:
+            if os.path.exists(path):
+                try:
+                    creds = Credentials.from_service_account_file(path, scopes=self.scopes)
+                    return build('sheets', 'v4', credentials=creds, cache_discovery=False)
+                except Exception:
+                    pass
+
+        return None  # Caller checks for None; no st.error() here to avoid banner spam
 
     def read_sheet(self, sheet_name, range_name="A:Z"):
         """Read data from Google Sheet"""
