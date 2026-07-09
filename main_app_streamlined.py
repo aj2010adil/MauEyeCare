@@ -27,6 +27,90 @@ def get_sheet_data():
     except Exception as e:
         return [], [], []
 
+
+@st.cache_data
+def get_frequency_ranked_data():
+    """Return frequency-ranked suggestion lists for all dropdowns.
+
+    Ranking logic:
+    - Patient names  : ranked by visit count (same name = return visit = higher rank)
+    - Patient mobiles: ranked alongside patient-name frequency
+    - Medicines      : ranked by usage proxy (original_stock - current_stock desc),
+                       then alphabetically so zero-usage items don't crowd the top
+    - Spectacles     : same as medicines
+    """
+    try:
+        medicines, spectacles, patients = get_sheet_data()
+    except Exception:
+        return [], [], [], {}, {}
+
+    # --- Patient names ranked by visit frequency ---
+    from collections import Counter
+    name_counter = Counter()
+    mobile_map = {}   # name -> latest mobile
+    for p in patients:
+        if not isinstance(p, dict):
+            continue
+        name = p.get('name', '').strip()
+        mobile = p.get('mobile', '').strip()
+        if name:
+            name_counter[name] += 1
+            if mobile:
+                mobile_map[name] = mobile  # keep latest mobile for each name
+
+    # Names sorted most-visited first
+    ranked_names = [name for name, _ in name_counter.most_common()]
+
+    # Mobiles ordered to match name frequency order, then any extras
+    seen_mobiles = set()
+    ranked_mobiles = []
+    for name in ranked_names:
+        mob = mobile_map.get(name, '')
+        if mob and mob not in seen_mobiles:
+            ranked_mobiles.append(mob)
+            seen_mobiles.add(mob)
+    # Add remaining mobiles not linked to a ranked name
+    for p in patients:
+        if isinstance(p, dict):
+            mob = p.get('mobile', '').strip()
+            if mob and mob not in seen_mobiles:
+                ranked_mobiles.append(mob)
+                seen_mobiles.add(mob)
+
+    # --- Medicines ranked by usage (original_stock - current_stock proxy) ---
+    def med_sort_key(m):
+        try:
+            qty = int(m.get('quantity', 0))
+            # Lower current stock → more has been dispensed → higher rank
+            # We negate so that lower stock sorts first (most used)
+            return (-1 * (1000 - qty), m.get('name', '').lower())
+        except Exception:
+            return (0, m.get('name', '').lower())
+
+    ranked_meds = [
+        m['name'] for m in sorted(
+            [m for m in medicines if isinstance(m, dict) and 'name' in m],
+            key=med_sort_key
+        )
+    ]
+
+    # --- Spectacles ranked the same way ---
+    def spec_sort_key(s):
+        try:
+            qty = int(s.get('quantity', 0))
+            return (-1 * (1000 - qty), s.get('name', '').lower())
+        except Exception:
+            return (0, s.get('name', '').lower())
+
+    ranked_specs = [
+        s['name'] for s in sorted(
+            [s for s in spectacles if isinstance(s, dict) and 'name' in s],
+            key=spec_sort_key
+        )
+    ]
+
+    return ranked_names, ranked_mobiles, ranked_meds, ranked_specs
+
 def main():
     st.set_page_config(
         page_title="MauEyeCare", 
@@ -107,30 +191,38 @@ def main():
     with tab1:
         st.header("👥 Patient Registration")
 
-        # Get existing patients for suggestions
+        # Get existing patients for suggestions — frequency-ranked
+        try:
+            ranked_names, ranked_mobiles, _, _ = get_frequency_ranked_data()
+            # Fallback raw lists if ranking returns empty
+            if not ranked_names or not ranked_mobiles:
+                _, _, existing_patients = get_sheet_data()
+                ranked_names = list(dict.fromkeys(
+                    p.get('name', '') for p in existing_patients
+                    if isinstance(p, dict) and p.get('name')
+                ))
+                ranked_mobiles = list(dict.fromkeys(
+                    p.get('mobile', '') for p in existing_patients
+                    if isinstance(p, dict) and p.get('mobile')
+                ))
+        except Exception:
+            ranked_names, ranked_mobiles = [], []
         existing_patients = []
-        patient_names = []
-        patient_mobiles = []
         try:
             _, _, existing_patients = get_sheet_data()
-            if existing_patients:
-                patient_names = [p.get('name', '') for p in existing_patients if isinstance(p, dict) and p.get('name')]
-                patient_mobiles = [p.get('mobile', '') for p in existing_patients if isinstance(p, dict) and p.get('mobile')]
-        except Exception as e:
+        except Exception:
             existing_patients = []
-            patient_names = []
-            patient_mobiles = []
 
         with st.form("patient_form"):
             col1, col2 = st.columns(2)
 
             with col1:
-                # Searchable dropdown: user types immediately, no fake placeholder to clear
+                # Frequency-ranked searchable dropdown — most-visited patients first
                 selected_name = st.selectbox(
                     "Patient Name",
-                    patient_names[:15],
+                    ranked_names[:30],
                     index=None,
-                    placeholder="🔍 Search existing patient or leave blank for new...",
+                    placeholder="🔍 Search existing patient (most visited shown first)...",
                     key="name_dropdown"
                 )
 
@@ -159,12 +251,12 @@ def main():
                 pincode = st.text_input("Pincode", value="276404", placeholder="6-digit pincode")
 
             with col2:
-                # Searchable dropdown: user types immediately, no fake placeholder to clear
+                # Frequency-ranked searchable dropdown — most-visited mobiles first
                 selected_mobile = st.selectbox(
                     "Mobile Number",
-                    patient_mobiles[:15],
+                    ranked_mobiles[:30],
                     index=None,
-                    placeholder="🔍 Search existing mobile or leave blank for new...",
+                    placeholder="🔍 Search existing mobile (most visited first)...",
                     key="mobile_dropdown"
                 )
 
@@ -312,12 +404,20 @@ def main():
             # Medicine Selection Section
             st.markdown("### 💊 Medicine Selection")
 
-            # Load medicines from Google Sheets
+            # Load medicines from Google Sheets — frequency ranked
             try:
                 medicines, _, _ = get_sheet_data()
                 medicine_options = {med['name']: med for med in medicines if isinstance(med, dict) and 'name' in med}
-            except:
+                _, _, ranked_med_names, _ = get_frequency_ranked_data()
+                # Keep only names that exist in inventory; preserve rank order
+                med_names = [n for n in ranked_med_names if n in medicine_options]
+                # Append any inventory items not yet in ranked list
+                for n in medicine_options:
+                    if n not in med_names:
+                        med_names.append(n)
+            except Exception:
                 medicine_options = {}
+                med_names = []
 
             if medicine_options:
                 # Combined dropdown + custom medicine selection
@@ -334,11 +434,12 @@ def main():
 
                 # index=None + placeholder: user can type immediately to filter —
                 # no placeholder text to delete, instant search experience.
+                # Most-used medicines appear first in the list.
                 selected_med_dropdown = st.selectbox(
                     "Select Medicine from Inventory:",
                     med_names,
                     index=None,
-                    placeholder="🔍 Type to search medicine...",
+                    placeholder="🔍 Type to search medicine (most used first)...",
                     key=f"med_dropdown_{_sel_key}"
                 )
 
@@ -473,8 +574,15 @@ def main():
             try:
                 _, spectacles, _ = get_sheet_data()
                 spectacle_options = {spec['name']: spec for spec in spectacles if isinstance(spec, dict) and 'name' in spec}
-            except:
+                _, _, _, ranked_spec_names = get_frequency_ranked_data()
+                # Preserve rank order, only include items in inventory
+                spec_names = [n for n in ranked_spec_names if n in spectacle_options]
+                for n in spectacle_options:
+                    if n not in spec_names:
+                        spec_names.append(n)
+            except Exception:
                 spectacle_options = {}
+                spec_names = []
 
             if spectacle_options:
                 # Combined dropdown + custom spectacle selection
@@ -487,11 +595,12 @@ def main():
                 _spec_key = st.session_state['spec_selector_key']
 
                 # index=None + placeholder: user types immediately to filter
+                # Most-used spectacles appear first in the list.
                 selected_spec_dropdown = st.selectbox(
                     "Select Spectacle from Inventory:",
                     spec_names,
                     index=None,
-                    placeholder="🔍 Type to search spectacle...",
+                    placeholder="🔍 Type to search spectacle (most used first)...",
                     key=f"spec_dropdown_{_spec_key}"
                 )
 
