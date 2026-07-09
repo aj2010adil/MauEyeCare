@@ -125,15 +125,20 @@ def main():
             col1, col2 = st.columns(2)
 
             with col1:
-                # Combined dropdown + custom input for name
-                name_options = ["-- Enter Custom Name --"] + patient_names[:15]
-                selected_name = st.selectbox("Patient Name", name_options, key="name_dropdown")
+                # Searchable dropdown: user types immediately, no fake placeholder to clear
+                selected_name = st.selectbox(
+                    "Patient Name",
+                    patient_names[:15],
+                    index=None,
+                    placeholder="🔍 Search existing patient or leave blank for new...",
+                    key="name_dropdown"
+                )
 
-                if selected_name == "-- Enter Custom Name --":
-                    patient_name = st.text_input("Enter Full Name", placeholder="Type patient full name", key="custom_name")
-                else:
+                if selected_name:
                     patient_name = selected_name
-                    st.info(f"Selected: {selected_name}")
+                    st.info(f"Returning patient selected: {selected_name}")
+                else:
+                    patient_name = st.text_input("Enter Full Name", placeholder="Type patient full name", key="custom_name")
 
                 age = st.number_input("Age", min_value=0, max_value=120, value=30)
                 gender = st.selectbox("Gender", ["Male", "Female", "Other"])
@@ -154,15 +159,20 @@ def main():
                 pincode = st.text_input("Pincode", value="276404", placeholder="6-digit pincode")
 
             with col2:
-                # Combined dropdown + custom input for mobile
-                mobile_options = ["-- Enter Custom Mobile --"] + patient_mobiles[:15]
-                selected_mobile = st.selectbox("Mobile Number", mobile_options, key="mobile_dropdown")
+                # Searchable dropdown: user types immediately, no fake placeholder to clear
+                selected_mobile = st.selectbox(
+                    "Mobile Number",
+                    patient_mobiles[:15],
+                    index=None,
+                    placeholder="🔍 Search existing mobile or leave blank for new...",
+                    key="mobile_dropdown"
+                )
 
-                if selected_mobile == "-- Enter Custom Mobile --":
-                    contact = st.text_input("Enter Mobile Number", placeholder="Type mobile number", key="custom_mobile")
-                else:
+                if selected_mobile:
                     contact = selected_mobile
-                    st.info(f"Selected: {selected_mobile}")
+                    st.info(f"Returning patient mobile: {selected_mobile}")
+                else:
+                    contact = st.text_input("Enter Mobile Number", placeholder="Type mobile number", key="custom_mobile")
 
                 issue_options = ["Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Floaters", "Night Blindness", "Headache", "Eye Strain", "Watering", "Itching", "Burning Sensation", "Foreign Body Sensation", "Light Sensitivity", "Discharge", "Swelling", "Routine Checkup", "Other"]
                 patient_issue = st.selectbox("Patient Issue/Complaint", issue_options)
@@ -469,23 +479,31 @@ def main():
             if spectacle_options:
                 # Combined dropdown + custom spectacle selection
                 spec_names = list(spectacle_options.keys())
-                spec_dropdown_options = ["-- Select Spectacle --"] + spec_names
 
+                # Counter-based key reset (same pattern as medicine dropdown)
+                if 'spec_selector_key' not in st.session_state:
+                    st.session_state['spec_selector_key'] = 0
+
+                _spec_key = st.session_state['spec_selector_key']
+
+                # index=None + placeholder: user types immediately to filter
                 selected_spec_dropdown = st.selectbox(
                     "Select Spectacle from Inventory:",
-                    spec_dropdown_options,
-                    key="spec_dropdown"
+                    spec_names,
+                    index=None,
+                    placeholder="🔍 Type to search spectacle...",
+                    key=f"spec_dropdown_{_spec_key}"
                 )
 
                 # Allow custom spectacle entry
                 custom_spectacle = st.text_input(
                     "Or enter custom spectacle:",
                     placeholder="Type spectacle name if not in dropdown",
-                    key="custom_spec"
+                    key=f"custom_spec_{_spec_key}"
                 )
 
                 # Determine final spectacle selection
-                if selected_spec_dropdown != "-- Select Spectacle --":
+                if selected_spec_dropdown is not None:
                     final_spectacle = selected_spec_dropdown
                     if final_spectacle in spectacle_options:
                         spec_data = spectacle_options[final_spectacle]
@@ -497,7 +515,15 @@ def main():
                     final_spectacle = None
 
                 if final_spectacle:
-                    st.session_state['selected_spectacles'] = [final_spectacle]
+                    # Reset dropdown on selection save
+                    if st.button(f"➕ Add {final_spectacle} to Prescription", key=f"add_spec_btn_{_spec_key}"):
+                        st.session_state['selected_spectacles'] = [final_spectacle]
+                        st.session_state['spec_selector_key'] += 1
+                        st.rerun()
+
+                    # Show already confirmed spectacle
+                    if st.session_state.get('selected_spectacles'):
+                        st.success(f"✅ Spectacle confirmed: {st.session_state['selected_spectacles'][0]}")
 
                     # Add spectacle usage instructions for first-time users
                     st.markdown("**Spectacle Usage Instructions:**")
