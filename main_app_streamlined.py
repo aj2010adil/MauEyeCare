@@ -111,6 +111,98 @@ def get_frequency_ranked_data():
 
     return ranked_names, ranked_mobiles, ranked_meds, ranked_specs
 
+
+def smart_word_filter(query: str, candidates: list, max_results: int = 40) -> list:
+    """Professional word-boundary search engine (VS Code / Spotlight style).
+
+    Scoring tiers (higher wins — first match in list wins ties):
+      900 : exact match
+      800 : starts-with full query
+      700 : all query chars match word-initials in order  (RS → Rahul Sharma)
+      600 : first char matches first word; rest match subsequent words' starts or substrings
+      500 : any single word starts with the full query
+      400 : substring anywhere in the full text
+      200 : fuzzy subsequence (all chars appear in order anywhere)
+        0 : no match
+
+    All matching is case-insensitive.
+    Results are returned sorted best-first, then frequency order preserved.
+    """
+    if not query or not query.strip():
+        return candidates[:max_results]
+
+    q = query.strip().lower()
+    scored = []
+
+    for idx, item in enumerate(candidates):
+        text = item.lower()
+        words = text.split()
+        q_chars = list(q)
+        score = 0
+
+        if text == q:
+            score = 900
+        elif text.startswith(q):
+            score = 800
+        elif len(q_chars) <= len(words) and all(
+            words[i].startswith(q_chars[i]) for i in range(len(q_chars))
+        ):
+            # Word-initials match: RS → Rahul Sharma
+            score = 700
+        elif words and words[0].startswith(q_chars[0]):
+            # First char matches first word; try matching rest against subsequent words
+            remaining_chars = q_chars[1:]
+            remaining_words = words[1:]
+            if not remaining_chars:
+                score = 600
+            else:
+                match_ok = True
+                rem_w_idx = 0
+                for rc in remaining_chars:
+                    found = False
+                    # Try word-initial first
+                    while rem_w_idx < len(remaining_words):
+                        if remaining_words[rem_w_idx].startswith(rc):
+                            rem_w_idx += 1
+                            found = True
+                            break
+                        # Try substring in this word
+                        if rc in remaining_words[rem_w_idx]:
+                            found = True
+                            break
+                        rem_w_idx += 1
+                    if not found:
+                        match_ok = False
+                        break
+                if match_ok:
+                    score = 600
+        
+        if score == 0 and any(w.startswith(q) for w in words):
+            score = 500
+
+        if score == 0 and q in text:
+            score = 400
+
+        if score == 0:
+            # Fuzzy subsequence
+            pos = 0
+            fuzzy_ok = True
+            for ch in q:
+                nxt = text.find(ch, pos)
+                if nxt == -1:
+                    fuzzy_ok = False
+                    break
+                pos = nxt + 1
+            if fuzzy_ok:
+                score = 200
+
+        if score > 0:
+            # Use negative idx so frequency order (earlier in list) breaks ties
+            scored.append((-score, idx, item))
+
+    scored.sort()
+    return [item for _, _, item in scored[:max_results]]
+
 def main():
     st.set_page_config(
         page_title="MauEyeCare", 
@@ -194,15 +286,16 @@ def main():
         # Get existing patients for suggestions — frequency-ranked
         try:
             ranked_names, ranked_mobiles, _, _ = get_frequency_ranked_data()
-            # Fallback raw lists if ranking returns empty
-            if not ranked_names or not ranked_mobiles:
-                _, _, existing_patients = get_sheet_data()
+            if not ranked_names:
+                _, _, existing_patients_raw = get_sheet_data()
                 ranked_names = list(dict.fromkeys(
-                    p.get('name', '') for p in existing_patients
+                    p.get('name', '') for p in existing_patients_raw
                     if isinstance(p, dict) and p.get('name')
                 ))
+            if not ranked_mobiles:
+                _, _, existing_patients_raw = get_sheet_data()
                 ranked_mobiles = list(dict.fromkeys(
-                    p.get('mobile', '') for p in existing_patients
+                    p.get('mobile', '') for p in existing_patients_raw
                     if isinstance(p, dict) and p.get('mobile')
                 ))
         except Exception:
@@ -213,24 +306,75 @@ def main():
         except Exception:
             existing_patients = []
 
+        # ── Quick Patient Lookup (outside form for live smart-search) ────────────
+        if ranked_names:
+            with st.expander("🔍 Find Existing Patient (smart search)", expanded=False):
+                st.caption("Type initials or any part of the name/mobile — e.g. 'RS' finds 'Rahul Sharma'")
+                lcol, rcol = st.columns(2)
+
+                with lcol:
+                    name_q = st.text_input(
+                        "Search by Name:",
+                        placeholder="Type name or initials…",
+                        key="lookup_name_q"
+                    )
+                    filtered_names = smart_word_filter(name_q, ranked_names) if name_q else ranked_names[:30]
+                    if filtered_names:
+                        chosen_name = st.selectbox(
+                            f"Matching names ({len(filtered_names)} found):",
+                            filtered_names,
+                            index=None,
+                            placeholder="Select to pre-fill form…",
+                            key="lookup_name_select"
+                        )
+                    else:
+                        st.info("No names match — will register as new patient.")
+                        chosen_name = None
+
+                with rcol:
+                    mob_q = st.text_input(
+                        "Search by Mobile:",
+                        placeholder="Type mobile digits…",
+                        key="lookup_mob_q"
+                    )
+                    filtered_mobs = smart_word_filter(mob_q, ranked_mobiles) if mob_q else ranked_mobiles[:30]
+                    if filtered_mobs:
+                        chosen_mob = st.selectbox(
+                            f"Matching mobiles ({len(filtered_mobs)} found):",
+                            filtered_mobs,
+                            index=None,
+                            placeholder="Select to pre-fill form…",
+                            key="lookup_mob_select"
+                        )
+                    else:
+                        st.info("No mobiles match.")
+                        chosen_mob = None
+
+                if st.button("✅ Pre-fill form with selected patient", key="prefill_btn"):
+                    if chosen_name:
+                        st.session_state['prefill_name'] = chosen_name
+                    if chosen_mob:
+                        st.session_state['prefill_mob'] = chosen_mob
+                    # Try to auto-fill age/gender from existing records
+                    for p in existing_patients:
+                        if isinstance(p, dict) and p.get('name', '').strip() == (chosen_name or '').strip():
+                            st.session_state.setdefault('prefill_age', p.get('age', 30))
+                            st.session_state.setdefault('prefill_gender', p.get('gender', 'Male'))
+                            break
+                    st.success(f"✅ Form pre-filled with: {chosen_name or ''} / {chosen_mob or ''}")
+
         with st.form("patient_form"):
             col1, col2 = st.columns(2)
 
             with col1:
-                # Frequency-ranked searchable dropdown — most-visited patients first
-                selected_name = st.selectbox(
+                # Name field — reads pre-fill from lookup section above
+                _default_name = st.session_state.get('prefill_name', '')
+                patient_name = st.text_input(
                     "Patient Name",
-                    ranked_names[:30],
-                    index=None,
-                    placeholder="🔍 Search existing patient (most visited shown first)...",
-                    key="name_dropdown"
+                    value=_default_name,
+                    placeholder="Full patient name",
+                    key="form_patient_name"
                 )
-
-                if selected_name:
-                    patient_name = selected_name
-                    st.info(f"Returning patient selected: {selected_name}")
-                else:
-                    patient_name = st.text_input("Enter Full Name", placeholder="Type patient full name", key="custom_name")
 
                 age = st.number_input("Age", min_value=0, max_value=120, value=30)
                 gender = st.selectbox("Gender", ["Male", "Female", "Other"])
@@ -251,20 +395,14 @@ def main():
                 pincode = st.text_input("Pincode", value="276404", placeholder="6-digit pincode")
 
             with col2:
-                # Frequency-ranked searchable dropdown — most-visited mobiles first
-                selected_mobile = st.selectbox(
+                # Mobile field — reads pre-fill from lookup section above
+                _default_mob = st.session_state.get('prefill_mob', '')
+                contact = st.text_input(
                     "Mobile Number",
-                    ranked_mobiles[:30],
-                    index=None,
-                    placeholder="🔍 Search existing mobile (most visited first)...",
-                    key="mobile_dropdown"
+                    value=_default_mob,
+                    placeholder="10-digit mobile number",
+                    key="form_mobile"
                 )
-
-                if selected_mobile:
-                    contact = selected_mobile
-                    st.info(f"Returning patient mobile: {selected_mobile}")
-                else:
-                    contact = st.text_input("Enter Mobile Number", placeholder="Type mobile number", key="custom_mobile")
 
                 issue_options = ["Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Floaters", "Night Blindness", "Headache", "Eye Strain", "Watering", "Itching", "Burning Sensation", "Foreign Body Sensation", "Light Sensitivity", "Discharge", "Swelling", "Routine Checkup", "Other"]
                 patient_issue = st.selectbox("Patient Issue/Complaint", issue_options)
@@ -404,14 +542,12 @@ def main():
             # Medicine Selection Section
             st.markdown("### 💊 Medicine Selection")
 
-            # Load medicines from Google Sheets — frequency ranked
+            # Load medicines — frequency ranked
             try:
                 medicines, _, _ = get_sheet_data()
                 medicine_options = {med['name']: med for med in medicines if isinstance(med, dict) and 'name' in med}
                 _, _, ranked_med_names, _ = get_frequency_ranked_data()
-                # Keep only names that exist in inventory; preserve rank order
                 med_names = [n for n in ranked_med_names if n in medicine_options]
-                # Append any inventory items not yet in ranked list
                 for n in medicine_options:
                     if n not in med_names:
                         med_names.append(n)
@@ -420,33 +556,38 @@ def main():
                 med_names = []
 
             if medicine_options:
-                # Combined dropdown + custom medicine selection
-                med_names = list(medicine_options.keys())
-
-                # --- Professional Reset Pattern ---
-                # A counter key is used to force Streamlit to re-create the
-                # selectbox and text_input widgets fresh after each "Add" action,
-                # effectively clearing the selection/search text automatically.
+                # ── Smart two-step combobox (text_input → filtered selectbox) ──
                 if 'med_selector_key' not in st.session_state:
                     st.session_state['med_selector_key'] = 0
-
                 _sel_key = st.session_state['med_selector_key']
 
-                # index=None + placeholder: user can type immediately to filter —
-                # no placeholder text to delete, instant search experience.
-                # Most-used medicines appear first in the list.
-                selected_med_dropdown = st.selectbox(
-                    "Select Medicine from Inventory:",
-                    med_names,
-                    index=None,
-                    placeholder="🔍 Type to search medicine (most used first)...",
-                    key=f"med_dropdown_{_sel_key}"
+                st.caption("💡 Smart search: type initials like 'EC' for 'EyeCare', or any word part — case-insensitive")
+
+                med_search_q = st.text_input(
+                    "🔍 Search Medicine:",
+                    placeholder="e.g. 'eye', 'EC' (Eye Care), 'sod' (Sodium Chloride)…",
+                    key=f"med_search_{_sel_key}"
                 )
+
+                # Apply smart filter; empty query = full frequency-ranked list
+                filtered_med_names = smart_word_filter(med_search_q, med_names) if med_search_q else med_names
+
+                if filtered_med_names:
+                    selected_med_dropdown = st.selectbox(
+                        f"Select from inventory ({len(filtered_med_names)} match{'es' if len(filtered_med_names) != 1 else ''}):",
+                        filtered_med_names,
+                        index=None,
+                        placeholder="Choose from filtered results…",
+                        key=f"med_dropdown_{_sel_key}"
+                    )
+                else:
+                    st.warning("No inventory medicines match — use custom entry below.")
+                    selected_med_dropdown = None
 
                 # Allow custom medicine entry
                 custom_medicine = st.text_input(
                     "Or enter custom medicine:",
-                    placeholder="Type medicine name if not in dropdown",
+                    placeholder="Type medicine name if not in inventory",
                     key=f"custom_med_{_sel_key}"
                 )
 
@@ -468,7 +609,7 @@ def main():
                             st.success(f"✅ {final_medicine} added to prescription")
                         else:
                             st.warning(f"⚠️ {final_medicine} is already in the list")
-                        # ✅ Reset both widgets by bumping the counter key
+                        # Reset both widgets by bumping the counter key
                         st.session_state['med_selector_key'] += 1
                         st.rerun()
 
@@ -585,29 +726,37 @@ def main():
                 spec_names = []
 
             if spectacle_options:
-                # Combined dropdown + custom spectacle selection
-                spec_names = list(spectacle_options.keys())
-
-                # Counter-based key reset (same pattern as medicine dropdown)
+                # ── Smart two-step combobox for spectacles ──────────────────────
                 if 'spec_selector_key' not in st.session_state:
                     st.session_state['spec_selector_key'] = 0
-
                 _spec_key = st.session_state['spec_selector_key']
 
-                # index=None + placeholder: user types immediately to filter
-                # Most-used spectacles appear first in the list.
-                selected_spec_dropdown = st.selectbox(
-                    "Select Spectacle from Inventory:",
-                    spec_names,
-                    index=None,
-                    placeholder="🔍 Type to search spectacle (most used first)...",
-                    key=f"spec_dropdown_{_spec_key}"
+                st.caption("💡 Smart search: type initials or any word part — case-insensitive, most-used shown first")
+
+                spec_search_q = st.text_input(
+                    "🔍 Search Spectacle:",
+                    placeholder="e.g. 'pro', 'PC' (Polycarbonate), 'anti' (Anti-reflective)…",
+                    key=f"spec_search_{_spec_key}"
                 )
+
+                filtered_spec_names = smart_word_filter(spec_search_q, spec_names) if spec_search_q else spec_names
+
+                if filtered_spec_names:
+                    selected_spec_dropdown = st.selectbox(
+                        f"Select from inventory ({len(filtered_spec_names)} match{'es' if len(filtered_spec_names) != 1 else ''}):",
+                        filtered_spec_names,
+                        index=None,
+                        placeholder="Choose from filtered results…",
+                        key=f"spec_dropdown_{_spec_key}"
+                    )
+                else:
+                    st.warning("No inventory spectacles match — use custom entry below.")
+                    selected_spec_dropdown = None
 
                 # Allow custom spectacle entry
                 custom_spectacle = st.text_input(
                     "Or enter custom spectacle:",
-                    placeholder="Type spectacle name if not in dropdown",
+                    placeholder="Type spectacle name if not in inventory",
                     key=f"custom_spec_{_spec_key}"
                 )
 
