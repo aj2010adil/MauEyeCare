@@ -796,11 +796,11 @@ Then click **🔄 Sync Google Sheets** above to test.
 • Avoid placing glasses lens-down on surfaces
 • Initial mild headache or dizziness is normal for 2-3 days
 • Return for adjustment if discomfort persists beyond a week"""
-                    else:
-                        custom_instructions = st.text_area("Custom spectacle instructions:",
-                                                         placeholder="Enter specific care instructions",
-                                                         key="custom_spec_instructions")
-                        st.session_state['spectacle_instructions'] = custom_instructions or "Follow standard spectacle care guidelines"
+                else:
+                    custom_instructions = st.text_area("Custom spectacle instructions:",
+                                                     placeholder="Enter specific care instructions",
+                                                     key="custom_spec_instructions")
+                    st.session_state['spectacle_instructions'] = custom_instructions or "Follow standard spectacle care guidelines"
 
             # Eye Prescription Section (separate from registration)
             st.markdown("### 👁️ Eye Prescription")
