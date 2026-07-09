@@ -306,9 +306,11 @@ def main():
         except Exception:
             existing_patients = []
 
-        # ── Quick Patient Lookup (outside form for live smart-search) ────────────
-        if ranked_names:
-            with st.expander("🔍 Find Existing Patient (smart search)", expanded=False):
+        # ── Quick Patient Lookup (always visible, outside form for live smart-search) ──
+        with st.expander("🔍 Find Existing Patient (smart search)", expanded=False):
+            if not ranked_names:
+                st.info("🔗 Connect Google Sheets to enable patient lookup. New patients: fill the form below.")
+            else:
                 st.caption("Type initials or any part of the name/mobile — e.g. 'RS' finds 'Rahul Sharma'")
                 lcol, rcol = st.columns(2)
 
@@ -355,20 +357,24 @@ def main():
                         st.session_state['prefill_name'] = chosen_name
                     if chosen_mob:
                         st.session_state['prefill_mob'] = chosen_mob
-                    # Try to auto-fill age/gender from existing records
+                    # Auto-fill age/gender from existing records
                     for p in existing_patients:
                         if isinstance(p, dict) and p.get('name', '').strip() == (chosen_name or '').strip():
-                            st.session_state.setdefault('prefill_age', p.get('age', 30))
-                            st.session_state.setdefault('prefill_gender', p.get('gender', 'Male'))
+                            st.session_state['prefill_age'] = p.get('age', 30)
+                            st.session_state['prefill_gender'] = p.get('gender', 'Male')
                             break
                     st.success(f"✅ Form pre-filled with: {chosen_name or ''} / {chosen_mob or ''}")
+                    st.rerun()
 
         with st.form("patient_form"):
             col1, col2 = st.columns(2)
 
             with col1:
-                # Name field — reads pre-fill from lookup section above
-                _default_name = st.session_state.get('prefill_name', '')
+                # Name field: prefill_name (from lookup) → patient_name (current session) → blank
+                _default_name = (
+                    st.session_state.get('prefill_name')
+                    or st.session_state.get('patient_name', '')
+                )
                 patient_name = st.text_input(
                     "Patient Name",
                     value=_default_name,
@@ -395,8 +401,11 @@ def main():
                 pincode = st.text_input("Pincode", value="276404", placeholder="6-digit pincode")
 
             with col2:
-                # Mobile field — reads pre-fill from lookup section above
-                _default_mob = st.session_state.get('prefill_mob', '')
+                # Mobile field: prefill_mob (from lookup) → patient_mobile (current session) → blank
+                _default_mob = (
+                    st.session_state.get('prefill_mob')
+                    or st.session_state.get('patient_mobile', '')
+                )
                 contact = st.text_input(
                     "Mobile Number",
                     value=_default_mob,
@@ -555,23 +564,22 @@ def main():
                 medicine_options = {}
                 med_names = []
 
-            if medicine_options:
-                # ── Smart two-step combobox (text_input → filtered selectbox) ──
-                if 'med_selector_key' not in st.session_state:
-                    st.session_state['med_selector_key'] = 0
-                _sel_key = st.session_state['med_selector_key']
+            # ── Medicine selection (always visible) ─────────────────────────────────
+            if 'med_selector_key' not in st.session_state:
+                st.session_state['med_selector_key'] = 0
+            _sel_key = st.session_state['med_selector_key']
 
+            selected_med_dropdown = None  # default: no inventory selection
+
+            if medicine_options and med_names:
+                # Inventory connected — show smart search + filtered dropdown
                 st.caption("💡 Smart search: type initials like 'EC' for 'EyeCare', or any word part — case-insensitive")
-
                 med_search_q = st.text_input(
                     "🔍 Search Medicine:",
                     placeholder="e.g. 'eye', 'EC' (Eye Care), 'sod' (Sodium Chloride)…",
                     key=f"med_search_{_sel_key}"
                 )
-
-                # Apply smart filter; empty query = full frequency-ranked list
                 filtered_med_names = smart_word_filter(med_search_q, med_names) if med_search_q else med_names
-
                 if filtered_med_names:
                     selected_med_dropdown = st.selectbox(
                         f"Select from inventory ({len(filtered_med_names)} match{'es' if len(filtered_med_names) != 1 else ''}):",
@@ -581,37 +589,38 @@ def main():
                         key=f"med_dropdown_{_sel_key}"
                     )
                 else:
-                    st.warning("No inventory medicines match — use custom entry below.")
-                    selected_med_dropdown = None
+                    st.warning("⚠️ No inventory medicines match your search.")
+            else:
+                st.info("📦 Inventory not connected — enter medicine name manually below.")
 
-                # Allow custom medicine entry
-                custom_medicine = st.text_input(
-                    "Or enter custom medicine:",
-                    placeholder="Type medicine name if not in inventory",
-                    key=f"custom_med_{_sel_key}"
-                )
+            # Custom entry is ALWAYS available
+            custom_medicine = st.text_input(
+                "Or enter custom medicine:" if medicine_options else "Enter medicine name:",
+                placeholder="Type medicine name if not in inventory",
+                key=f"custom_med_{_sel_key}"
+            )
 
-                # Determine final medicine selection
-                if selected_med_dropdown is not None:
-                    final_medicine = selected_med_dropdown
-                elif custom_medicine:
-                    final_medicine = custom_medicine
-                else:
-                    final_medicine = None
+            # Determine final medicine selection
+            if selected_med_dropdown is not None:
+                final_medicine = selected_med_dropdown
+            elif custom_medicine:
+                final_medicine = custom_medicine
+            else:
+                final_medicine = None
 
-                if final_medicine:
-                    if 'selected_medicines_list' not in st.session_state:
-                        st.session_state['selected_medicines_list'] = []
+            if final_medicine:
+                if 'selected_medicines_list' not in st.session_state:
+                    st.session_state['selected_medicines_list'] = []
 
-                    if st.button(f"➕ Add {final_medicine}", key=f"add_med_btn_{_sel_key}"):
-                        if final_medicine not in st.session_state['selected_medicines_list']:
-                            st.session_state['selected_medicines_list'].append(final_medicine)
-                            st.success(f"✅ {final_medicine} added to prescription")
-                        else:
-                            st.warning(f"⚠️ {final_medicine} is already in the list")
-                        # Reset both widgets by bumping the counter key
-                        st.session_state['med_selector_key'] += 1
-                        st.rerun()
+                if st.button(f"➕ Add {final_medicine}", key=f"add_med_btn_{_sel_key}"):
+                    if final_medicine not in st.session_state['selected_medicines_list']:
+                        st.session_state['selected_medicines_list'].append(final_medicine)
+                        st.success(f"✅ {final_medicine} added to prescription")
+                    else:
+                        st.warning(f"⚠️ {final_medicine} is already in the list")
+                    # Reset widgets by bumping the counter key
+                    st.session_state['med_selector_key'] += 1
+                    st.rerun()
 
                 # Show selected medicines with quantities and dosage
                 if st.session_state.get('selected_medicines_list'):
@@ -725,22 +734,22 @@ def main():
                 spectacle_options = {}
                 spec_names = []
 
-            if spectacle_options:
-                # ── Smart two-step combobox for spectacles ──────────────────────
-                if 'spec_selector_key' not in st.session_state:
-                    st.session_state['spec_selector_key'] = 0
-                _spec_key = st.session_state['spec_selector_key']
+            # ── Spectacle selection (always visible) ─────────────────────────────
+            if 'spec_selector_key' not in st.session_state:
+                st.session_state['spec_selector_key'] = 0
+            _spec_key = st.session_state['spec_selector_key']
 
+            selected_spec_dropdown = None  # default: no inventory selection
+
+            if spectacle_options and spec_names:
+                # Inventory connected — show smart search + filtered dropdown
                 st.caption("💡 Smart search: type initials or any word part — case-insensitive, most-used shown first")
-
                 spec_search_q = st.text_input(
                     "🔍 Search Spectacle:",
                     placeholder="e.g. 'pro', 'PC' (Polycarbonate), 'anti' (Anti-reflective)…",
                     key=f"spec_search_{_spec_key}"
                 )
-
                 filtered_spec_names = smart_word_filter(spec_search_q, spec_names) if spec_search_q else spec_names
-
                 if filtered_spec_names:
                     selected_spec_dropdown = st.selectbox(
                         f"Select from inventory ({len(filtered_spec_names)} match{'es' if len(filtered_spec_names) != 1 else ''}):",
@@ -749,28 +758,30 @@ def main():
                         placeholder="Choose from filtered results…",
                         key=f"spec_dropdown_{_spec_key}"
                     )
-                else:
-                    st.warning("No inventory spectacles match — use custom entry below.")
-                    selected_spec_dropdown = None
-
-                # Allow custom spectacle entry
-                custom_spectacle = st.text_input(
-                    "Or enter custom spectacle:",
-                    placeholder="Type spectacle name if not in inventory",
-                    key=f"custom_spec_{_spec_key}"
-                )
-
-                # Determine final spectacle selection
-                if selected_spec_dropdown is not None:
-                    final_spectacle = selected_spec_dropdown
-                    if final_spectacle in spectacle_options:
-                        spec_data = spectacle_options[final_spectacle]
+                    if selected_spec_dropdown and selected_spec_dropdown in spectacle_options:
+                        spec_data = spectacle_options[selected_spec_dropdown]
                         st.info(f"Price: ₹{spec_data.get('price', 0)} | Stock: {spec_data.get('quantity', 0)}")
-                elif custom_spectacle:
-                    final_spectacle = custom_spectacle
-                    st.info("Custom spectacle - Price will be determined manually")
                 else:
-                    final_spectacle = None
+                    st.warning("⚠️ No inventory spectacles match your search.")
+            else:
+                st.info("📦 Inventory not connected — enter spectacle name manually below.")
+
+            # Custom entry is ALWAYS available
+            custom_spectacle = st.text_input(
+                "Or enter custom spectacle:" if spectacle_options else "Enter spectacle name:",
+                placeholder="Type spectacle name if not in inventory",
+                key=f"custom_spec_{_spec_key}"
+            )
+            if custom_spectacle and not selected_spec_dropdown:
+                st.info("📝 Custom spectacle — price will be determined manually")
+
+            # Determine final spectacle selection
+            if selected_spec_dropdown is not None:
+                final_spectacle = selected_spec_dropdown
+            elif custom_spectacle:
+                final_spectacle = custom_spectacle
+            else:
+                final_spectacle = None
 
                 if final_spectacle:
                     # Reset dropdown on selection save
