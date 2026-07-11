@@ -838,7 +838,7 @@ def main():
             <p style="font-size: 8pt; margin: 0.5px 0;">Computer and AI assisted Refraction and Contact Lens Center</p>
             <h1>Mau Eye Care</h1>
             <p style="margin: 1px 0; font-size: 8pt;">Pura Khizir,(Near Mubarakpur Marraige Hall,Nai Pani ki tanki), Roadways Mubarakpur ,Azamgarh (U.P.)</p>
-            <p style="margin: 1px 0; font-size: 8pt;"> Mon-Sat: 10 AM-2 PM and 5 PM- 7PM | Sunday Closed |</p> 
+            <p style="margin: 1px 0; font-size: 8pt;"> Mon-Sat: 10 AM-5 PM| Sunday Closed |</p> 
             <p style="margin: 1px 0; font-size: 8pt;"> 📞9235647410 |Appointment:8299461251 |📧 mau.eye.care.404@gmail.com</p>
         </div>
         <div class="header-right">
