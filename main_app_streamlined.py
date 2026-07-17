@@ -15,7 +15,7 @@ sys.path.append(os.path.dirname(__file__))
 # Core imports
 from modules.google_sheets_api import google_sheets_api
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def get_sheet_data():
     """Load data from Google Sheets"""
     try:
