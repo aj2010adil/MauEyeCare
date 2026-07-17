@@ -90,7 +90,22 @@ def main():
 
     # --- Patient Registration Tab ---
     with tab1:
-        st.header("👥 Patient Registration")
+        col_header1, col_header2 = st.columns([4, 1])
+        with col_header1:
+            st.header("👥 Patient Registration")
+        with col_header2:
+            if st.button("🆕 Start New Patient", use_container_width=True):
+                keys_to_clear = [
+                    'patient_name', 'patient_mobile', 'age', 'gender', 'address', 'city', 'state', 'pincode',
+                    'occupation', 'referral_source', 'patient_issue', 'advice', 'new_patient',
+                    'selected_medicines_list', 'medicine_details', 'selected_spectacles', 'spectacle_instructions',
+                    'rx_table', 'consultation_fee', 'additional_charges', 'patient_complaint', 'patient_diagnosis',
+                    'name_dropdown', 'custom_name', 'mobile_dropdown', 'custom_mobile', 'custom_issue', 'custom_advice'
+                ]
+                for key in keys_to_clear:
+                    if key in st.session_state:
+                        del st.session_state[key]
+                st.rerun()
 
         # Get existing patients for suggestions
         existing_patients = []
