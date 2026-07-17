@@ -21,13 +21,13 @@ from modules.revenue_forecast import forecast_revenue_and_profit
 from modules.campaign_tracking import build_campaign_summary
 from modules.external_data_capture import build_external_signal_summary
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def get_sheet_data():
     """Load data from Google Sheets"""
     try:
-        medicines = sheets_manager.get_medicines()
-        spectacles = sheets_manager.get_spectacles()
-        patients = sheets_manager.get_patients()
+        medicines = google_sheets_api.read_sheet("Medicines")
+        spectacles = google_sheets_api.read_sheet("Spectacles")
+        patients = google_sheets_api.read_sheet("Patients")
         return medicines, spectacles, patients
     except Exception as e:
         return [], [], []
@@ -53,13 +53,13 @@ def main():
                 medicines, spectacles, patients = get_sheet_data()
                 st.success(f"✅ Synced: {len(medicines)} medicines, {len(spectacles)} spectacles, {len(patients)} patients!")
 
-        # OAuth status
-        if oauth_sheets_api.is_authenticated():
+        # Google Sheets status
+        test_result = google_sheets_api.test_connection()
+        if test_result['success']:
             st.success("✅ Google Sheets Connected")
         else:
             st.error("❌ Google Sheets Not Connected")
-            auth_url = oauth_sheets_api.get_auth_url()
-            st.markdown(f"[🔗 Connect to Google Sheets]({auth_url})")
+            st.caption("Check credentials.json")
 
         # Low stock alerts for doctor
         try:
@@ -86,20 +86,6 @@ def main():
             st.info(f"Age: {st.session_state.get('age', 'N/A')}")
             st.info(f"Mobile: {st.session_state.get('patient_mobile', 'N/A')}")
 
-    # Handle OAuth callback
-    query_params = st.query_params
-    if 'code' in query_params:
-        code = query_params['code']
-        state = query_params.get('state', '')
-
-        with st.spinner("Authenticating with Google Sheets..."):
-            result = oauth_sheets_api.exchange_code_for_token(code, state)
-            if result['success']:
-                st.success("✅ Google Sheets authentication successful!")
-                st.query_params.clear()
-                st.rerun()
-            else:
-                st.error(f"❌ Authentication failed: {result.get('error', 'Unknown error')}")
 
     # Main tabs
     tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
@@ -114,7 +100,25 @@ def main():
 
     # --- Patient Registration Tab ---
     with tab1:
-        st.header("👥 Patient Registration")
+        if 'form_reset_counter' not in st.session_state:
+            st.session_state.form_reset_counter = 0
+
+        col_header1, col_header2 = st.columns([4, 1])
+        with col_header1:
+            st.header("👥 Patient Registration")
+        with col_header2:
+            if st.button("🆕 Start New Patient", use_container_width=True):
+                st.session_state.form_reset_counter += 1
+                keys_to_clear = [
+                    'patient_name', 'patient_mobile', 'age', 'gender', 'address', 'city', 'state', 'pincode',
+                    'occupation', 'referral_source', 'patient_issue', 'advice', 'new_patient',
+                    'selected_medicines_list', 'medicine_details', 'selected_spectacles', 'spectacle_instructions',
+                    'rx_table', 'consultation_fee', 'additional_charges', 'patient_complaint', 'patient_diagnosis'
+                ]
+                for key in keys_to_clear:
+                    if key in st.session_state:
+                        del st.session_state[key]
+                st.rerun()
 
         # Get existing patients for suggestions
         existing_patients = []
@@ -136,22 +140,22 @@ def main():
             with col1:
                 # Combined dropdown + custom input for name
                 name_options = ["-- Enter Custom Name --"] + patient_names[:15]
-                selected_name = st.selectbox("Patient Name", name_options, key="name_dropdown")
+                selected_name = st.selectbox("Patient Name", name_options, key=f"name_dropdown_{st.session_state.form_reset_counter}")
 
                 if selected_name == "-- Enter Custom Name --":
-                    patient_name = st.text_input("Enter Full Name", placeholder="Type patient full name", key="custom_name")
+                    patient_name = st.text_input("Enter Full Name", placeholder="Type patient full name", key=f"custom_name_{st.session_state.form_reset_counter}")
                 else:
                     patient_name = selected_name
                     st.info(f"Selected: {selected_name}")
 
-                age = st.number_input("Age", min_value=0, max_value=120, value=30)
-                gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+                age = st.number_input("Age", min_value=0, max_value=120, value=30, key=f"age_{st.session_state.form_reset_counter}")
+                gender = st.selectbox("Gender", ["Male", "Female", "Other"], key=f"gender_{st.session_state.form_reset_counter}")
 
                 # Address fields for demographics with defaults
-                address = st.text_input("Address", placeholder="Street address")
+                address = st.text_input("Address", placeholder="Street address", key=f"address_{st.session_state.form_reset_counter}")
                 col_city, col_state = st.columns(2)
                 with col_city:
-                    city = st.text_input("City", value="Mubarkpur, Azamgarh", placeholder="City name")
+                    city = st.text_input("City", value="Mubarkpur, Azamgarh", placeholder="City name", key=f"city_{st.session_state.form_reset_counter}")
                 with col_state:
                     state = st.selectbox("State", [
                         "Uttar Pradesh", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
@@ -159,24 +163,24 @@ def main():
                         "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
                         "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
                         "Telangana", "Tripura", "Uttarakhand", "West Bengal", "Delhi"
-                    ])
-                pincode = st.text_input("Pincode", value="276404", placeholder="6-digit pincode")
+                    ], key=f"state_{st.session_state.form_reset_counter}")
+                pincode = st.text_input("Pincode", value="276404", placeholder="6-digit pincode", key=f"pincode_{st.session_state.form_reset_counter}")
 
             with col2:
                 # Combined dropdown + custom input for mobile
                 mobile_options = ["-- Enter Custom Mobile --"] + patient_mobiles[:15]
-                selected_mobile = st.selectbox("Mobile Number", mobile_options, key="mobile_dropdown")
+                selected_mobile = st.selectbox("Mobile Number", mobile_options, key=f"mobile_dropdown_{st.session_state.form_reset_counter}")
 
                 if selected_mobile == "-- Enter Custom Mobile --":
-                    contact = st.text_input("Enter Mobile Number", placeholder="Type mobile number", key="custom_mobile")
+                    contact = st.text_input("Enter Mobile Number", placeholder="Type mobile number", key=f"custom_mobile_{st.session_state.form_reset_counter}")
                 else:
                     contact = selected_mobile
                     st.info(f"Selected: {selected_mobile}")
 
                 issue_options = ["Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Floaters", "Night Blindness", "Headache", "Eye Strain", "Watering", "Itching", "Burning Sensation", "Foreign Body Sensation", "Light Sensitivity", "Discharge", "Swelling", "Routine Checkup", "Other"]
-                patient_issue = st.selectbox("Patient Issue/Complaint", issue_options)
+                patient_issue = st.selectbox("Patient Issue/Complaint", issue_options, key=f"issue_{st.session_state.form_reset_counter}")
                 if patient_issue == "Other":
-                    custom_issue = st.text_area("Specify Issue/Complaint", placeholder="Describe the patient's complaint in detail", key="custom_issue")
+                    custom_issue = st.text_area("Specify Issue/Complaint", placeholder="Describe the patient's complaint in detail", key=f"custom_issue_{st.session_state.form_reset_counter}")
                     patient_issue = custom_issue if custom_issue else "Other"
 
                 advice_options = [
@@ -187,13 +191,13 @@ def main():
                     "Follow-up in 6 months", "Refer to Specialist", "Eye Protection Advised", 
                     "Computer Vision Syndrome Care", "Other"
                 ]
-                advice = st.selectbox("Advice/Notes", advice_options)
+                advice = st.selectbox("Advice/Notes", advice_options, key=f"advice_{st.session_state.form_reset_counter}")
                 if advice == "Other":
-                    custom_advice = st.text_area("Specify Advice/Notes", placeholder="Enter detailed advice or notes for the patient", key="custom_advice")
+                    custom_advice = st.text_area("Specify Advice/Notes", placeholder="Enter detailed advice or notes for the patient", key=f"custom_advice_{st.session_state.form_reset_counter}")
                     advice = custom_advice if custom_advice else "Other"
 
                 # Professional details for analytics
-                occupation = st.text_input("Occupation", placeholder="Patient's occupation")
+                occupation = st.text_input("Occupation", placeholder="Patient's occupation", key=f"occupation_{st.session_state.form_reset_counter}")
                 referral_source = st.selectbox("How did you hear about us?", [
                     "", "Google Search", "Social Media", "Friend/Family", "Doctor Referral",
                     "Advertisement", "Walk-in", "Previous Patient", "Other"
@@ -289,7 +293,7 @@ def main():
 
                         # Get last prescription if available
                         try:
-                            prescriptions = sheets_manager.get_prescriptions()
+                            prescriptions = google_sheets_api.read_sheet("Prescriptions")
                             patient_prescriptions = [pr for pr in prescriptions if isinstance(pr, dict) and pr.get('patient_name', '').lower() == patient_name.lower()]
                             if patient_prescriptions:
                                 last_prescription = patient_prescriptions[-1]
@@ -303,32 +307,29 @@ def main():
                     except:
                         st.info("📅 Unable to load visit history")
                 # Professional Google Sheets integration
-                if oauth_sheets_api.is_authenticated():
-                    patient_record = {
-                        'name': patient_name,
-                        'age': age,
-                        'gender': gender,
-                        'mobile': contact,
-                        'issue': patient_issue,
-                        'advice': advice,
-                        'email': '',
-                        'address': address,
-                        'city': city,
-                        'state': state,
-                        'pincode': pincode,
-                        'occupation': occupation,
-                        'referral_source': referral_source
-                    }
-                    result = oauth_sheets_api.add_patient(patient_record)
-                    if result.get('success'):
-                        if not is_duplicate:
-                            st.info("✅ **New patient added to Google Sheets!**")
-                        else:
-                            st.info("✅ **Return visit recorded in Google Sheets!**")
+                patient_record = {
+                    'name': patient_name,
+                    'age': age,
+                    'gender': gender,
+                    'mobile': contact,
+                    'issue': patient_issue,
+                    'advice': advice,
+                    'email': '',
+                    'address': address,
+                    'city': city,
+                    'state': state,
+                    'pincode': pincode,
+                    'occupation': occupation,
+                    'referral_source': referral_source
+                }
+                success = google_sheets_api.add_patient(patient_record)
+                if success:
+                    if not is_duplicate:
+                        st.info("✅ **New patient added to Google Sheets!**")
                     else:
-                        st.warning(f"⚠️ Google Sheets sync failed: {result.get('error', 'Unknown error')}")
+                        st.info("✅ **Return visit recorded in Google Sheets!**")
                 else:
-                    st.warning("⚠️ Google Sheets not connected - patient data not synced")
+                    st.warning("⚠️ Google Sheets sync failed.")
 
                 st.rerun()
 
@@ -605,7 +606,7 @@ def main():
             last_rx = {}
             if not st.session_state.get('new_patient', True):
                 try:
-                    prescriptions = sheets_manager.get_prescriptions()
+                    prescriptions = google_sheets_api.read_sheet("Prescriptions")
                     patient_prescriptions = [p for p in prescriptions if p.get('patient_name') == st.session_state['patient_name']]
                     if patient_prescriptions:
                         last_prescription = patient_prescriptions[-1]
@@ -828,22 +829,23 @@ def main():
                     stock_updates = []
                     stock_errors = []
 
-                    if oauth_sheets_api.is_authenticated() and medicine_details:
+                    if medicine_details:
                         with st.spinner("Updating medicine stock in Google Sheets..."):
                             for med_name, details in medicine_details.items():
                                 if details.get('in_inventory', False):
-                                    result = oauth_sheets_api.update_medicine_quantity(med_name, details['quantity'])
-                                    if result.get('success'):
-                                        stock_updates.append(f"{med_name}: {result.get('old_qty', 0)} → {result.get('new_qty', 0)}")
+                                    new_qty = details['current_stock'] - details['quantity']
+                                    if new_qty < 0:
+                                        new_qty = 0
+                                    success = google_sheets_api.update_medicine_quantity(med_name, new_qty)
+                                    if success:
+                                        stock_updates.append(f"{med_name}: {details['current_stock']} → {new_qty}")
                                     else:
-                                        stock_errors.append(f"{med_name}: {result.get('error', 'Unknown error')}")
+                                        stock_errors.append(f"{med_name}: Error updating")
 
                             if stock_updates:
                                 st.success(f"✅ Stock updated: {', '.join(stock_updates)}")
                             if stock_errors:
                                 st.error(f"❌ Stock update errors: {', '.join(stock_errors)}")
-                    elif medicine_details:
-                        st.warning("⚠️ OAuth not authenticated - stock will not be updated automatically")
 
                     # Create compact single A4 prescription HTML
                     current_time = datetime.now(timezone(timedelta(hours=5, minutes=30)))
@@ -857,33 +859,33 @@ def main():
 <head>
     <title>Mau Eye Care Prescription - {patient_name}</title>
     <style>
-        @page {{ margin: 0.5in; size: A4; }}
-        body {{ font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; font-size: 11pt; line-height: 1.4; color: #333; }}
-        .header {{ background: #1a4f66; color: white; padding: 15px 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
+        @page {{ margin: 0.3in; size: A4; }}
+        body {{ font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; line-height: 1.2; color: #333; }}
+        .header {{ background: #1a4f66; color: white; padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
         .header-left, .header-right {{ flex: 1; }}
-        .header-center {{ text-align: center; flex: 2; padding: 0 10px; }}
+        .header-center {{ text-align: center; flex: 2; padding: 0 3px; }}
         .header-left {{ text-align: left; }}
         .header-right {{ text-align: right; }}
-        .header h1 {{ margin: 0; font-size: 24pt; font-weight: 800; letter-spacing: 1px; }}
-        .header h2 {{ margin: 2px 0; font-size: 14pt; font-weight: bold; }}
-        .header p {{ margin: 2px 0; font-size: 10pt; opacity: 0.9; }}
+        .header h1 {{ margin: 0; font-size: 18pt; font-weight: 800; letter-spacing: 0.5px; }}
+        .header h2 {{ margin: 1px 0; font-size: 11pt; font-weight: bold; }}
+        .header p {{ margin: 1px 0; font-size: 8pt; opacity: 0.9; }}
         .urdu {{ font-family: 'Noto Nastaliq Urdu', 'Arial Unicode MS', sans-serif; }}
-        .patient-info {{ background: #f4f6fc; border-left: 5px solid #2E86AB; padding: 12px 15px; margin: 15px 0; font-size: 11pt; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }}
-        .patient-info h3 {{ margin: 0 0 8px 0; font-size: 13pt; color: #1a4f66; }}
-        .patient-info p {{ margin: 4px 0; }}
-        .content {{ display: flex; gap: 20px; }}
+        .patient-info {{ background: #f4f6fc; border-left: 5px solid #2E86AB; padding: 8px 10px; margin: 6px 0; font-size: 10pt; border-radius: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }}
+        .patient-info h3 {{ margin: 0 0 4px 0; font-size: 11pt; color: #1a4f66; }}
+        .patient-info p {{ margin: 2px 0; }}
+        .content {{ display: flex; gap: 8px; }}
         .left-section {{ flex: 1; }}
         .right-section {{ flex: 1; }}
-        .section {{ background: white; padding: 12px; margin: 10px 0; border: 1px solid #e0e6ed; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }}
-        .section h3 {{ margin: 0 0 10px 0; font-size: 13pt; color: #2E86AB; border-bottom: 2px solid #f0f4f8; padding-bottom: 5px; }}
-        .item {{ background: #f8fafc; padding: 10px; margin: 6px 0; border-radius: 4px; border-left: 3px solid #64748b; font-size: 11pt; }}
-        .vision-table {{ width: 100%; border-collapse: collapse; margin: 10px 0; }}
-        .vision-table th, .vision-table td {{ border: 1px solid #e2e8f0; padding: 8px; text-align: center; font-size: 10.5pt; }}
+        .section {{ background: white; padding: 8px; margin: 5px 0; border: 1px solid #e0e6ed; border-radius: 3px; box-shadow: 0 1px 1px rgba(0,0,0,0.02); }}
+        .section h3 {{ margin: 0 0 6px 0; font-size: 11pt; color: #2E86AB; border-bottom: 1px solid #f0f4f8; padding-bottom: 3px; }}
+        .item {{ background: #f8fafc; padding: 6px; margin: 3px 0; border-radius: 2px; border-left: 3px solid #64748b; font-size: 10pt; }}
+        .vision-table {{ width: 100%; border-collapse: collapse; margin: 6px 0; }}
+        .vision-table th, .vision-table td {{ border: 1px solid #e2e8f0; padding: 4px; text-align: center; font-size: 9.5pt; }}
         .vision-table th {{ background: #f1f5f9; color: #334155; font-weight: bold; }}
-        .medicine-item {{ background: #fffaf0; padding: 12px; margin: 8px 0; font-size: 11pt; border-left: 4px solid #f59e0b; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }}
-        .spectacle-item {{ background: #f0fdf4; padding: 12px; margin: 8px 0; font-size: 11pt; border-left: 4px solid #22c55e; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }}
-        .signature {{ text-align: right; margin-top: 30px; font-size: 12pt; font-weight: bold; padding-top: 15px; border-top: 1px dashed #cbd5e1; }}
-        .footer {{ margin-top: 25px; padding-top: 10px; text-align: center; font-size: 9pt; color: #64748b; border-top: 1px solid #e2e8f0; }}
+        .medicine-item {{ background: #fffaf0; padding: 6px; margin: 3px 0; font-size: 9.5pt; border-left: 3px solid #f59e0b; border-radius: 2px; box-shadow: 0 1px 1px rgba(0,0,0,0.02); line-height: 1.3; }}
+        .spectacle-item {{ background: #f0fdf4; padding: 6px; margin: 3px 0; font-size: 9.5pt; border-left: 3px solid #22c55e; border-radius: 2px; box-shadow: 0 1px 1px rgba(0,0,0,0.02); line-height: 1.3; }}
+        .signature {{ text-align: right; margin-top: 8px; font-size: 10pt; font-weight: bold; padding-top: 8px; border-top: 1px dashed #cbd5e1; }}
+        .footer {{ margin-top: 8px; padding-top: 6px; text-align: center; font-size: 8pt; color: #64748b; border-top: 1px solid #e2e8f0; line-height: 1.2; }}
     </style>
 </head>
 <body>
@@ -896,16 +898,16 @@ def main():
            
         </div>
         <div class="header-center">
-            <p style="font-size: 10pt; margin: 1px 0;">Computer and AI assisted Refraction and Contact Lens Center</p>
+            <p style="font-size: 8pt; margin: 0.5px 0;">Computer and AI assisted Refraction and Contact Lens Center</p>
             <h1>Mau Eye Care</h1>
-            <p>Pura Khizir,(Near Mubarakpur Marraige Hall,Nai Pani ki tanki), Roadways Mubarakpur ,Azamgarh (U.P.)</p>
-            <p> Mon-Sat: 10 AM-2 PM and 5 PM- 7PM | Sunday Closed |</p> 
-            <p> 📞9235647410 |Appointment:8299461251 |📧 mau.eye.care.404@gmail.com</p>
+            <p style="margin: 1px 0; font-size: 8pt;">Pura Khizir,(Near Mubarakpur Marraige Hall,Nai Pani ki tanki), Roadways Mubarakpur ,Azamgarh (U.P.)</p>
+            <p style="margin: 1px 0; font-size: 8pt;"> Mon-Sat: 10 AM-5 PM| Sunday Closed |</p> 
+            <p style="margin: 1px 0; font-size: 8pt;"> 📞9235647410 |Appointment:8299461251 |📧 mau.eye.care.404@gmail.com</p>
         </div>
         <div class="header-right">
-            <h2 class="urdu" style="font-size: 28pt;">ڈاکٹر دانش</h2>
-            <p class="urdu" style="font-size: 18pt;">بی ایس سی آپٹومیٹری</p>
-            <p class="urdu" style="font-size: 18pt;">آنکھوں کے ماہر</p>
+            <h2 class="urdu" style="font-size: 18pt;">ڈاکٹر دانش</h2>
+            <p class="urdu" style="font-size: 12pt;">بی ایس سی آپٹومیٹری</p>
+            <p class="urdu" style="font-size: 12pt;">آنکھوں کے ماہر</p>
         </div>
     </div>
 
@@ -1030,12 +1032,11 @@ def main():
 
                     prescription_html += """
     <div class="signature">
-        <p>Doctor Signature: ___________________________</p>
+        <p style="margin: 4px 0; font-size: 9pt;">Doctor Signature: ___________________________</p>
     </div>
     
     <div class="footer">
-        <p><strong>Our Services:</strong> Eye Examinations • Prescription Glasses • Contact Lens Fitting • Computer Vision Syndrome Care • Diabetic Eye Screening • Glaucoma Testing</p>
-        <p><strong>Specialties:</strong> Refraction • Vision Therapy • Dry Eye Treatment • Pediatric Eye Care • Low Vision Aids • Eye Disease Management</p>
+        <p style="margin: 1px 0;"><strong>Services:</strong> Refraction • Glasses • Contact Lens • Eye Screening • Treatment</p>
     </div>
 </body>
 </html>"""
@@ -1047,15 +1048,22 @@ def main():
 <head>
     <title>Mau Eye Care Receipt - {patient_name}</title>
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 20px; }}
-        .header {{ text-align: center; background: #2E86AB; color: white; padding: 10px; margin-bottom: 20px; }}
-        .receipt-item {{ background: #f0f8ff; padding: 8px; margin: 5px 0; border-left: 4px solid #2E86AB; }}
-        .total {{ background: #e8f5e8; padding: 10px; font-weight: bold; text-align: center; margin: 10px 0; }}
+        @page {{ margin: 0.3in; }}
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 8px; font-size: 10pt; line-height: 1.3; }}
+        .header {{ text-align: center; background: #2E86AB; color: white; padding: 8px; margin-bottom: 10px; border-radius: 3px; }}
+        .header h2 {{ margin: 2px 0; font-size: 12pt; }}
+        .header p {{ margin: 2px 0; font-size: 9pt; }}
+        h3 {{ margin: 6px 0 4px 0; font-size: 10pt; color: #2E86AB; }}
+        .receipt-item {{ background: #f0f8ff; padding: 6px; margin: 4px 0; border-left: 3px solid #2E86AB; font-size: 9.5pt; border-radius: 2px; }}
+        .receipt-item strong {{ font-size: 10pt; }}
+        .receipt-item br + * {{ margin-top: 2px; }}
+        .total {{ background: #e8f5e8; padding: 8px; font-weight: bold; text-align: center; margin: 8px 0; border-radius: 3px; }}
+        .total h2 {{ margin: 4px 0; font-size: 12pt; }}
     </style>
 </head>
 <body>
     <div class="header">
-        <h2>Mau Eye Care - Payment Receipt</h2>
+        <h2>Mau Eye Care - Receipt</h2>
         <p>Patient: {patient_name} | Date: {current_time.strftime('%d/%m/%Y %I:%M %p')}</p>
     </div>
     
@@ -1067,9 +1075,8 @@ def main():
                             total_med_cost += details['total_cost']
                             receipt_html += f"""
     <div class="receipt-item">
-        <strong>{med_name}</strong><br>
-        Quantity: {details['quantity']} | Unit Price: ₹{details['price']} | Total: ₹{details['total_cost']}<br>
-        Dosage: {details.get('dosage', 'As directed')} | Timing: {details.get('timing', 'As directed')}
+        <strong>{med_name}</strong> • Qty: {details['quantity']} @ ₹{details['price']} = ₹{details['total_cost']}<br>
+        <span style="font-size: 9pt;">{details.get('dosage', 'As directed')} • {details.get('timing', 'As directed')}</span>
     </div>"""
 
                     consultation_fee = st.session_state.get('consultation_fee', 0)
@@ -1279,10 +1286,9 @@ def main():
             # Debug: Check if data is loaded
             if not medicines and not spectacles and not patients:
                 st.warning("⚠️ No data loaded from Google Sheets. Checking connection...")
-                if not oauth_sheets_api.is_authenticated():
-                    st.error("❌ Google Sheets not authenticated. Please connect first.")
-                    auth_url = oauth_sheets_api.get_auth_url()
-                    st.markdown(f"[🔗 Connect to Google Sheets]({auth_url})")
+                test_result = google_sheets_api.test_connection()
+                if not test_result['success']:
+                    st.error("❌ Google Sheets not authenticated. Please check credentials.json.")
                     return
                 else:
                     st.info("🔄 Trying to refresh data...")
@@ -1487,21 +1493,7 @@ def main():
             st.error(f"😞 Unable to load analytics: {str(e)}")
             st.info("Please ensure Google Sheets connection is working properly.")
 
-            # Try alternative data loading
-            try:
-                st.info("🔄 Attempting alternative data loading...")
-                from modules.google_sheets_manager import sheets_manager
-                patients = sheets_manager.get_patients()
-                medicines = sheets_manager.get_medicines()
 
-                if patients:
-                    st.success(f"✅ Loaded {len(patients)} patients via alternative method")
-                    # Show basic analytics with alternative data
-                    st.metric("Total Patients", len(patients))
-                else:
-                    st.warning("⚠️ No patient data available through any method")
-            except Exception as e2:
-                st.error(f"😞 Alternative loading also failed: {str(e2)}")
 
 if __name__ == "__main__":
     main()

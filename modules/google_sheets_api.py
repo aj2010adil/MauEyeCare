@@ -21,12 +21,25 @@ class GoogleSheetsAPI:
     def _authenticate(self):
         """Authenticate using Service Account"""
         try:
+            # First try Streamlit secrets
+            try:
+                if "gcp_service_account" in st.secrets:
+                    creds_info = dict(st.secrets["gcp_service_account"])
+                    creds = Credentials.from_service_account_info(
+                        creds_info, 
+                        scopes=self.scopes
+                    )
+                    return build('sheets', 'v4', credentials=creds, cache_discovery=False)
+            except Exception:
+                pass
+            
+            # Fallback to local credentials.json
             if os.path.exists(self.credentials_path):
                 creds = Credentials.from_service_account_file(self.credentials_path, scopes=self.scopes)
                 return build('sheets', 'v4', credentials=creds, cache_discovery=False)
-            else:
-                st.error("Service Account credentials.json not found!")
-                return None
+            
+            st.error("Service Account credentials not found in secrets or credentials.json!")
+            return None
         except Exception as e:
             st.error(f"Failed to authenticate with Google Sheets: {str(e)}")
             return None

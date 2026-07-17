@@ -6,27 +6,25 @@ Handles patient registration, duplicate prevention, and visit tracking
 
 import streamlit as st
 from datetime import datetime
-from .oauth_sheets_api import oauth_sheets_api
+from .google_sheets_api import google_sheets_api
 
 class PatientManager:
     def __init__(self):
-        self.oauth_api = oauth_sheets_api
+        self.sheets_api = google_sheets_api
     
     def register_patient(self, patient_data):
         """Register patient with duplicate check and visit tracking"""
         try:
-            if self.oauth_api.is_authenticated():
-                # Use OAuth API for real-time sync
-                result = self.oauth_api.add_patient(patient_data)
+            test_conn = self.sheets_api.test_connection()
+            if test_conn['success']:
+                # Use Google Sheets API for real-time sync
+                result = self.sheets_api.add_patient(patient_data)
                 
-                if result['success']:
-                    # Store in session for immediate use
+                # result might just be True/False for google_sheets_api
+                if result:
                     st.session_state.update({
-                        'patient_id': result['patient_id'],
                         'patient_name': patient_data['name'],
                         'patient_mobile': patient_data.get('mobile', ''),
-                        'patient_visits': result['visits'],
-                        'is_new_patient': result['new_patient']
                     })
                     
                     # Clear form and prepare for next patient
@@ -34,13 +32,10 @@ class PatientManager:
                     
                     return {
                         'success': True,
-                        'message': f"{'New patient registered' if result['new_patient'] else 'Return visit recorded'} - Visit #{result['visits']}",
-                        'patient_id': result['patient_id'],
-                        'visits': result['visits'],
-                        'new_patient': result['new_patient']
+                        'message': "Patient registered",
                     }
                 else:
-                    return {'success': False, 'error': result['error']}
+                    return {'success': False, 'error': 'Failed to add patient'}
             else:
                 # Fallback to local storage
                 return self.register_patient_locally(patient_data)
@@ -145,8 +140,9 @@ class PatientManager:
                 'total_cost': sum([details.get('total_cost', 0) for details in st.session_state.get('medicine_details', {}).values()])
             }
             
-            if self.oauth_api.is_authenticated():
-                self.oauth_api.add_prescription(prescription_data)
+            test_conn = self.sheets_api.test_connection()
+            if test_conn['success']:
+                self.sheets_api.add_prescription(prescription_data)
         
         # Clear all patient-related session data
         patient_keys = [
