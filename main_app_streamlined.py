@@ -90,17 +90,20 @@ def main():
 
     # --- Patient Registration Tab ---
     with tab1:
+        if 'form_reset_counter' not in st.session_state:
+            st.session_state.form_reset_counter = 0
+
         col_header1, col_header2 = st.columns([4, 1])
         with col_header1:
             st.header("👥 Patient Registration")
         with col_header2:
             if st.button("🆕 Start New Patient", use_container_width=True):
+                st.session_state.form_reset_counter += 1
                 keys_to_clear = [
                     'patient_name', 'patient_mobile', 'age', 'gender', 'address', 'city', 'state', 'pincode',
                     'occupation', 'referral_source', 'patient_issue', 'advice', 'new_patient',
                     'selected_medicines_list', 'medicine_details', 'selected_spectacles', 'spectacle_instructions',
-                    'rx_table', 'consultation_fee', 'additional_charges', 'patient_complaint', 'patient_diagnosis',
-                    'name_dropdown', 'custom_name', 'mobile_dropdown', 'custom_mobile', 'custom_issue', 'custom_advice'
+                    'rx_table', 'consultation_fee', 'additional_charges', 'patient_complaint', 'patient_diagnosis'
                 ]
                 for key in keys_to_clear:
                     if key in st.session_state:
@@ -127,22 +130,22 @@ def main():
             with col1:
                 # Combined dropdown + custom input for name
                 name_options = ["-- Enter Custom Name --"] + patient_names[:15]
-                selected_name = st.selectbox("Patient Name", name_options, key="name_dropdown")
+                selected_name = st.selectbox("Patient Name", name_options, key=f"name_dropdown_{st.session_state.form_reset_counter}")
 
                 if selected_name == "-- Enter Custom Name --":
-                    patient_name = st.text_input("Enter Full Name", placeholder="Type patient full name", key="custom_name")
+                    patient_name = st.text_input("Enter Full Name", placeholder="Type patient full name", key=f"custom_name_{st.session_state.form_reset_counter}")
                 else:
                     patient_name = selected_name
                     st.info(f"Selected: {selected_name}")
 
-                age = st.number_input("Age", min_value=0, max_value=120, value=30)
-                gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+                age = st.number_input("Age", min_value=0, max_value=120, value=30, key=f"age_{st.session_state.form_reset_counter}")
+                gender = st.selectbox("Gender", ["Male", "Female", "Other"], key=f"gender_{st.session_state.form_reset_counter}")
 
                 # Address fields for demographics with defaults
-                address = st.text_input("Address", placeholder="Street address")
+                address = st.text_input("Address", placeholder="Street address", key=f"address_{st.session_state.form_reset_counter}")
                 col_city, col_state = st.columns(2)
                 with col_city:
-                    city = st.text_input("City", value="Mubarkpur, Azamgarh", placeholder="City name")
+                    city = st.text_input("City", value="Mubarkpur, Azamgarh", placeholder="City name", key=f"city_{st.session_state.form_reset_counter}")
                 with col_state:
                     state = st.selectbox("State", [
                         "Uttar Pradesh", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
@@ -150,24 +153,24 @@ def main():
                         "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
                         "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
                         "Telangana", "Tripura", "Uttarakhand", "West Bengal", "Delhi"
-                    ])
-                pincode = st.text_input("Pincode", value="276404", placeholder="6-digit pincode")
+                    ], key=f"state_{st.session_state.form_reset_counter}")
+                pincode = st.text_input("Pincode", value="276404", placeholder="6-digit pincode", key=f"pincode_{st.session_state.form_reset_counter}")
 
             with col2:
                 # Combined dropdown + custom input for mobile
                 mobile_options = ["-- Enter Custom Mobile --"] + patient_mobiles[:15]
-                selected_mobile = st.selectbox("Mobile Number", mobile_options, key="mobile_dropdown")
+                selected_mobile = st.selectbox("Mobile Number", mobile_options, key=f"mobile_dropdown_{st.session_state.form_reset_counter}")
 
                 if selected_mobile == "-- Enter Custom Mobile --":
-                    contact = st.text_input("Enter Mobile Number", placeholder="Type mobile number", key="custom_mobile")
+                    contact = st.text_input("Enter Mobile Number", placeholder="Type mobile number", key=f"custom_mobile_{st.session_state.form_reset_counter}")
                 else:
                     contact = selected_mobile
                     st.info(f"Selected: {selected_mobile}")
 
                 issue_options = ["Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Floaters", "Night Blindness", "Headache", "Eye Strain", "Watering", "Itching", "Burning Sensation", "Foreign Body Sensation", "Light Sensitivity", "Discharge", "Swelling", "Routine Checkup", "Other"]
-                patient_issue = st.selectbox("Patient Issue/Complaint", issue_options)
+                patient_issue = st.selectbox("Patient Issue/Complaint", issue_options, key=f"issue_{st.session_state.form_reset_counter}")
                 if patient_issue == "Other":
-                    custom_issue = st.text_area("Specify Issue/Complaint", placeholder="Describe the patient's complaint in detail", key="custom_issue")
+                    custom_issue = st.text_area("Specify Issue/Complaint", placeholder="Describe the patient's complaint in detail", key=f"custom_issue_{st.session_state.form_reset_counter}")
                     patient_issue = custom_issue if custom_issue else "Other"
 
                 advice_options = [
@@ -178,17 +181,17 @@ def main():
                     "Follow-up in 6 months", "Refer to Specialist", "Eye Protection Advised", 
                     "Computer Vision Syndrome Care", "Other"
                 ]
-                advice = st.selectbox("Advice/Notes", advice_options)
+                advice = st.selectbox("Advice/Notes", advice_options, key=f"advice_{st.session_state.form_reset_counter}")
                 if advice == "Other":
-                    custom_advice = st.text_area("Specify Advice/Notes", placeholder="Enter detailed advice or notes for the patient", key="custom_advice")
+                    custom_advice = st.text_area("Specify Advice/Notes", placeholder="Enter detailed advice or notes for the patient", key=f"custom_advice_{st.session_state.form_reset_counter}")
                     advice = custom_advice if custom_advice else "Other"
 
                 # Professional details for analytics
-                occupation = st.text_input("Occupation", placeholder="Patient's occupation")
+                occupation = st.text_input("Occupation", placeholder="Patient's occupation", key=f"occupation_{st.session_state.form_reset_counter}")
                 referral_source = st.selectbox("How did you hear about us?", [
                     "", "Google Search", "Social Media", "Friend/Family", "Doctor Referral",
                     "Advertisement", "Walk-in", "Previous Patient", "Other"
-                ])
+                ], key=f"referral_{st.session_state.form_reset_counter}")
 
             submitted = st.form_submit_button("💾 Register Patient", type="primary")
 
