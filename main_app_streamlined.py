@@ -13,13 +13,7 @@ import json
 sys.path.append(os.path.dirname(__file__))
 
 # Core imports
-from modules.google_sheets_manager import sheets_manager
-from modules.oauth_sheets_api import oauth_sheets_api
-from modules.growth_marketing import build_growth_plan, format_growth_plan
-from modules.patient_intelligence import build_patient_intelligence_record, summarize_market_context
-from modules.revenue_forecast import forecast_revenue_and_profit
-from modules.campaign_tracking import build_campaign_summary
-from modules.external_data_capture import build_external_signal_summary
+from modules.google_sheets_api import google_sheets_api
 
 @st.cache_data(ttl=60)
 def get_sheet_data():
@@ -88,13 +82,9 @@ def main():
 
 
     # Main tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    tab1, tab2, tab3 = st.tabs([
         "👥 Patient Registration",
         "📤 Prescription Generator",
-        "📈 Growth Strategy",
-        "💰 Revenue Forecast",
-        "📣 Campaign Tracking",
-        "🌐 External Signals",
         "📊 Analytics"
     ])
 
@@ -140,22 +130,22 @@ def main():
             with col1:
                 # Combined dropdown + custom input for name
                 name_options = ["-- Enter Custom Name --"] + patient_names[:15]
-                selected_name = st.selectbox("Patient Name", name_options, key="name_dropdown")
+                selected_name = st.selectbox("Patient Name", name_options, key=f"name_dropdown_{st.session_state.form_reset_counter}")
 
                 if selected_name == "-- Enter Custom Name --":
-                    patient_name = st.text_input("Enter Full Name", placeholder="Type patient full name", key="custom_name")
+                    patient_name = st.text_input("Enter Full Name", placeholder="Type patient full name", key=f"custom_name_{st.session_state.form_reset_counter}")
                 else:
                     patient_name = selected_name
                     st.info(f"Selected: {selected_name}")
 
-                age = st.number_input("Age", min_value=0, max_value=120, value=30)
-                gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+                age = st.number_input("Age", min_value=0, max_value=120, value=30, key=f"age_{st.session_state.form_reset_counter}")
+                gender = st.selectbox("Gender", ["Male", "Female", "Other"], key=f"gender_{st.session_state.form_reset_counter}")
 
                 # Address fields for demographics with defaults
-                address = st.text_input("Address", placeholder="Street address")
+                address = st.text_input("Address", placeholder="Street address", key=f"address_{st.session_state.form_reset_counter}")
                 col_city, col_state = st.columns(2)
                 with col_city:
-                    city = st.text_input("City", value="Mubarkpur, Azamgarh", placeholder="City name")
+                    city = st.text_input("City", value="Mubarkpur, Azamgarh", placeholder="City name", key=f"city_{st.session_state.form_reset_counter}")
                 with col_state:
                     state = st.selectbox("State", [
                         "Uttar Pradesh", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
@@ -163,24 +153,24 @@ def main():
                         "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
                         "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
                         "Telangana", "Tripura", "Uttarakhand", "West Bengal", "Delhi"
-                    ])
-                pincode = st.text_input("Pincode", value="276404", placeholder="6-digit pincode")
+                    ], key=f"state_{st.session_state.form_reset_counter}")
+                pincode = st.text_input("Pincode", value="276404", placeholder="6-digit pincode", key=f"pincode_{st.session_state.form_reset_counter}")
 
             with col2:
                 # Combined dropdown + custom input for mobile
                 mobile_options = ["-- Enter Custom Mobile --"] + patient_mobiles[:15]
-                selected_mobile = st.selectbox("Mobile Number", mobile_options, key="mobile_dropdown")
+                selected_mobile = st.selectbox("Mobile Number", mobile_options, key=f"mobile_dropdown_{st.session_state.form_reset_counter}")
 
                 if selected_mobile == "-- Enter Custom Mobile --":
-                    contact = st.text_input("Enter Mobile Number", placeholder="Type mobile number", key="custom_mobile")
+                    contact = st.text_input("Enter Mobile Number", placeholder="Type mobile number", key=f"custom_mobile_{st.session_state.form_reset_counter}")
                 else:
                     contact = selected_mobile
                     st.info(f"Selected: {selected_mobile}")
 
                 issue_options = ["Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Floaters", "Night Blindness", "Headache", "Eye Strain", "Watering", "Itching", "Burning Sensation", "Foreign Body Sensation", "Light Sensitivity", "Discharge", "Swelling", "Routine Checkup", "Other"]
-                patient_issue = st.selectbox("Patient Issue/Complaint", issue_options)
+                patient_issue = st.selectbox("Patient Issue/Complaint", issue_options, key=f"issue_{st.session_state.form_reset_counter}")
                 if patient_issue == "Other":
-                    custom_issue = st.text_area("Specify Issue/Complaint", placeholder="Describe the patient's complaint in detail", key="custom_issue")
+                    custom_issue = st.text_area("Specify Issue/Complaint", placeholder="Describe the patient's complaint in detail", key=f"custom_issue_{st.session_state.form_reset_counter}")
                     patient_issue = custom_issue if custom_issue else "Other"
 
                 advice_options = [
@@ -191,26 +181,17 @@ def main():
                     "Follow-up in 6 months", "Refer to Specialist", "Eye Protection Advised", 
                     "Computer Vision Syndrome Care", "Other"
                 ]
-                advice = st.selectbox("Advice/Notes", advice_options)
+                advice = st.selectbox("Advice/Notes", advice_options, key=f"advice_{st.session_state.form_reset_counter}")
                 if advice == "Other":
-                    custom_advice = st.text_area("Specify Advice/Notes", placeholder="Enter detailed advice or notes for the patient", key="custom_advice")
+                    custom_advice = st.text_area("Specify Advice/Notes", placeholder="Enter detailed advice or notes for the patient", key=f"custom_advice_{st.session_state.form_reset_counter}")
                     advice = custom_advice if custom_advice else "Other"
 
                 # Professional details for analytics
-                occupation = st.text_input("Occupation", placeholder="Patient's occupation")
+                occupation = st.text_input("Occupation", placeholder="Patient's occupation", key=f"occupation_{st.session_state.form_reset_counter}")
                 referral_source = st.selectbox("How did you hear about us?", [
                     "", "Google Search", "Social Media", "Friend/Family", "Doctor Referral",
                     "Advertisement", "Walk-in", "Previous Patient", "Other"
-                ])
-                whatsapp_consent = st.checkbox("WhatsApp consent for reminders and campaigns", value=True)
-                preferred_contact = st.selectbox("Preferred Contact", ["WhatsApp", "Call", "SMS", "Email"], index=0)
-                locality = st.text_input("Locality / Area", value=city, placeholder="Locality or village/colony/market")
-                income_band = st.selectbox("Income Band", ["", "Low", "Middle", "High"], index=1)
-                budget_range = st.selectbox("Budget Range for Spectacles", ["", "Budget", "Medium", "Premium"], index=1)
-                previous_spectacles = st.selectbox("Previous Spectacles / Glasses", ["", "No", "Yes", "Unsure"], index=1)
-                follow_up_date = st.date_input("Suggested Follow-up Date", value=datetime.now().date() + timedelta(days=30))
-                campaign_source = st.text_input("Campaign Source", placeholder="e.g. WhatsApp, School camp, Referral")
-                distance_km = st.number_input("Distance from Clinic (km)", min_value=0, value=5, step=1)
+                ], key=f"referral_{st.session_state.form_reset_counter}")
 
             submitted = st.form_submit_button("💾 Register Patient", type="primary")
 
@@ -230,20 +211,6 @@ def main():
                     pass
 
                 # Store patient info in session
-                patient_intelligence = build_patient_intelligence_record({
-                    'whatsapp_consent': whatsapp_consent,
-                    'preferred_contact': preferred_contact,
-                    'locality': locality,
-                    'occupation': occupation,
-                    'income_band': income_band.lower(),
-                    'budget_range': budget_range.lower(),
-                    'previous_spectacles': previous_spectacles,
-                    'referral_source': referral_source,
-                    'follow_up_date': follow_up_date.strftime('%Y-%m-%d'),
-                    'campaign_source': campaign_source,
-                    'distance_km': distance_km,
-                })
-
                 st.session_state.update({
                     'patient_name': patient_name,
                     'patient_mobile': contact,
@@ -257,21 +224,11 @@ def main():
                     'referral_source': referral_source,
                     'patient_issue': patient_issue,
                     'advice': advice,
-                    'new_patient': not is_duplicate,
-                    'patient_intelligence': patient_intelligence,
+                    'new_patient': not is_duplicate
                 })
 
                 if is_duplicate:
                     st.success(f"🔄 **Return Visit Recorded!** {patient_name}")
-                else:
-                    st.success(f"✅ **New Patient Registered!** {patient_name}")
-                    st.balloons()
-
-                if st.session_state.get('patient_intelligence'):
-                    intel = st.session_state['patient_intelligence']
-                    st.info(f"🧠 Marketing segment: {intel['market_segment']} | Price tier: {intel['price_tier']} | Contact: {intel['preferred_contact']}")
-
-                if is_duplicate:
 
                     # Show last visit details for returning patient
                     st.markdown("---")
@@ -306,6 +263,10 @@ def main():
                             st.info("📄 No previous prescription found")
                     except:
                         st.info("📅 Unable to load visit history")
+                else:
+                    st.success(f"✅ **New Patient Registered!** {patient_name}")
+                    st.balloons()
+
                 # Professional Google Sheets integration
                 patient_record = {
                     'name': patient_name,
@@ -332,29 +293,6 @@ def main():
                     st.warning("⚠️ Google Sheets sync failed.")
 
                 st.rerun()
-
-        if 'patient_intelligence' in st.session_state and st.session_state['patient_intelligence']:
-            st.markdown("---")
-            st.subheader("🧠 Patient Intelligence")
-            intel = st.session_state['patient_intelligence']
-            st.write(f"- Market segment: {intel['market_segment']}")
-            st.write(f"- Price tier: {intel['price_tier']}")
-            st.write(f"- Preferred contact: {intel['preferred_contact']}")
-            st.write(f"- Follow-up date: {intel['follow_up_date'] or 'Not set'}")
-            st.write(f"- Referral source: {intel['referral_source'] or 'Not captured'}")
-
-            market_context = summarize_market_context({
-                'locality': intel['locality'] or st.session_state.get('city', 'Local Area'),
-                'population_estimate': 25000,
-                'school_count': 6,
-                'competitor_count': 2,
-                'google_trend_score': 8,
-                'season': 'school_session',
-            })
-            st.info(f"📍 {market_context['headline']}")
-            st.write(f"Priority: {market_context['priority']}")
-            for rec in market_context['recommendations']:
-                st.write(f"• {rec}")
 
         # Post-registration: Medicine and Spectacle Selection
         if 'patient_name' in st.session_state and st.session_state['patient_name']:
@@ -1165,119 +1103,8 @@ def main():
         else:
             st.info("👆 Please register a patient first in the Patient Registration tab")
 
-    # --- Growth Strategy Tab ---
-    with tab3:
-        st.header("📈 Spectacle Patient Growth Strategy")
-        st.markdown("This planner gives a practical, step-by-step growth plan for increasing spectacle patients in both rural and urban areas.")
-
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            location = st.selectbox(
-                "Area Type",
-                ["urban", "rural"],
-                index=0,
-                key="growth_location"
-            )
-        with col2:
-            monthly_budget = st.number_input("Monthly Marketing Budget (₹)", min_value=0, value=50000, step=5000)
-        with col3:
-            target_new_patients = st.number_input("Target New Patients / Month", min_value=1, value=40, step=1)
-
-        current_patient_volume = st.number_input("Current Estimated Patients / Month", min_value=0, value=20, step=1)
-
-        growth_plan = build_growth_plan(
-            location=location,
-            monthly_budget=int(monthly_budget),
-            target_new_patients=int(target_new_patients),
-            current_patient_volume=int(current_patient_volume),
-        )
-
-        st.metric("Recommended Focus", f"{len(growth_plan)} strategies")
-        st.metric("Growth Goal", f"{target_new_patients} new patients/month")
-
-        st.markdown("### Step-by-step plan")
-        for index, strategy in enumerate(growth_plan, start=1):
-            with st.expander(f"{index}. {strategy['strategy'].replace('_', ' ').title()}"):
-                st.write(f"**What is needed:** {strategy['need']}")
-                st.write(f"**How we can implement it:** {strategy['implementation']}")
-                st.write(f"**Advantage:** {strategy['advantage']}")
-                st.write(f"**How much can gain:** {strategy['estimated_gain']}")
-                st.write(f"**Estimated cost:** ₹{strategy['estimated_cost']:,}")
-                st.write(f"**Priority:** {strategy['priority']}")
-
-        st.markdown("### Summary Table")
-        st.code(format_growth_plan(growth_plan), language="text")
-
-    # --- Revenue Forecast Tab ---
-    with tab4:
-        st.header("💰 Revenue & Profit Forecast")
-        st.markdown("Estimate likely revenue and profit from patient growth, consultation value, and marketing budget.")
-
-        monthly_budget = st.number_input("Monthly Marketing Budget (₹)", min_value=0, value=50000, step=5000, key="forecast_budget")
-        patient_history = []
-        if 'patient_intelligence' in st.session_state:
-            patient_history.append(st.session_state['patient_intelligence'])
-
-        forecast = forecast_revenue_and_profit(patient_history, monthly_budget=int(monthly_budget))
-        st.metric("Estimated New Patients", forecast['estimated_new_patients'])
-        st.metric("Estimated Revenue", f"₹{forecast['estimated_revenue']:,}")
-        st.metric("Estimated Profit", f"₹{forecast['estimated_profit']:,}")
-        st.metric("Estimated ROI", f"{forecast['estimated_roi']}%")
-        st.info(f"📌 Recommendation: {forecast['recommendation']}")
-
-    # --- Campaign Tracking Tab ---
-    with tab5:
-        st.header("📣 Campaign Performance Tracking")
-        st.markdown("Track which campaigns and channels are producing the best patient response.")
-
-        campaign_records = []
-        if 'campaign_records' in st.session_state:
-            campaign_records = st.session_state['campaign_records']
-
-        with st.form("campaign_form"):
-            channel = st.selectbox("Channel", ["WhatsApp", "Google", "Facebook", "Referral", "Walk-in", "School Camp"])
-            campaign = st.text_input("Campaign Name", placeholder="e.g. Family Eye Camp")
-            submitted = st.form_submit_button("➕ Log Campaign")
-
-            if submitted:
-                campaign_records.append({'channel': channel, 'campaign': campaign or 'General'})
-                st.session_state['campaign_records'] = campaign_records
-                st.success("Campaign recorded")
-
-        summary = build_campaign_summary(campaign_records)
-        st.metric("Top Channel", summary['top_channel'])
-        st.metric("Best Campaign", summary['best_campaign'])
-        st.metric("Total Leads", summary['total_leads'])
-        st.metric("Estimated Conversion", f"{summary['conversion_rate'] * 100:.0f}%")
-        st.info(f"📌 Recommendation: {summary['recommendation']}")
-
-    # --- External Signals Tab ---
-    with tab6:
-        st.header("🌐 External Market Signals")
-        st.markdown("Use public-style market signals to decide the next move for local growth.")
-
-        signal_data = {
-            'google_trend_score': st.slider("Google trend interest", 0, 10, 7),
-            'social_media_interest': st.slider("Local social media interest", 0, 10, 6),
-            'competitor_count': st.slider("Nearby competitor count", 0, 10, 2),
-            'school_count': st.slider("Nearby schools/colleges", 0, 10, 5),
-            'population_estimate': st.slider("Estimated local population", 0, 50000, 25000, step=1000),
-            'season': st.selectbox("Season / period", ["general", "school_session", "festival", "wedding"]),
-        }
-
-        summary = build_external_signal_summary(
-            locality=st.session_state.get('city', 'Local Area'),
-            public_signals=signal_data,
-        )
-
-        st.metric("Signal Score", summary['signal_score'])
-        st.info(f"➡️ Next move: {summary['next_move']}")
-        st.markdown("**Recommended actions:**")
-        for action in summary['recommendations']:
-            st.write(f"• {action}")
-
     # --- Analytics Tab ---
-    with tab7:
+    with tab3:
         st.header("📊 Hospital Analytics & Business Intelligence")
 
         try:
