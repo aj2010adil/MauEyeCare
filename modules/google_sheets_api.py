@@ -22,12 +22,16 @@ class GoogleSheetsAPI:
         """Authenticate using Service Account"""
         try:
             # First try Streamlit secrets
-            if hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
-                creds = Credentials.from_service_account_info(
-                    st.secrets["gcp_service_account"], 
-                    scopes=self.scopes
-                )
-                return build('sheets', 'v4', credentials=creds, cache_discovery=False)
+            try:
+                if "gcp_service_account" in st.secrets:
+                    creds_info = dict(st.secrets["gcp_service_account"])
+                    creds = Credentials.from_service_account_info(
+                        creds_info, 
+                        scopes=self.scopes
+                    )
+                    return build('sheets', 'v4', credentials=creds, cache_discovery=False)
+            except Exception:
+                pass
             
             # Fallback to local credentials.json
             if os.path.exists(self.credentials_path):
