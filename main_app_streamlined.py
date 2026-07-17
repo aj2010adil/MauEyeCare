@@ -310,39 +310,42 @@ def main():
                 medicine_options = {}
 
             if medicine_options:
-                # Combined dropdown + custom medicine selection
+                # Ensure list exists in session state
+                if 'selected_medicines_list' not in st.session_state:
+                    st.session_state['selected_medicines_list'] = []
+
+                def add_selected_medicine():
+                    med = st.session_state.med_dropdown
+                    if med:
+                        if med not in st.session_state['selected_medicines_list']:
+                            st.session_state['selected_medicines_list'].append(med)
+                    st.session_state.med_dropdown = None
+
+                def add_custom_medicine():
+                    med = st.session_state.custom_med
+                    if med:
+                        if med not in st.session_state['selected_medicines_list']:
+                            st.session_state['selected_medicines_list'].append(med)
+                    st.session_state.custom_med = ""
+
                 med_names = list(medicine_options.keys())
-                med_dropdown_options = ["-- Select Medicine --"] + med_names
 
                 selected_med_dropdown = st.selectbox(
                     "Select Medicine from Inventory:",
-                    med_dropdown_options,
-                    key="med_dropdown"
+                    med_names,
+                    index=None,
+                    placeholder="-- Select Medicine --",
+                    key="med_dropdown",
+                    on_change=add_selected_medicine
                 )
 
                 # Allow custom medicine entry
                 custom_medicine = st.text_input(
-                    "Or enter custom medicine:",
+                    "Or enter custom medicine (Press Enter to add):",
                     placeholder="Type medicine name if not in dropdown",
-                    key="custom_med"
+                    key="custom_med",
+                    on_change=add_custom_medicine
                 )
-
-                # Determine final medicine selection
-                if selected_med_dropdown != "-- Select Medicine --":
-                    final_medicine = selected_med_dropdown
-                elif custom_medicine:
-                    final_medicine = custom_medicine
-                else:
-                    final_medicine = None
-
-                if final_medicine:
-                    if 'selected_medicines_list' not in st.session_state:
-                        st.session_state['selected_medicines_list'] = []
-
-                    if st.button(f"➕ Add {final_medicine}", key=f"add_{final_medicine}"):
-                        if final_medicine not in st.session_state['selected_medicines_list']:
-                            st.session_state['selected_medicines_list'].append(final_medicine)
-                            st.success(f"Added {final_medicine}")
 
                 # Show selected medicines with quantities and dosage
                 if st.session_state.get('selected_medicines_list'):
