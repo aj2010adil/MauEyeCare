@@ -140,22 +140,22 @@ def main():
             with col1:
                 # Combined dropdown + custom input for name
                 name_options = ["-- Enter Custom Name --"] + patient_names[:15]
-                selected_name = st.selectbox("Patient Name", name_options, key=f"name_dropdown_{st.session_state.form_reset_counter}")
+                selected_name = st.selectbox("Patient Name", name_options, key="name_dropdown")
 
                 if selected_name == "-- Enter Custom Name --":
-                    patient_name = st.text_input("Enter Full Name", placeholder="Type patient full name", key=f"custom_name_{st.session_state.form_reset_counter}")
+                    patient_name = st.text_input("Enter Full Name", placeholder="Type patient full name", key="custom_name")
                 else:
                     patient_name = selected_name
                     st.info(f"Selected: {selected_name}")
 
-                age = st.number_input("Age", min_value=0, max_value=120, value=30, key=f"age_{st.session_state.form_reset_counter}")
-                gender = st.selectbox("Gender", ["Male", "Female", "Other"], key=f"gender_{st.session_state.form_reset_counter}")
+                age = st.number_input("Age", min_value=0, max_value=120, value=30)
+                gender = st.selectbox("Gender", ["Male", "Female", "Other"])
 
                 # Address fields for demographics with defaults
-                address = st.text_input("Address", placeholder="Street address", key=f"address_{st.session_state.form_reset_counter}")
+                address = st.text_input("Address", placeholder="Street address")
                 col_city, col_state = st.columns(2)
                 with col_city:
-                    city = st.text_input("City", value="Mubarkpur, Azamgarh", placeholder="City name", key=f"city_{st.session_state.form_reset_counter}")
+                    city = st.text_input("City", value="Mubarkpur, Azamgarh", placeholder="City name")
                 with col_state:
                     state = st.selectbox("State", [
                         "Uttar Pradesh", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
@@ -163,24 +163,24 @@ def main():
                         "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
                         "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
                         "Telangana", "Tripura", "Uttarakhand", "West Bengal", "Delhi"
-                    ], key=f"state_{st.session_state.form_reset_counter}")
-                pincode = st.text_input("Pincode", value="276404", placeholder="6-digit pincode", key=f"pincode_{st.session_state.form_reset_counter}")
+                    ])
+                pincode = st.text_input("Pincode", value="276404", placeholder="6-digit pincode")
 
             with col2:
                 # Combined dropdown + custom input for mobile
                 mobile_options = ["-- Enter Custom Mobile --"] + patient_mobiles[:15]
-                selected_mobile = st.selectbox("Mobile Number", mobile_options, key=f"mobile_dropdown_{st.session_state.form_reset_counter}")
+                selected_mobile = st.selectbox("Mobile Number", mobile_options, key="mobile_dropdown")
 
                 if selected_mobile == "-- Enter Custom Mobile --":
-                    contact = st.text_input("Enter Mobile Number", placeholder="Type mobile number", key=f"custom_mobile_{st.session_state.form_reset_counter}")
+                    contact = st.text_input("Enter Mobile Number", placeholder="Type mobile number", key="custom_mobile")
                 else:
                     contact = selected_mobile
                     st.info(f"Selected: {selected_mobile}")
 
                 issue_options = ["Blurry Vision", "Eye Pain", "Redness", "Dry Eyes", "Double Vision", "Floaters", "Night Blindness", "Headache", "Eye Strain", "Watering", "Itching", "Burning Sensation", "Foreign Body Sensation", "Light Sensitivity", "Discharge", "Swelling", "Routine Checkup", "Other"]
-                patient_issue = st.selectbox("Patient Issue/Complaint", issue_options, key=f"issue_{st.session_state.form_reset_counter}")
+                patient_issue = st.selectbox("Patient Issue/Complaint", issue_options)
                 if patient_issue == "Other":
-                    custom_issue = st.text_area("Specify Issue/Complaint", placeholder="Describe the patient's complaint in detail", key=f"custom_issue_{st.session_state.form_reset_counter}")
+                    custom_issue = st.text_area("Specify Issue/Complaint", placeholder="Describe the patient's complaint in detail", key="custom_issue")
                     patient_issue = custom_issue if custom_issue else "Other"
 
                 advice_options = [
@@ -191,13 +191,13 @@ def main():
                     "Follow-up in 6 months", "Refer to Specialist", "Eye Protection Advised", 
                     "Computer Vision Syndrome Care", "Other"
                 ]
-                advice = st.selectbox("Advice/Notes", advice_options, key=f"advice_{st.session_state.form_reset_counter}")
+                advice = st.selectbox("Advice/Notes", advice_options)
                 if advice == "Other":
-                    custom_advice = st.text_area("Specify Advice/Notes", placeholder="Enter detailed advice or notes for the patient", key=f"custom_advice_{st.session_state.form_reset_counter}")
+                    custom_advice = st.text_area("Specify Advice/Notes", placeholder="Enter detailed advice or notes for the patient", key="custom_advice")
                     advice = custom_advice if custom_advice else "Other"
 
                 # Professional details for analytics
-                occupation = st.text_input("Occupation", placeholder="Patient's occupation", key=f"occupation_{st.session_state.form_reset_counter}")
+                occupation = st.text_input("Occupation", placeholder="Patient's occupation")
                 referral_source = st.selectbox("How did you hear about us?", [
                     "", "Google Search", "Social Media", "Friend/Family", "Doctor Referral",
                     "Advertisement", "Walk-in", "Previous Patient", "Other"
