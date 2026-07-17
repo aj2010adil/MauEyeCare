@@ -453,38 +453,60 @@ def main():
                 spectacle_options = {}
 
             if spectacle_options:
-                # Combined dropdown + custom spectacle selection
-                spec_names = list(spectacle_options.keys())
-                spec_dropdown_options = ["-- Select Spectacle --"] + spec_names
+                # Ensure list exists
+                if 'selected_spectacles' not in st.session_state:
+                    st.session_state['selected_spectacles'] = []
 
-                selected_spec_dropdown = st.selectbox(
+                def add_selected_spectacle():
+                    spec = st.session_state.spec_dropdown
+                    if spec:
+                        if spec not in st.session_state['selected_spectacles']:
+                            st.session_state['selected_spectacles'].append(spec)
+                    st.session_state.spec_dropdown = None
+
+                def add_custom_spectacle():
+                    spec = st.session_state.custom_spec
+                    if spec:
+                        if spec not in st.session_state['selected_spectacles']:
+                            st.session_state['selected_spectacles'].append(spec)
+                    st.session_state.custom_spec = ""
+
+                spec_names = list(spectacle_options.keys())
+
+                st.selectbox(
                     "Select Spectacle from Inventory:",
-                    spec_dropdown_options,
-                    key="spec_dropdown"
+                    spec_names,
+                    index=None,
+                    placeholder="-- Select Spectacle --",
+                    key="spec_dropdown",
+                    on_change=add_selected_spectacle
                 )
 
                 # Allow custom spectacle entry
-                custom_spectacle = st.text_input(
-                    "Or enter custom spectacle:",
+                st.text_input(
+                    "Or enter custom spectacle (Press Enter to add):",
                     placeholder="Type spectacle name if not in dropdown",
-                    key="custom_spec"
+                    key="custom_spec",
+                    on_change=add_custom_spectacle
                 )
 
-                # Determine final spectacle selection
-                if selected_spec_dropdown != "-- Select Spectacle --":
-                    final_spectacle = selected_spec_dropdown
-                    if final_spectacle in spectacle_options:
-                        spec_data = spectacle_options[final_spectacle]
-                        st.info(f"Price: ₹{spec_data.get('price', 0)} | Stock: {spec_data.get('quantity', 0)}")
-                elif custom_spectacle:
-                    final_spectacle = custom_spectacle
-                    st.info("Custom spectacle - Price will be determined manually")
-                else:
-                    final_spectacle = None
+                # Show selected spectacles
+                if st.session_state.get('selected_spectacles'):
+                    st.markdown("**Selected Spectacles:**")
+                    for i, spec_name in enumerate(st.session_state['selected_spectacles']):
+                        col_s1, col_s2 = st.columns([4, 1])
+                        with col_s1:
+                            if spec_name in spectacle_options:
+                                spec_data = spectacle_options[spec_name]
+                                st.info(f"**{spec_name}** — ₹{spec_data.get('price', 0)} | Stock: {spec_data.get('quantity', 0)}")
+                            else:
+                                st.info(f"**{spec_name}** — Custom spectacle")
+                        with col_s2:
+                            if st.button("🗑️ Remove", key=f"remove_spec_{i}"):
+                                st.session_state['selected_spectacles'].remove(spec_name)
+                                st.rerun()
 
-                if final_spectacle:
-                    st.session_state['selected_spectacles'] = [final_spectacle]
-
+                if st.session_state.get('selected_spectacles'):
                     # Add spectacle usage instructions for first-time users
                     st.markdown("**Spectacle Usage Instructions:**")
                     first_time_user = st.checkbox("First time spectacle user?", key="first_time_spec")
@@ -537,10 +559,14 @@ def main():
                 os_near_vision = st.selectbox("OS Near Vision", near_vision_options, key="os_near_vision")
 
             # Standard prescription values for suggestions
-            sphere_options = ["", "+0.25", "+0.50", "+0.75", "+1.00", "+1.25", "+1.50", "+1.75", "+2.00", "+2.25", "+2.50", "+3.00", "+3.50", "+4.00", "+5.00", "+6.00",
-                            "-0.25", "-0.50", "-0.75", "-1.00", "-1.25", "-1.50", "-1.75", "-2.00", "-2.25", "-2.50", "-3.00", "-3.50", "-4.00", "-5.00", "-6.00", "-8.00", "-10.00"]
-            cylinder_options = ["", "+0.25", "+0.50", "+0.75", "+1.00", "+1.25", "+1.50", "+1.75", "+2.00", "+2.25", "+2.50", "+3.00", "+4.00", "+5.00",
-                                "-0.25", "-0.50", "-0.75", "-1.00", "-1.25", "-1.50", "-1.75", "-2.00", "-2.25", "-2.50", "-3.00", "-4.00", "-5.00"]
+            # Sphere: -20.00 to +20.00 in 0.25 steps
+            _sphere_neg = ["-{:.2f}".format(i/4) for i in range(1, 81)][::-1]
+            _sphere_pos = ["+{:.2f}".format(i/4) for i in range(1, 81)]
+            sphere_options = [""] + _sphere_neg + _sphere_pos
+            # Cylinder: -8.00 to +8.00 in 0.25 steps
+            _cyl_neg = ["-{:.2f}".format(i/4) for i in range(1, 33)][::-1]
+            _cyl_pos = ["+{:.2f}".format(i/4) for i in range(1, 33)]
+            cylinder_options = [""] + _cyl_neg + _cyl_pos
             axis_options = [""] + [str(i) for i in range(0, 185, 5)]
             near_add_options = ["", "+1.00", "+1.25", "+1.50", "+1.75", "+2.00", "+2.25", "+2.50", "+2.75", "+3.00", "+3.25", "+3.50", "+3.75", "+4.00"]
 
