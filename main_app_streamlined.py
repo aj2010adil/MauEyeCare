@@ -13,16 +13,15 @@ import json
 sys.path.append(os.path.dirname(__file__))
 
 # Core imports
-from modules.google_sheets_manager import sheets_manager
-from modules.oauth_sheets_api import oauth_sheets_api
+from modules.google_sheets_api import google_sheets_api
 
 @st.cache_data
 def get_sheet_data():
     """Load data from Google Sheets"""
     try:
-        medicines = sheets_manager.get_medicines()
-        spectacles = sheets_manager.get_spectacles()
-        patients = sheets_manager.get_patients()
+        medicines = google_sheets_api.read_sheet("Medicines")
+        spectacles = google_sheets_api.read_sheet("Spectacles")
+        patients = google_sheets_api.read_sheet("Patients")
         return medicines, spectacles, patients
     except Exception as e:
         return [], [], []
@@ -48,13 +47,13 @@ def main():
                 medicines, spectacles, patients = get_sheet_data()
                 st.success(f"✅ Synced: {len(medicines)} medicines, {len(spectacles)} spectacles, {len(patients)} patients!")
 
-        # OAuth status
-        if oauth_sheets_api.is_authenticated():
+        # Google Sheets status
+        test_result = google_sheets_api.test_connection()
+        if test_result['success']:
             st.success("✅ Google Sheets Connected")
         else:
             st.error("❌ Google Sheets Not Connected")
-            auth_url = oauth_sheets_api.get_auth_url()
-            st.markdown(f"[🔗 Connect to Google Sheets]({auth_url})")
+            st.caption("Check credentials.json")
 
         # Low stock alerts for doctor
         try:
@@ -81,20 +80,6 @@ def main():
             st.info(f"Age: {st.session_state.get('age', 'N/A')}")
             st.info(f"Mobile: {st.session_state.get('patient_mobile', 'N/A')}")
 
-    # Handle OAuth callback
-    query_params = st.query_params
-    if 'code' in query_params:
-        code = query_params['code']
-        state = query_params.get('state', '')
-
-        with st.spinner("Authenticating with Google Sheets..."):
-            result = oauth_sheets_api.exchange_code_for_token(code, state)
-            if result['success']:
-                st.success("✅ Google Sheets authentication successful!")
-                st.query_params.clear()
-                st.rerun()
-            else:
-                st.error(f"❌ Authentication failed: {result.get('error', 'Unknown error')}")
 
     # Main tabs
     tab1, tab2, tab3 = st.tabs([
@@ -247,7 +232,7 @@ def main():
 
                         # Get last prescription if available
                         try:
-                            prescriptions = sheets_manager.get_prescriptions()
+                            prescriptions = google_sheets_api.read_sheet("Prescriptions")
                             patient_prescriptions = [pr for pr in prescriptions if isinstance(pr, dict) and pr.get('patient_name', '').lower() == patient_name.lower()]
                             if patient_prescriptions:
                                 last_prescription = patient_prescriptions[-1]
@@ -265,32 +250,29 @@ def main():
                     st.balloons()
 
                 # Professional Google Sheets integration
-                if oauth_sheets_api.is_authenticated():
-                    patient_record = {
-                        'name': patient_name,
-                        'age': age,
-                        'gender': gender,
-                        'mobile': contact,
-                        'issue': patient_issue,
-                        'advice': advice,
-                        'email': '',
-                        'address': address,
-                        'city': city,
-                        'state': state,
-                        'pincode': pincode,
-                        'occupation': occupation,
-                        'referral_source': referral_source
-                    }
-                    result = oauth_sheets_api.add_patient(patient_record)
-                    if result.get('success'):
-                        if not is_duplicate:
-                            st.info("✅ **New patient added to Google Sheets!**")
-                        else:
-                            st.info("✅ **Return visit recorded in Google Sheets!**")
+                patient_record = {
+                    'name': patient_name,
+                    'age': age,
+                    'gender': gender,
+                    'mobile': contact,
+                    'issue': patient_issue,
+                    'advice': advice,
+                    'email': '',
+                    'address': address,
+                    'city': city,
+                    'state': state,
+                    'pincode': pincode,
+                    'occupation': occupation,
+                    'referral_source': referral_source
+                }
+                success = google_sheets_api.add_patient(patient_record)
+                if success:
+                    if not is_duplicate:
+                        st.info("✅ **New patient added to Google Sheets!**")
                     else:
-                        st.warning(f"⚠️ Google Sheets sync failed: {result.get('error', 'Unknown error')}")
+                        st.info("✅ **Return visit recorded in Google Sheets!**")
                 else:
-                    st.warning("⚠️ Google Sheets not connected - patient data not synced")
+                    st.warning("⚠️ Google Sheets sync failed.")
 
                 st.rerun()
 
@@ -544,7 +526,7 @@ def main():
             last_rx = {}
             if not st.session_state.get('new_patient', True):
                 try:
-                    prescriptions = sheets_manager.get_prescriptions()
+                    prescriptions = google_sheets_api.read_sheet("Prescriptions")
                     patient_prescriptions = [p for p in prescriptions if p.get('patient_name') == st.session_state['patient_name']]
                     if patient_prescriptions:
                         last_prescription = patient_prescriptions[-1]
@@ -767,22 +749,23 @@ def main():
                     stock_updates = []
                     stock_errors = []
 
-                    if oauth_sheets_api.is_authenticated() and medicine_details:
+                    if medicine_details:
                         with st.spinner("Updating medicine stock in Google Sheets..."):
                             for med_name, details in medicine_details.items():
                                 if details.get('in_inventory', False):
-                                    result = oauth_sheets_api.update_medicine_quantity(med_name, details['quantity'])
-                                    if result.get('success'):
-                                        stock_updates.append(f"{med_name}: {result.get('old_qty', 0)} → {result.get('new_qty', 0)}")
+                                    new_qty = details['current_stock'] - details['quantity']
+                                    if new_qty < 0:
+                                        new_qty = 0
+                                    success = google_sheets_api.update_medicine_quantity(med_name, new_qty)
+                                    if success:
+                                        stock_updates.append(f"{med_name}: {details['current_stock']} → {new_qty}")
                                     else:
-                                        stock_errors.append(f"{med_name}: {result.get('error', 'Unknown error')}")
+                                        stock_errors.append(f"{med_name}: Error updating")
 
                             if stock_updates:
                                 st.success(f"✅ Stock updated: {', '.join(stock_updates)}")
                             if stock_errors:
                                 st.error(f"❌ Stock update errors: {', '.join(stock_errors)}")
-                    elif medicine_details:
-                        st.warning("⚠️ OAuth not authenticated - stock will not be updated automatically")
 
                     # Create compact single A4 prescription HTML
                     current_time = datetime.now(timezone(timedelta(hours=5, minutes=30)))
@@ -1112,10 +1095,9 @@ def main():
             # Debug: Check if data is loaded
             if not medicines and not spectacles and not patients:
                 st.warning("⚠️ No data loaded from Google Sheets. Checking connection...")
-                if not oauth_sheets_api.is_authenticated():
-                    st.error("❌ Google Sheets not authenticated. Please connect first.")
-                    auth_url = oauth_sheets_api.get_auth_url()
-                    st.markdown(f"[🔗 Connect to Google Sheets]({auth_url})")
+                test_result = google_sheets_api.test_connection()
+                if not test_result['success']:
+                    st.error("❌ Google Sheets not authenticated. Please check credentials.json.")
                     return
                 else:
                     st.info("🔄 Trying to refresh data...")
@@ -1320,21 +1302,7 @@ def main():
             st.error(f"😞 Unable to load analytics: {str(e)}")
             st.info("Please ensure Google Sheets connection is working properly.")
 
-            # Try alternative data loading
-            try:
-                st.info("🔄 Attempting alternative data loading...")
-                from modules.google_sheets_manager import sheets_manager
-                patients = sheets_manager.get_patients()
-                medicines = sheets_manager.get_medicines()
 
-                if patients:
-                    st.success(f"✅ Loaded {len(patients)} patients via alternative method")
-                    # Show basic analytics with alternative data
-                    st.metric("Total Patients", len(patients))
-                else:
-                    st.warning("⚠️ No patient data available through any method")
-            except Exception as e2:
-                st.error(f"😞 Alternative loading also failed: {str(e2)}")
 
 if __name__ == "__main__":
     main()
