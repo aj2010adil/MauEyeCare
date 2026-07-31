@@ -21,7 +21,7 @@ def run_streamlit_app():
     """Run the Streamlit application"""
     print("Starting MauEyeCare application...")
     try:
-        subprocess.run([sys.executable, "-m", "streamlit", "run", "main_app.py"])
+        subprocess.run([sys.executable, "-m", "streamlit", "run", "main_app_streamlined.py"])
     except KeyboardInterrupt:
         print("\n👋 Application stopped by user")
     except Exception as e:
@@ -32,8 +32,9 @@ def main():
     print("=" * 40)
     
     # Check if we're in the right directory
-    if not os.path.exists("main_app.py"):
-        print("❌ main_app.py not found. Please run this script from the MauEyeCare directory.")
+    target_app = "main_app_streamlined.py" if os.path.exists("main_app_streamlined.py") else "main_app.py"
+    if not os.path.exists(target_app):
+        print("❌ Application entry point not found. Please run this script from the MauEyeCare directory.")
         return
     
     # Install dependencies

@@ -34,8 +34,8 @@ def main():
         initial_sidebar_state="expanded"
     )
     
-    st.title("🏥 Computer and AI assisted Refraction and Contact Lens Center - Mau Eye Care - Professional Eye Care Hospital")
-    st.markdown("*Streamlined Hospital Management System*")
+    st.title("🏥 Mau Eye Care (AI Powered Clinic Management System)")
+    
 
     # Sidebar
     with st.sidebar:
