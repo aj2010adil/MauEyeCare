@@ -828,32 +828,35 @@ def main():
     <title>Mau Eye Care Prescription - {patient_name}</title>
     <style>
         @page {{ margin: 0.3in; size: A4; }}
-        body {{ font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; line-height: 1.2; color: #333; }}
-        .header {{ background: #1a4f66; color: white; padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+        body {{ font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; line-height: 1.2; color: #000; background: #fff; }}
+        .header {{ background: #fff; color: #000; padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 2px solid #000; border-radius: 4px; }}
         .header-left, .header-right {{ flex: 1; }}
         .header-center {{ text-align: center; flex: 2; padding: 0 3px; }}
         .header-left {{ text-align: left; }}
         .header-right {{ text-align: right; }}
-        .header h1 {{ margin: 0; font-size: 18pt; font-weight: 800; letter-spacing: 0.5px; }}
-        .header h2 {{ margin: 1px 0; font-size: 11pt; font-weight: bold; }}
-        .header p {{ margin: 1px 0; font-size: 8pt; opacity: 0.9; }}
+        .header h1 {{ margin: 0; font-size: 18pt; font-weight: 800; letter-spacing: 0.5px; color: #000; }}
+        .header h2 {{ margin: 1px 0; font-size: 11pt; font-weight: bold; color: #000; }}
+        .header p {{ margin: 1px 0; font-size: 8pt; color: #000; }}
         .urdu {{ font-family: 'Noto Nastaliq Urdu', 'Arial Unicode MS', sans-serif; }}
-        .patient-info {{ background: #f4f6fc; border-left: 5px solid #2E86AB; padding: 8px 10px; margin: 6px 0; font-size: 10pt; border-radius: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }}
-        .patient-info h3 {{ margin: 0 0 4px 0; font-size: 11pt; color: #1a4f66; }}
-        .patient-info p {{ margin: 2px 0; }}
+        .patient-info {{ background: #fff; border: 1.5px solid #000; border-left: 5px solid #000; padding: 8px 10px; margin: 6px 0; font-size: 10pt; border-radius: 3px; color: #000; }}
+        .patient-info h3 {{ margin: 0 0 4px 0; font-size: 11pt; color: #000; border-bottom: 1px solid #000; padding-bottom: 2px; }}
+        .patient-info p {{ margin: 2px 0; color: #000; }}
         .content {{ display: flex; gap: 8px; }}
         .left-section {{ flex: 1; }}
         .right-section {{ flex: 1; }}
-        .section {{ background: white; padding: 8px; margin: 5px 0; border: 1px solid #e0e6ed; border-radius: 3px; box-shadow: 0 1px 1px rgba(0,0,0,0.02); }}
-        .section h3 {{ margin: 0 0 6px 0; font-size: 11pt; color: #2E86AB; border-bottom: 1px solid #f0f4f8; padding-bottom: 3px; }}
-        .item {{ background: #f8fafc; padding: 6px; margin: 3px 0; border-radius: 2px; border-left: 3px solid #64748b; font-size: 10pt; }}
+        .section {{ background: #fff; padding: 8px; margin: 5px 0; border: 1.5px solid #000; border-radius: 3px; color: #000; }}
+        .section h3 {{ margin: 0 0 6px 0; font-size: 11pt; color: #000; border-bottom: 1.5px solid #000; padding-bottom: 3px; }}
+        .item {{ background: #fff; padding: 6px; margin: 3px 0; border-radius: 2px; border: 1px solid #000; border-left: 3px solid #000; font-size: 10pt; color: #000; }}
         .vision-table {{ width: 100%; border-collapse: collapse; margin: 6px 0; }}
-        .vision-table th, .vision-table td {{ border: 1px solid #e2e8f0; padding: 4px; text-align: center; font-size: 9.5pt; }}
-        .vision-table th {{ background: #f1f5f9; color: #334155; font-weight: bold; }}
-        .medicine-item {{ background: #fffaf0; padding: 6px; margin: 3px 0; font-size: 9.5pt; border-left: 3px solid #f59e0b; border-radius: 2px; box-shadow: 0 1px 1px rgba(0,0,0,0.02); line-height: 1.3; }}
-        .spectacle-item {{ background: #f0fdf4; padding: 6px; margin: 3px 0; font-size: 9.5pt; border-left: 3px solid #22c55e; border-radius: 2px; box-shadow: 0 1px 1px rgba(0,0,0,0.02); line-height: 1.3; }}
-        .signature {{ text-align: right; margin-top: 8px; font-size: 10pt; font-weight: bold; padding-top: 8px; border-top: 1px dashed #cbd5e1; }}
-        .footer {{ margin-top: 8px; padding-top: 6px; text-align: center; font-size: 8pt; color: #64748b; border-top: 1px solid #e2e8f0; line-height: 1.2; }}
+        .vision-table th, .vision-table td {{ border: 1px solid #000; padding: 4px; text-align: center; font-size: 9.5pt; color: #000; }}
+        .vision-table th {{ background: #f0f0f0; color: #000; font-weight: bold; }}
+        .medicine-item {{ background: #fff; padding: 6px; margin: 3px 0; font-size: 9.5pt; border: 1px solid #666; border-left: 4px solid #000; border-radius: 2px; line-height: 1.3; color: #000; }}
+        .spectacle-item {{ background: #fff; padding: 6px; margin: 3px 0; font-size: 9.5pt; border: 1px solid #666; border-left: 4px solid #000; border-radius: 2px; line-height: 1.3; color: #000; }}
+        .signature {{ text-align: right; margin-top: 8px; font-size: 10pt; font-weight: bold; padding-top: 8px; border-top: 1px dashed #000; color: #000; }}
+        .footer {{ margin-top: 8px; padding-top: 6px; text-align: center; font-size: 8pt; color: #000; border-top: 1.5px solid #000; line-height: 1.2; }}
+        @media print {{
+            body {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }}
+        }}
     </style>
 </head>
 <body>

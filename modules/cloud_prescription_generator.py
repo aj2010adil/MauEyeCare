@@ -121,22 +121,25 @@ def generate_prescription_html(prescription, doctor_name, patient_name, age, gen
     <meta charset="UTF-8">
     <title>Prescription - {patient_name}</title>
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }}
-        .header {{ text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; }}
-        .clinic-name {{ font-size: 24px; font-weight: bold; color: #2c5aa0; }}
-        .doctor-info {{ font-size: 16px; margin: 10px 0; }}
-        .prescription-info {{ text-align: right; margin: 20px 0; }}
+        body {{ font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; color: #000; background: #fff; }}
+        .header {{ text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 20px; }}
+        .clinic-name {{ font-size: 24px; font-weight: bold; color: #000; }}
+        .doctor-info {{ font-size: 16px; margin: 10px 0; color: #000; }}
+        .prescription-info {{ text-align: right; margin: 20px 0; color: #000; }}
         .section {{ margin: 20px 0; }}
-        .section-title {{ font-size: 18px; font-weight: bold; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px; }}
-        .patient-info {{ background: #f5f5f5; padding: 15px; border-radius: 5px; }}
+        .section-title {{ font-size: 18px; font-weight: bold; color: #000; border-bottom: 1px solid #000; padding-bottom: 5px; }}
+        .patient-info {{ background: #fff; border: 1px solid #000; padding: 15px; border-radius: 4px; }}
         .rx-table {{ width: 100%; border-collapse: collapse; margin: 10px 0; }}
-        .rx-table th, .rx-table td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-        .rx-table th {{ background-color: #f2f2f2; }}
-        .medicine-item {{ margin: 10px 0; padding: 10px; border-left: 3px solid #2c5aa0; background: #f9f9f9; }}
-        .instructions {{ background: #fff3cd; padding: 15px; border-radius: 5px; border-left: 4px solid #ffc107; }}
-        .footer {{ text-align: right; margin-top: 40px; }}
+        .rx-table th, .rx-table td {{ border: 1px solid #000; padding: 8px; text-align: left; color: #000; }}
+        .rx-table th {{ background-color: #f2f2f2; font-weight: bold; }}
+        .medicine-item {{ margin: 10px 0; padding: 10px; border: 1px solid #666; border-left: 4px solid #000; background: #fff; color: #000; }}
+        .instructions {{ background: #fff; padding: 15px; border-radius: 4px; border: 1px solid #000; border-left: 4px solid #000; color: #000; }}
+        .footer {{ text-align: right; margin-top: 40px; color: #000; }}
         ul {{ padding-left: 20px; }}
         li {{ margin: 5px 0; }}
+        @media print {{
+            body {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }}
+        }}
     </style>
 </head>
 <body>
