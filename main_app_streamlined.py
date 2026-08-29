@@ -8,12 +8,35 @@ import pandas as pd
 import sys, os
 from datetime import datetime, timezone, timedelta
 import json
+import io
+import base64
+import urllib.parse
 
 # Add current directory to path
 sys.path.append(os.path.dirname(__file__))
 
 # Core imports
 from modules.google_sheets_api import google_sheets_api
+from modules.whatsapp_utils import send_via_whatsapp_web, format_clinical_whatsapp_message
+
+def generate_qr_base64(data_url: str) -> str:
+    """Generate base64 encoded PNG QR code for clean offline printing"""
+    try:
+        import qrcode
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=3,
+            border=1,
+        )
+        qr.add_data(data_url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffered = io.BytesIO()
+        img.save(buffered, format="PNG")
+        return base64.b64encode(buffered.getvalue()).decode()
+    except Exception as e:
+        return ""
 
 @st.cache_data(ttl=60)
 def get_sheet_data():
@@ -103,7 +126,8 @@ def main():
                     'patient_name', 'patient_mobile', 'age', 'gender', 'address', 'city', 'state', 'pincode',
                     'occupation', 'referral_source', 'patient_issue', 'advice', 'new_patient',
                     'selected_medicines_list', 'medicine_details', 'selected_spectacles', 'spectacle_instructions',
-                    'rx_table', 'consultation_fee', 'additional_charges', 'patient_complaint', 'patient_diagnosis'
+                    'rx_table', 'consultation_fee', 'additional_charges', 'patient_complaint', 'patient_diagnosis',
+                    'ipd', 'next_review'
                 ]
                 for key in keys_to_clear:
                     if key in st.session_state:
@@ -650,6 +674,20 @@ def main():
                 near_add_os_custom = st.text_input("Custom ADD OS", value="" if near_add_os_dropdown else last_rx.get('OS', {}).get('ADD', ''), key="near_add_os_custom")
                 os_add = near_add_os_custom if near_add_os_custom else near_add_os_dropdown
 
+            # Optical Parameters & Clinical Follow-up
+            st.markdown("#### 📏 Optical Parameters & Follow-up")
+            col_opt1, col_opt2 = st.columns(2)
+            with col_opt1:
+                ipd_input = st.text_input("Pupillary Distance (IPD in mm)", value=last_rx.get('IPD', ''), placeholder="e.g. 62 mm or 64 mm", key=f"ipd_{st.session_state.form_reset_counter}")
+            with col_opt2:
+                review_options = ["After 1 Week", "After 15 Days", "After 1 Month", "After 3 Months", "After 6 Months", "1 Year / Annual Checkup", "SOS / As Needed", "Custom"]
+                selected_review = st.selectbox("Next Review / Follow-up", review_options, index=2, key=f"review_sel_{st.session_state.form_reset_counter}")
+                if selected_review == "Custom":
+                    custom_review = st.text_input("Enter Custom Review Note", placeholder="e.g. After 10 days with test report", key=f"review_cust_{st.session_state.form_reset_counter}")
+                    next_review_val = custom_review if custom_review else "As advised"
+                else:
+                    next_review_val = selected_review
+
             # Doctor fees section
             st.markdown("### 💰 Consultation Fees")
             col_fee1, col_fee2 = st.columns(2)
@@ -664,9 +702,12 @@ def main():
 
             rx_table = {
                 "OD": {"Sphere": od_sphere, "Cylinder": od_cylinder, "Axis": od_axis, "ADD": od_add, "Vision": od_vision, "Near": od_near_vision},
-                "OS": {"Sphere": os_sphere, "Cylinder": os_cylinder, "Axis": os_axis, "ADD": os_add, "Vision": os_vision, "Near": os_near_vision}
+                "OS": {"Sphere": os_sphere, "Cylinder": os_cylinder, "Axis": os_axis, "ADD": os_add, "Vision": os_vision, "Near": os_near_vision},
+                "IPD": ipd_input
             }
             st.session_state['rx_table'] = rx_table
+            st.session_state['ipd'] = ipd_input
+            st.session_state['next_review'] = next_review_val
             st.session_state['consultation_fee'] = consultation_fee
             st.session_state['additional_charges'] = additional_charges
             st.session_state['patient_complaint'] = complaint
@@ -820,7 +861,22 @@ def main():
                     rx_table = st.session_state.get('rx_table', {})
                     od_data = rx_table.get('OD', {})
                     os_data = rx_table.get('OS', {})
+                    ipd_val = st.session_state.get('ipd') or rx_table.get('IPD', '')
+                    next_review_val = st.session_state.get('next_review') or 'After 1 Month'
+                    patient_mobile = st.session_state.get('patient_mobile', '')
                     
+                    # Generate Google Review QR Code (Base64 PNG for 100% offline printing)
+                    google_review_url = "https://maps.google.com/?q=Mau+Eye+Care+Mubarakpur"
+                    review_qr_b64 = generate_qr_base64(google_review_url)
+                    
+                    qr_html_snippet = f"""
+        <div class="qr-box">
+            <img src="data:image/png;base64,{review_qr_b64}" width="50" height="50" alt="Review QR" style="display:block; margin:0 auto;" />
+            <div style="font-size: 6.5pt; font-weight: bold; margin-top: 1px;">⭐ Scan to Review</div>
+        </div>""" if review_qr_b64 else ""
+
+                    ipd_html_snippet = f"""<div style="font-size: 9pt; margin-top: 4px; font-weight: bold;">• Pupillary Distance (IPD): {ipd_val} mm</div>""" if ipd_val else ""
+
                     prescription_html = f"""
 <!DOCTYPE html>
 <html>
@@ -829,6 +885,9 @@ def main():
     <style>
         @page {{ margin: 0.3in; size: A4; }}
         body {{ font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; line-height: 1.2; color: #000; background: #fff; }}
+        .no-print {{ text-align: center; margin-bottom: 8px; }}
+        .print-btn {{ background: #000; color: #fff; border: 1.5px solid #000; padding: 6px 16px; font-size: 10pt; font-weight: bold; border-radius: 4px; cursor: pointer; }}
+        .print-btn:hover {{ background: #333; }}
         .header {{ background: #fff; color: #000; padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 2px solid #000; border-radius: 4px; }}
         .header-left, .header-right {{ flex: 1; }}
         .header-center {{ text-align: center; flex: 2; padding: 0 3px; }}
@@ -852,21 +911,28 @@ def main():
         .vision-table th {{ background: #f0f0f0; color: #000; font-weight: bold; }}
         .medicine-item {{ background: #fff; padding: 6px; margin: 3px 0; font-size: 9.5pt; border: 1px solid #666; border-left: 4px solid #000; border-radius: 2px; line-height: 1.3; color: #000; }}
         .spectacle-item {{ background: #fff; padding: 6px; margin: 3px 0; font-size: 9.5pt; border: 1px solid #666; border-left: 4px solid #000; border-radius: 2px; line-height: 1.3; color: #000; }}
+        .review-box {{ margin-top: 6px; padding: 5px 8px; border: 1px solid #000; font-size: 9.5pt; background: #fff; }}
         .signature {{ text-align: right; margin-top: 8px; font-size: 10pt; font-weight: bold; padding-top: 8px; border-top: 1px dashed #000; color: #000; }}
-        .footer {{ margin-top: 8px; padding-top: 6px; text-align: center; font-size: 8pt; color: #000; border-top: 1.5px solid #000; line-height: 1.2; }}
+        .footer-container {{ display: flex; justify-content: space-between; align-items: center; border-top: 1.5px solid #000; margin-top: 8px; padding-top: 4px; }}
+        .footer-text {{ flex: 1; text-align: left; font-size: 8pt; color: #000; line-height: 1.2; }}
+        .qr-box {{ text-align: center; margin-left: 8px; flex-shrink: 0; }}
         @media print {{
+            .no-print {{ display: none !important; }}
             body {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }}
         }}
     </style>
 </head>
 <body>
+    <div class="no-print">
+        <button class="print-btn" onclick="window.print()">🖨️ Click to Print Prescription (Ctrl + P)</button>
+    </div>
+
     <div class="header">
         <div class="header-left">
             <h2>Dr. Danish</h2>
             <p>B.Sc. Optometry</p>
             <p>Optometrist & Eye Specialist</p>
             <p>Reg. No.: UPS 2908</p>
-           
         </div>
         <div class="header-center">
             <p style="font-size: 8pt; margin: 0.5px 0;">Computer and AI assisted Refraction and Contact Lens Center</p>
@@ -892,13 +958,7 @@ def main():
     </div>
 
     <div class="content">
-        <div class="left-section">"""
-
-
-
-                    # Add eye prescription section - always include
-                    if True:  # Always show eye prescription section
-                        prescription_html += f"""
+        <div class="left-section">
             <div class="section">
                 <h3>👁️ Eye Prescription</h3>
                 <table class="vision-table">
@@ -924,8 +984,9 @@ def main():
                         <td>{os_data.get('ADD', '')}</td>
                     </tr>
                 </table>
+                {ipd_html_snippet}
                 
-                <h3>👁️ Vision Testing</h3>
+                <h3 style="margin-top: 8px;">👁️ Vision Testing</h3>
                 <table class="vision-table">
                     <tr>
                         <th>Eye</th>
@@ -944,7 +1005,6 @@ def main():
                     </tr>
                 </table>
             </div>"""
-
 
                     # Add spectacles section
                     if selected_spectacles:
@@ -992,27 +1052,32 @@ def main():
                         prescription_html += """
             </div>"""
 
-
+                    # Add follow-up review note
+                    prescription_html += f"""
+            <div class="review-box">
+                🗓️ <strong>Next Review / Follow-up:</strong> {next_review_val}
+            </div>"""
 
                     # Close content and add signature/footer
-                    prescription_html += """
+                    prescription_html += f"""
         </div>
-    </div>"""
+    </div>
 
-
-
-                    prescription_html += """
     <div class="signature">
         <p style="margin: 4px 0; font-size: 9pt;">Doctor Signature: ___________________________</p>
     </div>
     
-    <div class="footer">
-        <p style="margin: 1px 0;"><strong>Services:</strong> Refraction • Glasses • Contact Lens • Eye Screening • Treatment</p>
+    <div class="footer-container">
+        <div class="footer-text">
+            <p style="margin: 1px 0;"><strong>Services:</strong> Refraction • Glasses • Contact Lens • Eye Screening • Treatment</p>
+            <p style="margin: 2px 0; font-size: 7.5pt;">⭐ <em>Rate your experience on Google: Search <strong>Mau Eye Care Mubarakpur</strong></em></p>
+        </div>
+        {qr_html_snippet}
     </div>
 </body>
 </html>"""
 
-                    # Create detailed receipt HTML
+                    # Create detailed receipt HTML (monochrome optimized with Print & Review QR)
                     receipt_html = f"""
 <!DOCTYPE html>
 <html>
@@ -1020,22 +1085,35 @@ def main():
     <title>Mau Eye Care Receipt - {patient_name}</title>
     <style>
         @page {{ margin: 0.3in; }}
-        body {{ font-family: Arial, sans-serif; margin: 0; padding: 8px; font-size: 10pt; line-height: 1.3; }}
-        .header {{ text-align: center; background: #2E86AB; color: white; padding: 8px; margin-bottom: 10px; border-radius: 3px; }}
-        .header h2 {{ margin: 2px 0; font-size: 12pt; }}
-        .header p {{ margin: 2px 0; font-size: 9pt; }}
-        h3 {{ margin: 6px 0 4px 0; font-size: 10pt; color: #2E86AB; }}
-        .receipt-item {{ background: #f0f8ff; padding: 6px; margin: 4px 0; border-left: 3px solid #2E86AB; font-size: 9.5pt; border-radius: 2px; }}
+        body {{ font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 8px; font-size: 10pt; line-height: 1.3; color: #000; background: #fff; }}
+        .no-print {{ text-align: center; margin-bottom: 8px; }}
+        .print-btn {{ background: #000; color: #fff; border: 1.5px solid #000; padding: 6px 14px; font-size: 9.5pt; font-weight: bold; border-radius: 4px; cursor: pointer; }}
+        .header {{ text-align: center; border: 1.5px solid #000; padding: 8px; margin-bottom: 10px; border-radius: 3px; }}
+        .header h2 {{ margin: 2px 0; font-size: 13pt; color: #000; }}
+        .header p {{ margin: 2px 0; font-size: 8.5pt; color: #000; }}
+        h3 {{ margin: 6px 0 4px 0; font-size: 10.5pt; color: #000; border-bottom: 1px solid #000; padding-bottom: 2px; }}
+        .receipt-item {{ background: #fff; padding: 6px; margin: 4px 0; border: 1px solid #666; border-left: 4px solid #000; font-size: 9.5pt; border-radius: 2px; color: #000; }}
         .receipt-item strong {{ font-size: 10pt; }}
         .receipt-item br + * {{ margin-top: 2px; }}
-        .total {{ background: #e8f5e8; padding: 8px; font-weight: bold; text-align: center; margin: 8px 0; border-radius: 3px; }}
-        .total h2 {{ margin: 4px 0; font-size: 12pt; }}
+        .total {{ border: 2px solid #000; padding: 8px; font-weight: bold; text-align: center; margin: 8px 0; border-radius: 3px; background: #f0f0f0; }}
+        .total h2 {{ margin: 4px 0; font-size: 13pt; color: #000; }}
+        .footer-container {{ display: flex; justify-content: space-between; align-items: center; border-top: 1.5px solid #000; margin-top: 10px; padding-top: 4px; }}
+        .footer-text {{ flex: 1; text-align: left; font-size: 8pt; color: #000; }}
+        .qr-box {{ text-align: center; margin-left: 8px; flex-shrink: 0; }}
+        @media print {{
+            .no-print {{ display: none !important; }}
+            body {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }}
+        }}
     </style>
 </head>
 <body>
+    <div class="no-print">
+        <button class="print-btn" onclick="window.print()">🖨️ Click to Print Receipt</button>
+    </div>
+
     <div class="header">
-        <h2>Mau Eye Care - Receipt</h2>
-        <p>Patient: {patient_name} | Date: {current_time.strftime('%d/%m/%Y %I:%M %p')}</p>
+        <h2>Mau Eye Care - Official Receipt</h2>
+        <p><strong>Patient:</strong> {patient_name} | <strong>Mobile:</strong> {st.session_state.get('patient_mobile', 'N/A')} | <strong>Date:</strong> {current_time.strftime('%d/%m/%Y %I:%M %p')}</p>
     </div>
     
     <h3>Medicine Details:</h3>"""
@@ -1068,12 +1146,35 @@ def main():
     <div class="total">
         <h2>TOTAL AMOUNT: ₹{grand_total:,}</h2>
     </div>
+
+    <div class="footer-container">
+        <div class="footer-text">
+            <p style="margin: 1px 0;"><strong>Thank you for choosing Mau Eye Care!</strong></p>
+            <p style="margin: 2px 0; font-size: 7.5pt;">⭐ <em>Rate your experience on Google: Search <strong>Mau Eye Care Mubarakpur</strong></em></p>
+        </div>
+        {qr_html_snippet}
+    </div>
 </body>
 </html>"""
 
-                    # Download buttons
+                    # Prepare Clinical WhatsApp Message
+                    whatsapp_msg = format_clinical_whatsapp_message(
+                        patient_name=patient_name,
+                        date_str=current_time.strftime('%d/%m/%Y'),
+                        rx_table=rx_table,
+                        ipd=ipd_val,
+                        spectacles=selected_spectacles,
+                        medicines=medicine_details,
+                        advice=st.session_state.get('advice'),
+                        next_review=next_review_val
+                    )
+                    clean_phone = patient_mobile.replace("+", "").replace(" ", "").replace("-", "") if patient_mobile else ""
+                    encoded_msg = urllib.parse.quote(whatsapp_msg)
+                    whatsapp_url = f"https://wa.me/{clean_phone}?text={encoded_msg}" if clean_phone else f"https://wa.me/?text={encoded_msg}"
+
+                    # Download & Sharing action buttons
                     timestamp = current_time.strftime("%Y%m%d_%H%M")
-                    col_dl1, col_dl2 = st.columns(2)
+                    col_dl1, col_dl2, col_dl3 = st.columns(3)
                     
                     with col_dl1:
                         st.download_button(
@@ -1081,7 +1182,8 @@ def main():
                             data=prescription_html.encode('utf-8'),
                             file_name=f"Prescription_{patient_name.replace(' ', '_')}_{timestamp}.html",
                             mime="text/html",
-                            type="primary"
+                            type="primary",
+                            use_container_width=True
                         )
                     
                     with col_dl2:
@@ -1090,10 +1192,22 @@ def main():
                             data=receipt_html.encode('utf-8'),
                             file_name=f"Receipt_{patient_name.replace(' ', '_')}_{timestamp}.html",
                             mime="text/html",
-                            type="secondary"
+                            type="secondary",
+                            use_container_width=True
                         )
 
-                    st.success("✅ Prescription generated successfully!")
+                    with col_dl3:
+                        st.link_button(
+                            "📲 Share on WhatsApp",
+                            whatsapp_url,
+                            type="primary",
+                            use_container_width=True
+                        )
+
+                    with st.expander("💬 View / Copy WhatsApp Prescription Message"):
+                        st.text_area("WhatsApp Clinical Summary", whatsapp_msg, height=160)
+
+                    st.success("✅ Prescription & Receipt generated successfully!")
 
                     # Mark prescription as generated
                     st.session_state['prescription_generated'] = True
@@ -1125,6 +1239,7 @@ def main():
                             'selected_spectacles', 'medicine_details', 'selected_medicines_list', 'rx_table', 'prescription_generated',
                             'patient_complaint', 'patient_diagnosis', 'complaint', 'diagnosis', 'od_distance_vision', 'od_near_vision',
                             'os_distance_vision', 'os_near_vision', 'spectacle_instructions', 'new_patient',
+                            'ipd', 'next_review',
                             'name_dropdown', 'custom_name', 'mobile_dropdown', 'custom_mobile', 'custom_issue', 'custom_advice'
                         ]
                         for key in keys_to_clear:

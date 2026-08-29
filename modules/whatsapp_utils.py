@@ -73,7 +73,7 @@ def send_via_whatsapp_web(phone_number, message):
     return whatsapp_url
 
 def format_prescription_message(patient_name, prescription_link, doctor_name="Dr. Danish"):
-    """Format professional prescription message"""
+    """Format professional prescription message with link"""
     message = f"""🏥 *MauEyeCare Prescription Ready*
 
 Dear {patient_name},
@@ -97,3 +97,64 @@ Your eye care prescription has been prepared by {doctor_name}.
 👁️ Complete AI-Powered Eye Care"""
     
     return message
+
+
+def format_clinical_whatsapp_message(patient_name, date_str, rx_table=None, ipd=None, spectacles=None, medicines=None, advice=None, next_review=None, doctor_name="Dr. Danish"):
+    """Format complete clinical prescription summary for direct WhatsApp sending"""
+    lines = [
+        "🏥 *MAU EYE CARE - CLINICAL PRESCRIPTION*",
+        f"👤 *Patient:* {patient_name}",
+        f"📅 *Date:* {date_str}",
+        f"👨‍⚕️ *Doctor:* {doctor_name} (B.Sc. Optometry, Reg: UPS 2908)",
+        "------------------------------------"
+    ]
+    
+    # Eye Prescription / Refraction
+    if rx_table:
+        od = rx_table.get('OD', {})
+        os = rx_table.get('OS', {})
+        lines.append("👁️ *SPECTACLE REFRACTION (POWER):*")
+        od_text = f"• *OD (Right Eye):* SPH: {od.get('Sphere','')} | CYL: {od.get('Cylinder','')} | AXIS: {od.get('Axis','')} | ADD: {od.get('ADD','')}"
+        os_text = f"• *OS (Left Eye):* SPH: {os.get('Sphere','')} | CYL: {os.get('Cylinder','')} | AXIS: {os.get('Axis','')} | ADD: {os.get('ADD','')}"
+        lines.append(od_text)
+        lines.append(os_text)
+        if ipd:
+            lines.append(f"• *IPD (Pupillary Distance):* {ipd}")
+        lines.append("")
+    
+    # Recommended Spectacles
+    if spectacles:
+        lines.append("👓 *RECOMMENDED SPECTACLES:*")
+        for spec in spectacles:
+            lines.append(f"• {spec}")
+        lines.append("")
+        
+    # Prescribed Medicines
+    if medicines:
+        lines.append("💊 *PRESCRIBED MEDICINES:*")
+        for med_name, details in medicines.items():
+            qty = details.get('quantity', 1)
+            dosage = details.get('dosage', 'As directed')
+            timing = details.get('timing', '')
+            med_line = f"• *{med_name}* (Qty: {qty})\n   ↳ Dosage: {dosage}"
+            if timing:
+                med_line += f" | Timing: {timing}"
+            lines.append(med_line)
+        lines.append("")
+
+    # Advice & Next Review
+    if advice and advice != 'N/A':
+        lines.append(f"💡 *Doctor's Advice:* {advice}")
+        
+    if next_review and next_review != 'N/A':
+        lines.append(f"🗓️ *Next Review / Follow-up:* {next_review}")
+        
+    lines.extend([
+        "",
+        "------------------------------------",
+        "⭐ *Rate Us on Google:* https://maps.google.com/?q=Mau+Eye+Care+Mubarakpur",
+        "📞 *Helpline / Appointments:* 9235647410 / 8299461251",
+        "📍 Pura Khizir, Mubarakpur, Azamgarh (U.P.)"
+    ])
+    
+    return "\n".join(lines)
