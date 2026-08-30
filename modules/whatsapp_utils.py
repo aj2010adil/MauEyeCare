@@ -157,4 +157,27 @@ def format_clinical_whatsapp_message(patient_name, date_str, rx_table=None, ipd=
         "📍 Pura Khizir, Mubarakpur, Azamgarh (U.P.)"
     ])
     
-    return "\n".join(lines)
+    return "\n".join(lines)
+
+
+def format_followup_reminder_message(patient_name, target_date_str, reason="", doctor_name="Dr. Danish"):
+    """Format a respectful, friendly clinical follow-up reminder for WhatsApp"""
+    return f"""🏥 *MAU EYE CARE - PATIENT REVIEW REMINDER* 👁️
+
+Namaste *{patient_name}* ji,
+
+This is a gentle reminder from *{doctor_name}* (B.Sc. Optometry, Reg: UPS 2908) at *Mau Eye Care*.
+
+📋 *Follow-up Details:*
+• Patient: {patient_name}
+• Scheduled Review Date: {target_date_str}
+• Purpose: {reason or 'Routine Eye Checkup / Spectacle Vision Review'}
+
+⏰ *Clinic Timings:* Mon - Sat: 10:00 AM – 5:00 PM (Sunday Closed)
+📍 *Address:* Pura Khizir (Near Mubarakpur Marriage Hall, Nai Pani ki tanki), Mubarakpur, Azamgarh (U.P.)
+📞 *Helpline / Appointments:* 9235647410 / 8299461251
+
+*Timely eye checkups protect your vision and ensure comfortable sight.*
+
+⭐ *Rate Us on Google:* https://maps.google.com/?q=Mau+Eye+Care+Mubarakpur"""
+

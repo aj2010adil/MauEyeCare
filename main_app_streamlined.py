@@ -17,7 +17,8 @@ sys.path.append(os.path.dirname(__file__))
 
 # Core imports
 from modules.google_sheets_api import google_sheets_api
-from modules.whatsapp_utils import send_via_whatsapp_web, format_clinical_whatsapp_message
+from modules.whatsapp_utils import send_via_whatsapp_web, format_clinical_whatsapp_message, format_followup_reminder_message
+from modules.followup_manager import followup_manager, parse_relative_interval
 
 def generate_qr_base64(data_url: str) -> str:
     """Generate base64 encoded PNG QR code for clean offline printing"""
@@ -105,10 +106,11 @@ def main():
 
 
     # Main tabs
-    tab1, tab2, tab3 = st.tabs([
+    tab1, tab2, tab3, tab4 = st.tabs([
         "👥 Patient Registration",
         "📤 Prescription Generator",
-        "📊 Analytics"
+        "📊 Analytics",
+        "📅 Follow-Up CRM"
     ])
 
     # --- Patient Registration Tab ---
@@ -1209,6 +1211,19 @@ def main():
 
                     st.success("✅ Prescription & Receipt generated successfully!")
 
+                    # Automatically log follow-up in CRM
+                    try:
+                        followup_manager.add_followup(
+                            patient_name=patient_name,
+                            mobile=patient_mobile,
+                            consultation_date=current_time.strftime('%Y-%m-%d'),
+                            review_interval=next_review_val,
+                            diagnosis=st.session_state.get('patient_diagnosis') or st.session_state.get('patient_complaint') or '',
+                            advice=st.session_state.get('advice') or ''
+                        )
+                    except Exception:
+                        pass
+
                     # Mark prescription as generated
                     st.session_state['prescription_generated'] = True
                 else:
@@ -1468,7 +1483,198 @@ def main():
             st.error(f"😞 Unable to load analytics: {str(e)}")
             st.info("Please ensure Google Sheets connection is working properly.")
 
+    # --- Follow-Up CRM Tab ---
+    with tab4:
+        st.header("📅 Patient Follow-Up & Recall CRM")
+        st.markdown("*Automated review tracking, patient recall scheduling, and 1-click WhatsApp reminders.*")
 
+        # Automatically sync past patient records into CRM queue if needed
+        try:
+            _, _, existing_patients_list = get_sheet_data()
+            if existing_patients_list:
+                followup_manager.auto_import_from_patients(existing_patients_list)
+        except Exception:
+            pass
+
+        # Top summary KPIs
+        categorized = followup_manager.get_categorized_followups()
+        
+        col_kpi1, col_kpi2, col_kpi3, col_kpi4, col_kpi5 = st.columns(5)
+        with col_kpi1:
+            st.metric("🔴 Overdue", len(categorized['overdue']))
+        with col_kpi2:
+            st.metric("🟡 Due Today", len(categorized['due_today']))
+        with col_kpi3:
+            st.metric("🟢 This Week", len(categorized['upcoming_week']))
+        with col_kpi4:
+            st.metric("🔵 Next 30 Days", len(categorized['upcoming_month']))
+        with col_kpi5:
+            st.metric("✅ Completed", len(categorized['completed']))
+
+        st.markdown("---")
+
+        # Filters and Search
+        col_f1, col_f2, col_f3 = st.columns([2, 1, 1])
+        with col_f1:
+            search_query = st.text_input("🔍 Search by Patient Name or Mobile", placeholder="Type patient name or mobile number...").strip().lower()
+        with col_f2:
+            queue_filter = st.selectbox(
+                "Filter Queue",
+                [
+                    "Due Today (🟡)",
+                    "Overdue (🔴)",
+                    "Upcoming This Week (🟢)",
+                    "Upcoming Next 30 Days (🔵)",
+                    "All Active Follow-ups",
+                    "Completed / Visited (✅)",
+                    "SOS / As Needed"
+                ]
+            )
+        with col_f3:
+            st.write("")
+            st.write("")
+            if st.button("🔄 Refresh CRM Queue", use_container_width=True):
+                st.rerun()
+
+        # Determine which list to show
+        if "Due Today" in queue_filter:
+            display_list = categorized['due_today']
+        elif "Overdue" in queue_filter:
+            display_list = categorized['overdue']
+        elif "This Week" in queue_filter:
+            display_list = categorized['upcoming_week']
+        elif "Next 30 Days" in queue_filter:
+            display_list = categorized['upcoming_month']
+        elif "Completed" in queue_filter:
+            display_list = categorized['completed']
+        elif "SOS" in queue_filter:
+            display_list = categorized['sos']
+        else:
+            display_list = categorized['overdue'] + categorized['due_today'] + categorized['upcoming_week'] + categorized['upcoming_month']
+
+        # Apply search query
+        if search_query:
+            display_list = [
+                item for item in display_list 
+                if search_query in item.get('patient_name', '').lower() or search_query in item.get('mobile', '').lower()
+            ]
+
+        # Display Queue Count
+        st.subheader(f"📋 Follow-Up Queue ({len(display_list)} Patients)")
+
+        if not display_list:
+            st.info("🎉 No patients currently in this follow-up category!")
+        else:
+            for idx, item in enumerate(display_list):
+                fu_id = item.get('id', f'fu_{idx}')
+                p_name = item.get('patient_name', 'Unknown')
+                p_mobile = item.get('mobile', '')
+                target_date_str = item.get('target_date', '')
+                consult_date_str = item.get('consultation_date', '')
+                status = item.get('status', 'Pending')
+                reminders_count = item.get('reminders_count', 0)
+                diff_days = item.get('diff_days', 0)
+                diagnosis = item.get('diagnosis', 'Routine Eye Review')
+                advice = item.get('advice', '')
+                review_interval = item.get('review_interval', 'Routine Review')
+
+                # Determine badge styling
+                if status == "Completed":
+                    badge = "✅ COMPLETED / VISITED"
+                elif diff_days < 0:
+                    badge = f"🔴 OVERDUE BY {-diff_days} DAYS"
+                elif diff_days == 0:
+                    badge = "🟡 DUE TODAY"
+                else:
+                    badge = f"🟢 DUE IN {diff_days} DAYS"
+
+                with st.container(border=True):
+                    col_info, col_actions = st.columns([3, 2])
+                    
+                    with col_info:
+                        st.markdown(f"### 👤 **{p_name}** &nbsp;&nbsp; `{badge}`")
+                        info_cols = st.columns(3)
+                        with info_cols[0]:
+                            st.write(f"📞 **Mobile:** {p_mobile or 'N/A'}")
+                        with info_cols[1]:
+                            st.write(f"📅 **Consultation:** {consult_date_str}")
+                        with info_cols[2]:
+                            st.write(f"🗓️ **Scheduled:** {target_date_str or 'SOS'}")
+                            
+                        if diagnosis or advice:
+                            st.caption(f"🩺 **Clinical Note:** {diagnosis} | *Advice:* {advice}")
+                        if reminders_count > 0:
+                            st.caption(f"📲 *Reminders Sent:* {reminders_count} times (Last: {item.get('last_reminder_sent_at', '')})")
+
+                    with col_actions:
+                        st.markdown("**Actions:**")
+                        action_col1, action_col2 = st.columns(2)
+                        
+                        # WhatsApp Reminder Button
+                        reminder_text = format_followup_reminder_message(
+                            patient_name=p_name,
+                            target_date_str=target_date_str,
+                            reason=f"{diagnosis} (Interval: {review_interval})"
+                        )
+                        clean_mobile = p_mobile.replace("+", "").replace(" ", "").replace("-", "") if p_mobile else ""
+                        wa_url = send_via_whatsapp_web(clean_mobile, reminder_text) if clean_mobile else f"https://wa.me/?text={urllib.parse.quote(reminder_text)}"
+                        
+                        with action_col1:
+                            st.link_button("📲 Send Reminder", wa_url, use_container_width=True, type="primary")
+                            if st.button("📝 Log Sent", key=f"log_sent_{fu_id}", use_container_width=True):
+                                followup_manager.mark_reminder_sent(fu_id)
+                                st.success("✅ Logged!")
+                                st.rerun()
+
+                        with action_col2:
+                            if status != "Completed":
+                                if st.button("✅ Mark Visited", key=f"done_{fu_id}", use_container_width=True):
+                                    followup_manager.mark_completed(fu_id)
+                                    st.success(f"✅ Marked {p_name} as Visited!")
+                                    st.rerun()
+                            
+                            # Reschedule popover
+                            with st.popover("🗓️ Reschedule"):
+                                resched_choice = st.selectbox(
+                                    "New Target Interval",
+                                    ["After 1 Week", "After 15 Days", "After 1 Month", "After 3 Months", "After 6 Months", "1 Year"],
+                                    key=f"resched_sel_{fu_id}"
+                                )
+                                if st.button("Confirm Reschedule", key=f"resched_btn_{fu_id}"):
+                                    followup_manager.reschedule(fu_id, resched_choice)
+                                    st.success("🗓️ Rescheduled!")
+                                    st.rerun()
+
+        # Manual Follow-Up Creation Form
+        st.markdown("---")
+        with st.expander("➕ Schedule Manual Follow-Up for Walk-in Patient"):
+            with st.form("manual_followup_form"):
+                col_m1, col_m2 = st.columns(2)
+                with col_m1:
+                    m_name = st.text_input("Patient Name*", placeholder="Full Name")
+                    m_mobile = st.text_input("Mobile Number*", placeholder="10-digit mobile")
+                    m_diag = st.text_input("Diagnosis / Complaint", placeholder="e.g. Dry eye review, Refraction change")
+                with col_m2:
+                    m_interval = st.selectbox(
+                        "Review Interval",
+                        ["After 1 Week", "After 15 Days", "After 1 Month", "After 3 Months", "After 6 Months", "1 Year / Annual Checkup"]
+                    )
+                    m_advice = st.text_area("Doctor's Advice / Notes", placeholder="Special instructions for the patient")
+                    
+                if st.form_submit_button("➕ Schedule Follow-Up", type="primary"):
+                    if m_name:
+                        followup_manager.add_followup(
+                            patient_name=m_name,
+                            mobile=m_mobile,
+                            consultation_date=datetime.now().strftime('%Y-%m-%d'),
+                            review_interval=m_interval,
+                            diagnosis=m_diag,
+                            advice=m_advice
+                        )
+                        st.success(f"✅ Follow-up scheduled for {m_name} ({m_interval})!")
+                        st.rerun()
+                    else:
+                        st.error("Please enter patient name.")
 
 if __name__ == "__main__":
     main()
