@@ -17,7 +17,7 @@ sys.path.append(os.path.dirname(__file__))
 
 # Core imports
 from modules.google_sheets_api import google_sheets_api
-from modules.whatsapp_utils import send_via_whatsapp_web, format_clinical_whatsapp_message, format_followup_reminder_message
+from modules.whatsapp_utils import send_via_whatsapp_web, format_clinical_whatsapp_message, format_followup_reminder_message, REMINDER_LANGUAGE_OPTIONS
 from modules.followup_manager import followup_manager, parse_relative_interval
 
 def generate_qr_base64(data_url: str) -> str:
@@ -1524,8 +1524,15 @@ def main():
 
         st.markdown("---")
 
-        # Filters and Search
-        col_f1, col_f2, col_f3 = st.columns([2, 1, 1])
+        # ── Global Language & Filter Controls ──
+        col_lang, col_f1, col_f2, col_f3 = st.columns([2, 3, 2, 1])
+        with col_lang:
+            reminder_language = st.selectbox(
+                "🌐 Message Language",
+                REMINDER_LANGUAGE_OPTIONS,
+                index=0,
+                help="Doctor selects the language before sending WhatsApp reminder to each patient."
+            )
         with col_f1:
             search_query = st.text_input("🔍 Search by Patient Name or Mobile", placeholder="Type patient name or mobile number...").strip().lower()
         with col_f2:
@@ -1621,14 +1628,14 @@ def main():
                         st.markdown("**Actions:**")
                         action_col1, action_col2 = st.columns(2)
                         
-                        # WhatsApp Reminder Button
+                        # WhatsApp Reminder Button — use doctor-selected language
                         reminder_text = format_followup_reminder_message(
                             patient_name=p_name,
                             target_date_str=target_date_str,
-                            reason=f"{diagnosis} (Interval: {review_interval})"
+                            reason=diagnosis,
+                            language=reminder_language
                         )
-                        clean_mobile = p_mobile.replace("+", "").replace(" ", "").replace("-", "") if p_mobile else ""
-                        wa_url = send_via_whatsapp_web(clean_mobile, reminder_text) if clean_mobile else f"https://wa.me/?text={urllib.parse.quote(reminder_text)}"
+                        wa_url = send_via_whatsapp_web(p_mobile, reminder_text)
                         
                         with action_col1:
                             st.link_button("📲 Send Reminder", wa_url, use_container_width=True, type="primary")

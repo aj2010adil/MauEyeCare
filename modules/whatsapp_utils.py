@@ -166,24 +166,135 @@ def format_clinical_whatsapp_message(patient_name, date_str, rx_table=None, ipd=
     return "\n".join(lines)
 
 
-def format_followup_reminder_message(patient_name, target_date_str, reason="", doctor_name="Dr. Danish"):
-    """Format a respectful, friendly clinical follow-up reminder for WhatsApp"""
-    return f"""🏥 *MAU EYE CARE - PATIENT REVIEW REMINDER* 👁️
+# ─────────────────────────────────────────────
+# LANGUAGE OPTIONS for doctor to choose from
+# ─────────────────────────────────────────────
+REMINDER_LANGUAGE_OPTIONS = [
+    "🌐 Urdu-Hindi Mixed (Default)",
+    "اردو  Urdu Only",
+    "हिंदी  Hindi Only",
+]
 
-Namaste *{patient_name}* ji,
+def format_followup_reminder_message(patient_name, target_date_str, reason="", doctor_name="Dr. Danish", language="🌐 Urdu-Hindi Mixed (Default)"):
+    """
+    Format a culturally appropriate WhatsApp follow-up reminder.
+    language choices:
+      - '🌐 Urdu-Hindi Mixed (Default)' : Hindustani mix, Islamic tone (recommended for Mubarakpur)
+      - 'اردو  Urdu Only'               : Pure Urdu script with full Islamic etiquette
+      - 'हिंदी  Hindi Only'              : Pure Hindi for Hindu / general patients
+    """
 
-This is a gentle reminder from *{doctor_name}* (B.Sc. Optometry, Reg: UPS 2908) at *Mau Eye Care*.
+    # Clean up reason — strip the raw "Interval:" text if no real diagnosis was captured
+    clean_reason = ""
+    if reason and "Interval:" not in reason and reason.strip():
+        clean_reason = reason.strip()
 
-📋 *Follow-up Details:*
-• Patient: {patient_name}
-• Scheduled Review Date: {target_date_str}
-• Purpose: {reason or 'Routine Eye Checkup / Spectacle Vision Review'}
+    # ──────────────────────────────────────────
+    # 1. URDU-HINDI MIXED (Default / Islamic)
+    # ──────────────────────────────────────────
+    if "Urdu-Hindi" in language or "Mixed" in language or "Default" in language:
+        purpose_line = f"• *Wajah:* {clean_reason}" if clean_reason else ""
+        return f"""🕌 *السلام علیکم ورحمۃ اللہ وبرکاتہ*
+_Assalamu Alaikum wa Rahmatullahi wa Barakatuh_
 
-⏰ *Clinic Timings:* Mon - Sat: 10:00 AM – 5:00 PM (Sunday Closed)
-📍 *Address:* Pura Khizir (Near Mubarakpur Marriage Hall, Nai Pani ki tanki), Mubarakpur, Azamgarh (U.P.)
-📞 *Helpline / Appointments:* 9235647410 / 8299461251
+*{patient_name}* ji, Aadab! 🙏
 
-*Timely eye checkups protect your vision and ensure comfortable sight.*
+Yeh aek mohabbat bhari yaad-daasht hai *{doctor_name}* (B.Sc. Optometry, Reg: UPS 2908) ki taraf se — *Mau Eye Care, Mubarakpur*.
 
-⭐ *Rate Us on Google:* https://maps.google.com/?q=Mau+Eye+Care+Mubarakpur"""
+━━━━━━━━━━━━━━━━━━━━━
+👁️ *Aankh Ki Jaanch Ka Waqt Aa Gaya Hai*
+━━━━━━━━━━━━━━━━━━━━━
+
+📋 *Tafseelat:*
+• *Mareez:* {patient_name}
+• *Mulaqaat Ki Taareekh:* {target_date_str}
+{purpose_line}
+
+_"Sehat Allah ki naaimat hai — aankhein uski amaanat hain."_
+Waqt par jaanch karwaana iss amaanat ki hifazat hai. 🤲
+
+━━━━━━━━━━━━━━━━━━━━━
+🏥 *Mau Eye Care — Mubarakpur*
+━━━━━━━━━━━━━━━━━━━━━
+⏰ *Waqt:* Peer ta Shanichar, Subah 10 baje – Shaam 5 baje
+   _(Itwar / Sunday band)_
+📍 *Pata:* Pura Khizir (Shaadi Hall ke paas, Nai Pani Ki Tanki), Mubarakpur, Azamgarh
+📞 *Appointment:* 9235647410 / 8299461251
+
+⭐ *Google par Rate Karein:*
+https://maps.google.com/?q=Mau+Eye+Care+Mubarakpur
+
+_InshAllah, aapki aankhein hamesha roshni se bhari rahein._ 🤲
+*Allah Hafiz!*"""
+
+    # ──────────────────────────────────────────
+    # 2. PURE URDU (Full Islamic / Urdu script)
+    # ──────────────────────────────────────────
+    elif "Urdu" in language or "اردو" in language:
+        purpose_line = f"• *وجہ:* {clean_reason}" if clean_reason else ""
+        return f"""🕌 *السلام علیکم ورحمۃ اللہ وبرکاتہ*
+
+*{patient_name}* جی، آداب! 🙏
+
+یہ ایک محبت بھری یاد دہانی ہے *{doctor_name}* (B.Sc. آپٹومیٹری، Reg: UPS 2908) کی طرف سے — *Mau Eye Care، مبارکپور*۔
+
+━━━━━━━━━━━━━━━━━━━━━
+👁️ *آنکھ کی جانچ کا وقت آ گیا ہے*
+━━━━━━━━━━━━━━━━━━━━━
+
+📋 *تفصیلات:*
+• *مریض:* {patient_name}
+• *ملاقات کی تاریخ:* {target_date_str}
+{purpose_line}
+
+_"صحت اللہ کی نعمت ہے — آنکھیں اس کی امانت ہیں۔"_
+وقت پر جانچ کروانا اس امانت کی حفاظت ہے۔ 🤲
+
+━━━━━━━━━━━━━━━━━━━━━
+🏥 *Mau Eye Care — مبارکپور*
+━━━━━━━━━━━━━━━━━━━━━
+⏰ *وقت:* پیر تا ہفتہ — صبح ۱۰ بجے تا شام ۵ بجے
+   _(اتوار کو کلینک بند رہے گی)_
+📍 *پتہ:* پورہ خضیر (شادی ہال کے پاس، نئی پانی کی ٹنکی)، مبارکپور، اعظم گڑھ (یو پی)
+📞 *ملاقات:* 9235647410 / 8299461251
+
+⭐ *گوگل پر ریٹ کریں:*
+https://maps.google.com/?q=Mau+Eye+Care+Mubarakpur
+
+_ان شاء اللہ، آپ کی آنکھیں ہمیشہ روشنی سے بھری رہیں۔_ 🤲
+*اللہ حافظ!*"""
+
+    # ──────────────────────────────────────────
+    # 3. PURE HINDI (हिंदी - for Hindu patients)
+    # ──────────────────────────────────────────
+    else:
+        purpose_line = f"• *कारण:* {clean_reason}" if clean_reason else ""
+        return f"""🏥 *मऊ आई केयर — मुबारकपुर*
+👁️ *नेत्र जांच की याद दिलाना*
+
+नमस्ते *{patient_name}* जी! 🙏
+
+यह एक विनम्र सूचना है *{doctor_name}* (B.Sc. ऑप्टोमेट्री, Reg: UPS 2908) की ओर से — *Mau Eye Care, मुबारकपुर*।
+
+━━━━━━━━━━━━━━━━━━━━━
+📋 *विवरण (Details):*
+• *मरीज़:* {patient_name}
+• *जांच की तारीख:* {target_date_str}
+{purpose_line}
+
+_"आँखें ईश्वर का अनमोल उपहार हैं — समय पर जांच करवाएं।"_ 🌟
+
+━━━━━━━━━━━━━━━━━━━━━
+🏥 *Mau Eye Care — मुबारकपुर*
+━━━━━━━━━━━━━━━━━━━━━
+⏰ *समय:* सोमवार से शनिवार — सुबह 10 बजे से शाम 5 बजे तक
+   _(रविवार को क्लिनिक बंद रहेगी)_
+📍 *पता:* पुरा ख़िज़ीर (शादी हॉल के पास, नई पानी की टंकी), मुबारकपुर, आज़मगढ़ (उ.प्र.)
+📞 *अपॉइंटमेंट:* 9235647410 / 8299461251
+
+⭐ *Google पर हमें Rate करें:*
+https://maps.google.com/?q=Mau+Eye+Care+Mubarakpur
+
+_भगवान करे, आपकी आँखें सदा स्वस्थ और रोशन रहें।_ 🙏
+*धन्यवाद!*"""
 
