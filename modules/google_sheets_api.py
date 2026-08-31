@@ -137,32 +137,47 @@ class GoogleSheetsAPI:
             st.error(f"Error updating spectacle quantity: {str(e)}")
             return False
             
+    # Hard‑coded column order for the Patients sheet as requested
+    PATIENT_COLUMNS = [
+        'id', 'name', 'age', 'gender', 'mobile', 'registration_date',
+        'issue', 'advice', 'occupation', 'screen_time', 'family_history',
+        'diabetes', 'hypertension', 'last_eye_exam', 'current_glasses',
+        'eye_strain', 'referral_source'
+    ]
+
     def format_patient_for_sheets(self, patient_data):
-        """Format patient data for Google Sheets"""
-        return [
-            patient_data.get('id', ''),
-            patient_data.get('name', ''),
-            patient_data.get('age', ''),
-            patient_data.get('gender', ''),
-            patient_data.get('mobile', ''),
-            patient_data.get('email', ''),
-            patient_data.get('address', ''),
-            patient_data.get('city', ''),
-            patient_data.get('state', ''),
-            patient_data.get('pincode', ''),
-            patient_data.get('registration_date', datetime.now().strftime('%Y-%m-%d %H:%M:%S')),
-            patient_data.get('issue', ''),
-            patient_data.get('advice', ''),
-            patient_data.get('occupation', ''),
-            patient_data.get('screen_time', ''),
-            patient_data.get('family_history', ''),
-            patient_data.get('diabetes', ''),
-            patient_data.get('hypertension', ''),
-            patient_data.get('last_eye_exam', ''),
-            patient_data.get('current_glasses', ''),
-            patient_data.get('eye_strain', ''),
-            patient_data.get('referral_source', '')
-        ]
+        """Format patient data according to the fixed column layout.
+        Any missing fields will be filled with an empty string.
+        """
+        # Initialise a row with empty strings for each column
+        row = [''] * len(self.PATIENT_COLUMNS)
+        # Map each expected field to its column index
+        mapping = {
+            'id': 0,
+            'name': 1,
+            'age': 2,
+            'gender': 3,
+            'mobile': 4,
+            'registration_date': 5,
+            'issue': 6,
+            'advice': 7,
+            'occupation': 8,
+            'screen_time': 9,
+            'family_history': 10,
+            'diabetes': 11,
+            'hypertension': 12,
+            'last_eye_exam': 13,
+            'current_glasses': 14,
+            'eye_strain': 15,
+            'referral_source': 16,
+        }
+        for key, idx in mapping.items():
+            if key == 'registration_date':
+                row[idx] = patient_data.get('registration_date', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            else:
+                row[idx] = patient_data.get(key, '')
+        return row
+
 
     def add_patient(self, patient_data):
         """Add new patient to Google Sheets automatically"""

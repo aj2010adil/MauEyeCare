@@ -689,6 +689,11 @@ def main():
                     next_review_val = custom_review if custom_review else "As advised"
                 else:
                     next_review_val = selected_review
+                # If patient age is zero, ask for days until review and override interval
+                if st.session_state.get('age', 0) == 0:
+                    days = st.number_input('Days until review', min_value=1, step=1, key='followup_days')
+                    if days:
+                        next_review_val = f"{days} day"
 
             # Doctor fees section
             st.markdown("### 💰 Consultation Fees")
