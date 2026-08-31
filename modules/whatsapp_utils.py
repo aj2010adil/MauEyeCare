@@ -60,17 +60,23 @@ def send_text_message(phone_number, message):
         return {"success": False, "error": str(e)}
 
 def send_via_whatsapp_web(phone_number, message):
-    """Generate WhatsApp Web URL for sending message"""
-    # Clean phone number
-    clean_number = phone_number.replace("+", "").replace(" ", "").replace("-", "")
-    
-    # Encode message for URL
+    """Generate WhatsApp Web URL for sending message safely with validation and auto-country code"""
+    import re
+    # Extract only digits
+    digits_only = re.sub(r'\D', '', str(phone_number or ''))
     encoded_message = urllib.parse.quote(message)
     
-    # Generate WhatsApp Web URL
-    whatsapp_url = f"https://wa.me/{clean_number}?text={encoded_message}"
-    
-    return whatsapp_url
+    # If no valid digits or less than 10 digits (e.g. name or empty), open generic WhatsApp share link
+    if len(digits_only) < 10:
+        return f"https://wa.me/?text={encoded_message}"
+        
+    # If standard 10-digit Indian mobile number, prefix 91
+    if len(digits_only) == 10:
+        digits_only = "91" + digits_only
+    elif len(digits_only) == 11 and digits_only.startswith("0"):
+        digits_only = "91" + digits_only[1:]
+        
+    return f"https://wa.me/{digits_only}?text={encoded_message}"
 
 def format_prescription_message(patient_name, prescription_link, doctor_name="Dr. Danish"):
     """Format professional prescription message with link"""

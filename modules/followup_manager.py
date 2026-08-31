@@ -1,12 +1,7 @@
-#!/usr/bin/env python3
-"""
-Follow-Up Manager for MauEyeCare Hospital Management System
-Handles patient review scheduling, target date calculation, status tracking, and CRM queues.
-"""
-
 import os
 import json
 import re
+import uuid
 from datetime import datetime, timedelta, date
 
 FOLLOWUPS_FILE = os.path.join(os.path.dirname(__file__), "..", "followups_data.json")
@@ -85,7 +80,19 @@ class FollowupManager:
         try:
             if os.path.exists(self.storage_path):
                 with open(self.storage_path, "r", encoding="utf-8") as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    # Deduplicate and ensure unique IDs for every item
+                    seen_ids = set()
+                    modified = False
+                    for idx, item in enumerate(data):
+                        cur_id = item.get("id")
+                        if not cur_id or cur_id in seen_ids:
+                            item["id"] = f"FU-{uuid.uuid4().hex[:10]}"
+                            modified = True
+                        seen_ids.add(item["id"])
+                    if modified:
+                        self._save_data(data)
+                    return data
         except Exception:
             pass
         return []
@@ -135,9 +142,9 @@ class FollowupManager:
                 self._save_data(data)
                 return entry
                 
-        # Create new entry
+        # Create new entry with guaranteed unique UUID
         new_entry = {
-            "id": f"FU-{datetime.now().strftime('%Y%m%d%H%M%S%f')[:17]}",
+            "id": f"FU-{uuid.uuid4().hex[:10]}",
             "patient_name": patient_name,
             "mobile": mobile or "",
             "consultation_date": consult_d.strftime("%Y-%m-%d"),
@@ -263,7 +270,7 @@ class FollowupManager:
         return False
 
     def auto_import_from_patients(self, patients_list):
-        """Automatically seed follow-up queue from past patient records if not already tracked"""
+        """Automatically seed follow-up queue from past patient records with unique UUIDs"""
         if not patients_list:
             return 0
             
@@ -303,7 +310,7 @@ class FollowupManager:
                     target_date = datetime.now().date() + timedelta(days=30)
                     
                 new_entry = {
-                    "id": f"FU-{datetime.now().strftime('%Y%m%d%H%M%S%f')[:17]}",
+                    "id": f"FU-{uuid.uuid4().hex[:10]}",
                     "patient_name": name,
                     "mobile": mobile,
                     "consultation_date": reg_d_clean,
@@ -326,3 +333,4 @@ class FollowupManager:
         return imported_count
 
 followup_manager = FollowupManager()
+

@@ -1311,8 +1311,19 @@ def main():
                     st.metric("Return Rate", f"{return_rate:.1f}%")
 
                 with col3:
-                    # Average age
-                    ages = [int(p.get('age', 0)) for p in patients if isinstance(p, dict) and p.get('age')]
+                    # Average age — safe parsing handles misaligned sheet columns (e.g. datetime in age cell)
+                    def safe_age(val):
+                        try:
+                            v = str(val).strip()
+                            # Reject obvious non-ages: empty, datetime strings, text
+                            if not v or len(v) > 5 or not v.isdigit():
+                                return None
+                            age_int = int(v)
+                            return age_int if 1 <= age_int <= 120 else None
+                        except Exception:
+                            return None
+
+                    ages = [a for a in [safe_age(p.get('age')) for p in patients if isinstance(p, dict)] if a is not None]
                     avg_age = sum(ages) / len(ages) if ages else 0
                     st.metric("Average Age", f"{avg_age:.1f} years")
 
